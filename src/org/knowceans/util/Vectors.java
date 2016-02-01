@@ -28,6 +28,8 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Vector;
 
+import org.knowceans.util.ArrayUtils;
+
 /**
  * Static vector manipulation routines for Matlab porting and other numeric
  * operations. The routines work for int and double partly; the class is

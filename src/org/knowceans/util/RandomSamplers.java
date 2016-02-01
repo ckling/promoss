@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import ckling.functions.ArrayTool;
+import org.knowceans.util.ArrayUtils;
 
 /**
  * Instance-based samplers with diverse sampling methods, including beta, gamma,

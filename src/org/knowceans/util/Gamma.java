@@ -56,7 +56,7 @@ public class Gamma {
 	/**
 	 * clamp value for small gamma and digamma values
 	 */
-	private static final double GAMMA_MINX = 1.e-12;
+	private static final double GAMMA_MINX = 1.e-10;
 	private static final double DIGAMMA_MINNEGX = -1250;
 
 	/**
@@ -78,6 +78,13 @@ public class Gamma {
 	 *            the value.
 	 * @return log(&#915;(x))
 	 */
+	
+	public static void main (String[] args) {
+		
+		System.out.println(digamma0(0.12));
+		
+	}
+	
 	// this is from Apache Commons Math
 	public static double lgamma(double x) {
 		double ret;
@@ -318,6 +325,7 @@ public class Gamma {
 	 */
 	// from Apache Commons Math
 	public static double digamma(double x) {
+		
 		// double y = digamma(x, 0);
 		// System.out.println(y + " " + x);
 		// return y;
@@ -352,7 +360,7 @@ public class Gamma {
 		// System.out.println("recursion level " + level + " x " + x);
 		// }
 		// return digamma(x + 1, level + 1) - 1 / x;
-		return digamma(x + 1) - 1 / x;
+		return digamma(x + 1.0) - (1.0 / x);
 	}
 
 	/**
@@ -372,6 +380,7 @@ public class Gamma {
 				* p;
 		p = p + log(x) - 0.5 / x - 1 / (x - 1) - 1 / (x - 2) - 1 / (x - 3) - 1
 				/ (x - 4) - 1 / (x - 5) - 1 / (x - 6);
+				
 		return p;
 	}
 
