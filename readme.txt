@@ -32,8 +32,4 @@ Place, Suite 330, Boston, MA 02111-1307 USA
 Notes
 ***************************
 
-This is the implementation of MGTM, a geographical topic model using multi-Dirichlet processes.
-
-The source code of MGTM is found in /sourcecode/nhdp3/ 
-
-Will explain the code later...
+This is the Multi-Dirichlet Process (MDP) based topic model for multiple contexts.
