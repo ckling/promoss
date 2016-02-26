@@ -56,29 +56,24 @@ public class PracticalInference {
 	//number of top words returned for the topic file
 	public int topk = 100;
 	//Number of read docs (might repeat with the same docs)
-	public int RUNS = 1000;
+	public int RUNS = 2000;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
-	public int BATCHSIZE = 16;
-	public int BATCHSIZE_GROUPS = 4096;
-	//How many observations do we take before updating alpha_1
+	public int BATCHSIZE = 4096;
+	public int BATCHSIZE_GROUPS = 256;
+	//Tells after how many steps we update alpha_1
 	public int BATCHSIZE_ALPHA = 1000;
-	//After how many steps a sample is taken to estimate alpha
-	public int SAMPLE_ALPHA = 100;
 	//Burn in phase: how long to wait till updating nkt?
-	public int BURNIN = 0;
-	//Burn in phase for documents: How long till we update the
-	//topic distributions of context-clusters?
-	public int BURNIN_DOCUMENTS = 100;
+	public int BURNIN = 10;
 	//how many instances of a word do we need to see before we put it in the dictionary?
 	//(this is only relevant when there is no dict file yet)
-	public int MIN_DICT_WORDS = 100;
+	public int MIN_DICT_WORDS = 1;
 
 	//relative size of the training set
 	public double TRAINING_SHARE = 1.0;
 
-	public String dataset = "porn_full3";
-	public String basedirectory;
+	public static String dataset = "test2";
+	public static String basedirectory;
 
 	public int M = 0; //Number of Documents
 	public int C = 0; //Number of words in the corpus
@@ -89,24 +84,19 @@ public class PracticalInference {
 	public int[][] Cfc; //Number of documents for each cluster (FxCf)
 	public int[][] Cfg; //Number of documents for each group (FxCg)
 	public int[] N; //Number of Words per document
-	public int T = 25; //Number of truncated topics
+	public int T = 50; //Number of truncated topics
 	public HashMap<Integer,Integer> Ncounts; //Number of documents with N words
 
 	public int[][][] A; //Groups and their clusters
 
 	public ArrayList<ArrayList<Set<Integer>>> affected_groups; //Which clusters are affected by changes in group g; F x G x ...
 
-	private double concentration_init = Math.min(0.1,5.0/T); 
+	public double alpha_0 = 0.1;
 
-	public double alpha_0 = concentration_init;
-
-	public double alpha_1 = concentration_init;
+	public double alpha_1 = 0.1;
 
 	//Dirichlet parameter for multinomials over clusters
 	public double[] delta;
-
-	//decides if delta is fixed or not.
-	public double delta_fix = 10;
 
 	//Dirichlet parameter for multinomial over features
 	public double[] epsilon;
@@ -117,7 +107,7 @@ public class PracticalInference {
 	public double beta_0 = 0.01;
 
 	//helping variable beta_0*V
-	private double beta_0V = beta_0 * V;
+	private double beta_0V = 0.01 * V;
 
 	//Global topic weight (estimated)
 	public double[] pi_0;
@@ -136,23 +126,27 @@ public class PracticalInference {
 	//Estimated number of times term t appeared in topic k
 	public double[][] nkt;
 	//Estimated number of times term t appeared in topic k in the batch
-	private double[][] tempnkt;
+	public double[][] tempnkt;
 	//Estimated number of words in topic k
 	public double[] nk;
 
-	//Estimated number of tables for word v in topic k, used to update the topic-prior beta
+	//Estimated number of tables for word v in topic k, used to update tau
 	public double[][] mkt;
-	//Estimated number of tables for word v in topic k, used to update the topic prior beta
+	//Estimated number of tables for word v in topic k, used to update tau
 	//temporal variable for estimation
-	private double[][] tempmkt;
+	public double[][] tempmkt;
 
 
 	//Topic "counts" per document
 	public double[][] nmk;
+	//Feature "counts" per document
+	public double[][] nmf;
+	//Topic-table "counts" for each document per cluster
+	public double[][][][] tmkfc;
 
 	//variational parameters for the stick breaking process - parameters for Beta distributions \hat{a} and \hat{b}
-	private double[] ahat;
-	private double[] bhat;
+	public double[] ahat;
+	public double[] bhat;
 
 
 	//rho: Learning rate; rho = s / ((tau + t)^kappa);
@@ -160,31 +154,30 @@ public class PracticalInference {
 	//tau = 64, K = 0.5; S = 1; Batchsize = 4096
 
 	public int rhos = 1;
-	public double rhokappa = 0.5;
+	public double rhokappa = 0.1;
 	public int rhotau = 64;
 
-	//public int rhos = 1;
-	//public double rhokappa = 0.5;
-	//public int rhotau = 2000;
+	//	public int rhos = 10;
+	//	public double rhokappa = 0.9;
+	//	public int rhotau = 1000;
 
 	public int rhos_document = 1;
-	public double rhokappa_document = rhokappa;
+	public double rhokappa_document = 0.1;
 	public int rhotau_document = 64;
 
+	public double rhokappa_hyper = 0.1;
 	public int rhos_hyper = 1;
-	public double rhokappa_hyper = rhokappa;
 	public int rhotau_hyper = 64;
-
 	//tells the number of processed words
 	public int rhot = 0;
 	//tells the number of the current run)
 	public int rhot_step = 0;
 	//tells the number of words seen in this document
-	private int[] rhot_words_doc;
+	public int[] rhot_words_doc;
 
 	//count number of words seen in the batch
 	//remember that rhot counts the number of documents, not words
-	private int[] batch_words;
+	public int[] batch_words;
 	//count number of times the group was seen in the batch - FxG
 	public int[][] rhot_group;
 
@@ -201,8 +194,10 @@ public class PracticalInference {
 	//Sum over log(1-q(k,f,c)) for all documents in the given group g and cluster number c. We need this sum for calculating 
 	//Sum of E[n>0] and E[n=0] for all documents of the group and cluster. 
 	public double[][][] sumqfgc;
+
+
 	//Sum over 1-q(_,f,_) for document M and feature f (approximated seat counts)
-	public double[] sumqf;
+	public double[][] sumqf;
 	//Batch estimate of sumqf2 for stochastic updates
 	//private static double[] sumqf2temp;
 
@@ -214,21 +209,18 @@ public class PracticalInference {
 
 
 	//statistic over gamma, used to do batch-updates of clusters: sum of gamma
-	private double[][][][] sumqtemp2_clusters;
+	public double[][][][] sumqtemp2_clusters;
 	//statistic over gamma, used to do batch-updates of features: sum of gamma
 	//private static double[] sumqtemp2_features;
 	//statistic over gamma, used to do batch-updates of clusters: prodct of gamma-1
-	private double[][][][] sumqtemp;
+	public double[][][][] sumqtemp;
+
 	//sum over document-topic table estimates \sum_{m=0}^{M} p(n_{mk} > 0)) for batch
 	public double sumnmk_ge0=0.0;
 
 	//denominator for alpha_0 estimate
-	private double alpha_1_estimate_denominator;
+	public double alpha_1_estimate_denominator;
 
-	//counts over the feature use
-	private double[] tempsumqf;
-	//counts over the group use
-	double[][] sumq2_groups;
 
 	//Document-Table counts per topic, added: for updating hyper parameters. Dimension: M.
 	//private static double sumqk;
@@ -248,16 +240,11 @@ public class PracticalInference {
 	public double rhostkt_document;
 	public double oneminusrhostkt_document;
 
-	//counts, how many documents we observed in the batch to estimate alpha_1
-	public int alpha_batch_counter = 0;
-
 	public HashSet<Integer> empty_documents = new HashSet<Integer>();
 
 	public static void main (String[] args) {
 
 		PracticalInference pi = new PracticalInference();
-
-
 
 		pi.readSettings();
 
@@ -277,7 +264,6 @@ public class PracticalInference {
 
 			System.out.println("Run " + i + " (alpha_0 "+pi.alpha_0+" alpha_1 "+ pi.alpha_1+ " beta_0 " + pi.beta_0 + " gamma "+pi.gamma + " delta " + pi.delta[0]+ " epsilon " + pi.epsilon[0]);
 
-
 			pi.rhot_step++;
 			//get step size
 			pi.rhostkt_document = pi.rho(pi.rhos_document,pi.rhotau_document,pi.rhokappa_document,pi.rhot_step);
@@ -294,8 +280,10 @@ public class PracticalInference {
 			}
 			System.out.println();
 
-			pi.updateHyperParameters();
-			
+			if (i > 10*pi.BURNIN) {
+				pi.updateHyperParameters();
+			}
+
 			if (pi.rhot_step%pi.SAVE_STEP==0) {
 				//store inferred variables
 				System.out.println("Storing variables...");
@@ -556,14 +544,6 @@ public class PracticalInference {
 		delta = new double[F];
 		for (int f=0;f<F;f++) {
 			delta[f]=1.0;
-			if (delta_fix != 0) {
-				delta[f]=delta_fix;
-			}
-		}
-
-		epsilon = new double[F];
-		for (int f=0;f<F;f++) {
-			epsilon[f] = 1.0;
 		}
 
 		beta_0V = beta_0 * V;
@@ -616,16 +596,23 @@ public class PracticalInference {
 				//												}
 				//												multrand[T-1] = rest;
 				//												nkt[k][t] = wordfreq[t] * multrand[k];
-				//nkt[k][t]= Math.random();
+				//nkt[k][t]=Math.random();
 				//nkt[k][t] = (Double.valueOf(C)/V * 1.0/ Double.valueOf(T)) * 0.9 + 0.1 * (0.5-Math.random()) * C/Double.valueOf(T);
 				//nk[k]+=nkt[k][t];
 
 				tempmkt[k][t] = 0.0;
 			}
 		}
+
+
 		pi_0 = new double[T];
 		ahat = new double[T];
 		bhat = new double[T];
+
+		epsilon = new double[F];
+		for (int f=0;f<F;f++) {
+			epsilon[f] = 1.0;
+		}
 
 		pi_0[0] = 1.0 / (1.0+gamma);
 		for (int i=1;i<T;i++) {
@@ -656,14 +643,16 @@ public class PracticalInference {
 		}
 
 
-		//sumqfgc = new double[F][];
-		sumqf = new double[F];
+		sumqfgc = new double[F][][];
+		sumqf = new double[M][F];
 
 		//sumqf2temp = new double[F];
 		pi_kfc_noF = new double[F][][][];
 		for (int f=0;f<F;f++) {
+			sumqfgc[f] = new double[A[f].length][];
 			pi_kfc_noF[f] = new double[A[f].length][][]; 
 			for (int g=0;g<A[f].length;g++) {
+				sumqfgc[f][g] = new double[A[f][g].length];
 				pi_kfc_noF[f][g] = new double[A[f][g].length][T];
 				for (int i=0;i<A[f][g].length;i++) {
 					for (int k = 0; k < T; k++) {
@@ -675,21 +664,12 @@ public class PracticalInference {
 			}
 		}
 
-		tempsumqf = new double[F];
-		sumq2_groups = new double[F][];
-		for (int f=0;f<F;f++) {
-			sumq2_groups[f] = new double[A[f].length];
-		}
+		alpha_1_estimate_denominator = - BATCHSIZE_ALPHA*Gamma.digamma0(alpha_1);
 
-		sumqfgc = new double[F][][];
-		for (int f=0;f<F;f++) {
-			sumqfgc[f] = new double[A[f].length][];
-			for (int g=0;g<A[f].length;g++) {
-				sumqfgc[f][g] = new double[A[f][g].length];
-			}
-		}
+
 
 	}
+
 
 	/**
 	 * Reads the number of features F from by counting the
@@ -715,8 +695,7 @@ public class PracticalInference {
 				for (Entry<Integer,Integer> e : wordset) {
 					N[m]+=e.getValue();
 				}		
-			}	
-
+			}
 			return ;
 		}
 		else {
@@ -790,6 +769,8 @@ public class PracticalInference {
 
 		return;
 
+
+
 	}
 
 	public void inferenceDoc(int m) {
@@ -856,7 +837,7 @@ public class PracticalInference {
 		for (int f=0;f<F;f++) {
 			int g = group[f];
 			double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
-			double temp2 = (sumqf[f] + epsilon[f]);
+			double temp2 = (sumqf[m][f] + epsilon[f]);
 			for (int i=0;i<grouplength[f];i++) {
 				int a=A[f][g][i];
 				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
@@ -918,31 +899,7 @@ public class PracticalInference {
 
 				if ((Double.isInfinite(q[k]) || q[k]==1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
 					System.out.println("Error calculating gamma " + " " + "first part: " + (nmk[m][k] + alpha_1*topic_prior[k]) + " second part: " + (nkt[k][t] + beta_0) 
-							/ (nk[k] + beta_0V) + " m " + m+ " " + N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + " sumqmk " + sumqmk[k] + 
-							" qk " + q[k] + " nmk " + nmk[m][k] + " prior " + topic_prior[k] + " nkt " + nkt[k][t]+ " a0 " + alpha_0  + 
-							" alpha1 " + alpha_1 +" beta " + beta_0 + " betaV" + beta_0V);
-
-
-					for (int f=0;f<F;f++) {
-						int g = group[f];
-						double sumqfgc_denominator = BasicMath.sum(sumqfgc[f]) + grouplength[f]*delta[f];
-						System.out.println(" f " + f + " sumqfgc_denominator " + sumqfgc_denominator);
-						System.out.println("sumqf[m][f] " + m + " " + f + " " + sumqfgc_denominator + " epsilon " + epsilon[f]);
-
-						for (int i=0;i<grouplength[f];i++) {
-							int a=A[f][g][i];
-							double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
-							System.out.println(" f " + f + " sumqfck2_denominator " + sumqfck2_denominator);
-
-							//cluster probability in group
-							System.out.println(" f " + f + " i " + i + " sumqfgc[m][f][i] " + sumqfgc[f][i] + " delta[f] " + delta[f]);
-
-							for (int k2=0;k2<T;k2++) {
-								System.out.println(" f " + f + " a "+ a + " k " + k2 + " sumqfck[f][a][k]" + sumqfck[f][a][k] + " pi0[k] " + pi_0[k]);  
-							}
-						}
-					}
-
+							/ (nk[k] + beta_0V) + " m " + m+ " " + N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + " sumqmk " + sumqmk[k] + " qk " + q[k] + " nmk " + nmk[m][k] + " prior " + topic_prior[k] + " nkt " + nkt[k][t]+ " a0 " + alpha_0  + " alpha1 " + alpha_1 +" beta " + beta_0 + " betaV" + beta_0V);
 					debug = true;
 					//Skip this file...
 					break;
@@ -988,29 +945,47 @@ public class PracticalInference {
 			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
 		}
 
-		//We update global topic-word counts in batches (mini-batches lead to local optima)
-		//after a burn-in phase
-		if (rhot%BATCHSIZE == 0 && rhot_step>BURNIN) {
-			updateTopicWordCounts();
-		}
-		//TODO 2x?
-		if (rhot_step>BURNIN_DOCUMENTS) {
+		double[] sumq2_features = new double[F];
 
 
-
+		if (rhot_step>2*BURNIN) {
 			for (int f=0;f<F;f++) {
 
 				int g = group[f];
 				//increase count for that group
 				rhot_group[f][g]++;
 
+				//if (rhot_step>BURNIN) {
 				for (int k=0;k<T;k++) {
 					//TODO add feature probability here?
-					tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+					sumq2_features[f] += topic_ge_0[k] * pk_f[k][f];
+
 				}
+				//}
+
+
+
+//				if (m%10000 == 0) {
+//					int k=0;
+//					System.out.print(" (" + topic_prior[k] +  " " + grouplength[f] + " " +topic_ge_0[k]+") ");
+//					for (int i=0;i<grouplength[f];i++) {
+//						//System.out.println(BasicMath.sum(pk_fck[f][i]));
+//						//for (int k=0;k<T;k++) {
+//						int a=A[f][g][i];
+//						//System.out.print((sumqfck[f][a][k] + (alpha_0 * pi_0[k]))/(BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f]) + " " );
+//						//System.out.print(sumqfck[f][a][k] + " " + pi_0[k] + " " );
+//						System.out.print(topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k]+ " ");
+//						//System.out.print(sumqfgc[f][g][i]+ " ");
+//						//System.out.print(pk_fck[f][i][k]);
+//						//}
+//					}
+//					System.out.println();
+//				}
 
 				//update feature-counter
 				for (int i=0;i<grouplength[f];i++) {
+
+
 
 					//how often did we see this cluster already?
 					//rhot_cluster[f][i]++;
@@ -1024,8 +999,13 @@ public class PracticalInference {
 
 				updateClusterTopicDistribution(f,g);	
 
+				updateTopicAndFeatureDistribution();
+
 			}
 
+			for (int f=0;f<F;f++) {
+				sumqf[m][f]=oneminusrhostkt_document * sumqf[m][f] +  rhostkt_document * sumq2_features[f];
+			}
 		}
 
 
@@ -1033,31 +1013,24 @@ public class PracticalInference {
 
 
 		//take 10000 samples to estimate alpha_1
-		if (rhot_step>10*BURNIN) {
+		if (rhot_step>BURNIN) {
 
-			//ignore documents containing only one word.
-			if (rhot%SAMPLE_ALPHA == 0 && N[m]>1) {
-				sumnmk_ge0+=BasicMath.sum(topic_ge_0);
-				alpha_1_estimate_denominator += Gamma.digamma0(N[m]+alpha_1);
-				alpha_batch_counter++;
+			sumnmk_ge0+=BasicMath.sum(topic_ge_0);
+			alpha_1_estimate_denominator += Gamma.digamma0(N[m]+alpha_1);
 
+			//We use the estimate from Sato and guess the table sum based on the batch
+			if ((rhot-(M*TRAINING_SHARE*BURNIN))%BATCHSIZE_ALPHA == 0) {
 
-				//We use the estimate from Sato and guess the table sum based on the batch
-				if (alpha_batch_counter%BATCHSIZE_ALPHA == 0) {
-
-					alpha_1_estimate_denominator-= BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1);
-					//this is for preventing updates after we saw only empty documents
-					if (sumnmk_ge0>0) {
-						double rhostkt = rho(rhos_hyper,rhotau_hyper,rhokappa_hyper, rhot/BATCHSIZE);
-						alpha_1 = (1.0-rhostkt) * alpha_1 + rhostkt * (sumnmk_ge0 / alpha_1_estimate_denominator);
-					}
-
-					//reset sumnmk_ge0
-					sumnmk_ge0 = 0;
-					//get new denominator
-					alpha_1_estimate_denominator = 0;
-					alpha_batch_counter = 0;
+				//this is for preventing updates after we saw only empty documents
+				if (sumnmk_ge0>0) {
+					double rhostkt = rho(rhos_hyper,rhotau_hyper,rhokappa_hyper,(int) (rhot-(M*TRAINING_SHARE*BURNIN))/BATCHSIZE_ALPHA);
+					alpha_1 = (1.0-rhostkt) * alpha_1 + rhostkt * (sumnmk_ge0 / alpha_1_estimate_denominator);
 				}
+
+				//reset sumnmk_ge0
+				sumnmk_ge0 = 0;
+				//get new denominator
+				alpha_1_estimate_denominator = - BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1);
 			}
 		}
 
@@ -1098,68 +1071,67 @@ public class PracticalInference {
 	//	}
 
 	/**
-	 * Here we do stochastic updates of the document-topic counts
+	 * Here we do stochastic updates of the document-topic and the global feature counts
 	 */
-	public synchronized void updateTopicWordCounts() {
+	public synchronized void updateTopicAndFeatureDistribution() {
 
-		for (int f=0;f<F;f++) {
-			//TODO: multiply with avg doc length
-			sumqf[f]=oneminusrhostkt_document * sumqf[f] +  rhostkt_document * tempsumqf[f] * (M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
-			tempsumqf[f] = 0;
-		}
+		//We update global topic-word counts in batches (mini-batches lead to local optima)
+		if (rhot%BATCHSIZE == 0) {
+			//only update if we are beyond burn in phase
+			if (rhot_step>BURNIN) {
 
-
-		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
-		double rhostktnormC = rhostkt * (C / Double.valueOf(BasicMath.sum(batch_words)));
+				double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
+				double rhostktnormC = rhostkt * (C / Double.valueOf(BasicMath.sum(batch_words)));
 
 
-		nk = new double[T];
-		for (int k=0;k<T;k++) {
-			for (int v=0;v<V;v++) {
-				double oneminusrhostkt = (1.0 - rhostkt);
+				nk = new double[T];
+				for (int k=0;k<T;k++) {
+					for (int v=0;v<V;v++) {
+						double oneminusrhostkt = (1.0 - rhostkt);
 
-				nkt[k][v] *= oneminusrhostkt;
+						nkt[k][v] *= oneminusrhostkt;
 
-				//update word-topic-tables for estimating tau
-				mkt[k][v] *= oneminusrhostkt;
-				if(!debug && Double.isInfinite(mkt[k][v])) {
-					System.out.println("mkt pre " + Double.valueOf(wordfreq[v])/batch_words[v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
-					debug = true;
+						//update word-topic-tables for estimating tau
+						mkt[k][v] *= oneminusrhostkt;
+						if(!debug && Double.isInfinite(mkt[k][v])) {
+							System.out.println("mkt pre " + Double.valueOf(wordfreq[v])/batch_words[v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
+							debug = true;
+						}
+
+						//we estimate the topic counts as the average q (tempnkt consists of BATCHSIZE observations)
+						//and multiply this with the size of the corpus C
+						if (tempnkt[k][v]>0) {
+
+							nkt[k][v] += rhostktnormC * tempnkt[k][v];
+							//estimate tables in the topic per word, we just assume that the topic-word assignment is 
+							//identical for the other words in the corpus.
+							mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(C / Double.valueOf(BasicMath.sum(batch_words)))));
+							if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
+								System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
+								debug = true;
+							}
+
+							//reset batch counts
+							tempnkt[k][v] = 0;
+							//reset word counts in the last topic iteration
+							if (k+1==T) {
+								batch_words[v] = 0;
+							}
+						}
+
+						nk[k] += nkt[k][v];
+
+					}
 				}
 
-				//we estimate the topic counts as the average q (tempnkt consists of BATCHSIZE observations)
-				//and multiply this with the size of the corpus C
-				if (tempnkt[k][v]>0) {
-
-					nkt[k][v] += rhostktnormC * tempnkt[k][v];
-					//estimate tables in the topic per word, we just assume that the topic-word assignment is 
-					//identical for the other words in the corpus.
-					mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(C / Double.valueOf(BasicMath.sum(batch_words)))));
-					if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
-						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
-						debug = true;
-					}
-
-					//reset batch counts
-					tempnkt[k][v] = 0;
-					//reset word counts in the last topic iteration
-					if (k+1==T) {
-						batch_words[v] = 0;
+				//reset
+				for (int k=0;k<T;k++) {
+					for (int t=0;t<V;t++) {
+						tempmkt[k][t] = 0.0;
 					}
 				}
-
-				nk[k] += nkt[k][v];
-
 			}
 		}
-
-		//reset
-		for (int k=0;k<T;k++) {
-			for (int t=0;t<V;t++) {
-				tempmkt[k][t] = 0.0;
-			}
-		}
-
 	}
 
 	/**
@@ -1175,9 +1147,7 @@ public class PracticalInference {
 		//sumqfgc[f][group[f]][i] ok 
 		//sumqfg[f][group[f]] 
 
-		//we update if we saw all documents from the group OR the batchsize
-		int BATCHSIZE_GROUP_MIN = Math.min(Cfg[f][g],BATCHSIZE_GROUPS);
-		if (rhot_group[f][g] % BATCHSIZE_GROUP_MIN == 0) {
+		if (rhot_group[f][g] % BATCHSIZE_GROUPS == 0) {
 
 			//calculate update rate
 			double rhost_group = rho(rhos,rhotau,rhokappa,rhot_group[f][g]);
@@ -1194,30 +1164,26 @@ public class PracticalInference {
 
 				//update group-cluster-counts: how many tables do we expect to see for group i?
 				//Double.valueOf(Cfg[f][g])/Double.valueOf(BATCHSIZE_GROUPS) is the proportion of observed words!
+				sumqfgc[f][g][i]  = oneminusrho*sumqfgc[f][g][i] + rhost_group * BasicMath.sum(sumqtemp2_clusters[f][g][i]) * Double.valueOf(Cfg[f][g])/Double.valueOf(BATCHSIZE_GROUPS);
 
-				double cluster_sum = 0.0;
-				//total documents in cluster - remember that this includes documents from other groups
-				int cluster_size = Cfc[f][a];
+
 				for (int k=0;k<T;k++) {
 
 					//update table counts for the global topic distribution:
 					//-> Probability of seeing topic k once in each cluster?
 
-
+					//total documents in cluster - remember that this includes documents from other groups
+					int cluster_size = Cfc[f][a];
 					//update the probability of seeing a table in the cluster: E(m_{f,c,k} > 0)
-					sumqfck_ge0[f][a][k] = oneminusrho*sumqfck_ge0[f][a][k] + rhost_group * (1.0 - Math.exp((sumqtemp[f][g][i][k]*cluster_size)/BATCHSIZE_GROUP_MIN));
+					sumqfck_ge0[f][a][k] = oneminusrho*sumqfck_ge0[f][a][k] + rhost_group * (1.0 - Math.exp((sumqtemp[f][g][i][k]*cluster_size)/BATCHSIZE_GROUPS));
 
 					//update counts per cluster
-					sumqfck[f][a][k] = oneminusrho*sumqfck[f][a][k] + rhost_group * (cluster_size/Double.valueOf(BATCHSIZE_GROUP_MIN)) * sumqtemp2_clusters[f][g][i][k];
-
-					cluster_sum +=sumqtemp2_clusters[f][g][i][k];
+					sumqfck[f][a][k] = oneminusrho*sumqfck[f][a][k] + rhost_group * (cluster_size/Double.valueOf(BATCHSIZE_GROUPS)) * sumqtemp2_clusters[f][g][i][k];
 
 					//We have to reset the batch counts 
 					sumqtemp2_clusters[f][g][i][k] = 0;
 					sumqtemp[f][g][i][k] = 0;
 				}
-				sumqfgc[f][g][i]  = oneminusrhostkt_document*sumqfgc[f][g][i] + rhostkt_document * cluster_sum * (cluster_size/Double.valueOf(BATCHSIZE_GROUP_MIN));
-
 
 
 
@@ -1225,7 +1191,7 @@ public class PracticalInference {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS+1)  {
+			if (rhot_step > BURNIN)  {
 				//Update global topic distribution
 				updateGlobalTopicDistribution();
 			}
@@ -1323,89 +1289,85 @@ public class PracticalInference {
 
 	public void updateHyperParameters() {
 
-		if(rhot_step>BURNIN_DOCUMENTS) {
+		if(rhot_step<=2*BURNIN) return;
 
-			//System.out.println("Updating hyperparameters...");
+		//System.out.println("Updating hyperparameters...");
 
-			//Update alpha_0 using the table counts per cluster
-			//Cf is the number of clusters per feature
-			if (alpha_0 > 0.0001) {
-				int zeros = 0;
-				double alpha_0_denominator = 0;
-				for (int f = 0; f < F; f++) {
-					for (int i = 0; i < Cf[f]; i++) {
-						//sumqfck => potential number of tables
-						double sum = BasicMath.sum(sumqfck[f][i]);
-						if (sum > 0) {
-							alpha_0_denominator += Gamma.digamma0(sum + alpha_0);
-						}
-						else {
-							zeros++;
-						}
+		//Update alpha_0 using the table counts per cluster
+		//Cf is the number of clusters per feature
+		if (alpha_0 > 0.0001) {
+			int zeros = 0;
+			double alpha_0_denominator = 0;
+			for (int f = 0; f < F; f++) {
+				for (int i = 0; i < Cf[f]; i++) {
+					//sumqfck => potential number of tables
+					double sum = BasicMath.sum(sumqfck[f][i]);
+					if (sum > 0) {
+						alpha_0_denominator += Gamma.digamma0(sum + alpha_0);
 					}
-				}
-				alpha_0_denominator -= (BasicMath.sum(Cf) - zeros) * Gamma.digamma0(alpha_0);
-
-				//sumqfck_ge0 => number of tables
-
-				alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
-			}
-
-			double beta_0_denominator = 0.0;
-			for (int k=0; k < T; k++) {
-				//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
-				beta_0_denominator += Gamma.digamma0(nk[k]+beta_0*V);
-			}
-			beta_0_denominator -= T * Gamma.digamma0(beta_0*V);
-			beta_0 = 0;
-			for (int k=0;k<T;k++) {
-				for (int t = 0; t < V; t++) {
-					beta_0 += mkt[k][t];
-					if (!debug && (mkt[k][t] == 0 || Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
-						System.out.println("mkt " + k + " " + t + ": " + mkt[k][t] + " nkt: " +  nkt[k][t]);
-						debug = true;
+					else {
+						zeros++;
 					}
 				}
 			}
+			alpha_0_denominator -= (BasicMath.sum(Cf) - zeros) * Gamma.digamma0(alpha_0);
 
-			beta_0 /= beta_0_denominator;
+			//sumqfck_ge0 => number of tables
 
-			//at this point, beta is multiplied by V
-			beta_0V = beta_0;
+			alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
+		}
 
-			//Correct value of beta
-			beta_0 /=V;
-
-			//		beta_0 = DirichletEstimation.estimateAlphaLikChanging(nkt,beta_0,200);
-			//
-			//		beta_0V = beta_0 * V;
-
-
-			//gamma prior Gamma(1,1), Minka
-			//beta_0 = DirichletEstimation.estimateAlphaMap(nkt,nk,beta_0,1.0,1.0);
-
-			//TODO zeta, delta: feature-choice (f), group-choice (delta)
-
-			//epsilon = DirichletEstimation.estimateAlphaLik(sumqf,epsilon);
-
-			//		for (int i=0;i<sumqfgc.length;i++) {
-			//			for (int j=0;j<sumqfgc[i].length;j++) {
-			//				if (BasicMath.sum(sumqfgc[i][j])> 1) {
-			//					System.out.println(i + " "+ j + ": ");
-			//					for (int c=0;c<sumqfgc[i][j].length;c++) {
-			//						System.out.println(" "+ sumqfgc[i][j][c]);
-			//					}
-			//					System.out.println();
-			//				}
-			//			}
-			//		}
-
-			if (delta_fix == 0) {
-				for (int f=0;f<F;f++) {
-					delta[f] = DirichletEstimation.estimateAlphaLikChanging(sumqfgc[f], delta[f], 200);
+		double beta_0_denominator = 0.0;
+		for (int k=0; k < T; k++) {
+			//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
+			beta_0_denominator += Gamma.digamma0(nk[k]+beta_0*V);
+		}
+		beta_0_denominator -= T * Gamma.digamma0(beta_0*V);
+		beta_0 = 0;
+		for (int k=0;k<T;k++) {
+			for (int t = 0; t < V; t++) {
+				beta_0 += mkt[k][t];
+				if (!debug && (mkt[k][t] == 0 || Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
+					System.out.println("mkt " + k + " " + t + ": " + mkt[k][t] + " nkt: " +  nkt[k][t]);
+					debug = true;
 				}
 			}
+		}
 
+		beta_0 /= beta_0_denominator;
+
+		//at this point, beta is multiplied by V
+		beta_0V = beta_0;
+
+		//Correct value of beta
+		beta_0 /=V;
+
+		//		beta_0 = DirichletEstimation.estimateAlphaLikChanging(nkt,beta_0,200);
+		//
+		//		beta_0V = beta_0 * V;
+
+
+		//gamma prior Gamma(1,1), Minka
+		//beta_0 = DirichletEstimation.estimateAlphaMap(nkt,nk,beta_0,1.0,1.0);
+
+		//TODO zeta, delta: feature-choice (f), group-choice (delta)
+
+		epsilon = DirichletEstimation.estimateAlphaLik(sumqf,epsilon);
+
+		//		for (int i=0;i<sumqfgc.length;i++) {
+		//			for (int j=0;j<sumqfgc[i].length;j++) {
+		//				if (BasicMath.sum(sumqfgc[i][j])> 1) {
+		//					System.out.println(i + " "+ j + ": ");
+		//					for (int c=0;c<sumqfgc[i][j].length;c++) {
+		//						System.out.println(" "+ sumqfgc[i][j][c]);
+		//					}
+		//					System.out.println();
+		//				}
+		//			}
+		//		}
+
+		for (int f=0;f<F;f++) {
+			delta[f] = DirichletEstimation.estimateAlphaLikChanging(sumqfgc[f], delta[f], 200);
 		}
 
 
@@ -1435,9 +1397,6 @@ public class PracticalInference {
 		if ((rhot_step % (SAVE_STEP *10)) == 0) {
 
 			save.saveVar(perplexity(), basedirectory+"perplexity_"+rhot_step);
-
-		}
-		if (rhot_step == RUNS) {
 
 			double[][] doc_topic = new double[M][T];
 			for (int m=0;m<M;m++) {
@@ -1506,21 +1465,17 @@ public class PracticalInference {
 		}
 		save.saveVar(topktopics, basedirectory+"topktopics_"+rhot_step);
 		save.saveVar(delta, basedirectory+"delta_"+rhot_step);
-		save.saveVar(epsilon, basedirectory+"epsilon_"+rhot_step);
 
 
 		save.saveVar("alpha_0 "+alpha_0+
 				"\nalpha_1 "+ alpha_1+
 				"\nbeta_0 " + beta_0 +
 				"\ngamma "+gamma+
-				"\nrhos "+rhos+
-				"\nrhotau "+rhotau+
-				"\nrhokappa "+rhokappa+
+				"\nepsilon "+epsilon+
 				"\nBATCHSIZE "+BATCHSIZE+
 				"\nBATCHSIZE_GROUPS "+BATCHSIZE_GROUPS+
 				"\nBURNIN "+BURNIN+
-				"\nBURNIN_DOCUMENTS "+BURNIN_DOCUMENTS+
-				"\nMIN_DICT_WORDS "+MIN_DICT_WORDS
+				"\nMIN_DICHT_WORDS "+MIN_DICT_WORDS
 				,basedirectory+"others_"+rhot_step);
 
 
@@ -1573,11 +1528,10 @@ public class PracticalInference {
 			z[m-testsize] = new double[doclength][T];
 		}
 
-		int runmax = 20;
-
-		for (int m = testsize; m<M; m++) {
-			//sample for 200 runs
-			for (int RUN=0;RUN<runmax;RUN++) {
+		int runmax = 200;
+		//sample for 200 runs
+		for (int RUN=0;RUN<runmax;RUN++) {
+			for (int m = testsize; m<M; m++) {
 
 				//document index in test set, for z
 				int mt = m-testsize;
@@ -1601,7 +1555,7 @@ public class PracticalInference {
 				for (int f=0;f<F;f++) {
 					int g = group[f];
 					double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + A[f][g].length*delta[f];
-					double temp2 = (sumqf[f] + epsilon[f]);
+					double temp2 = (sumqf[m][f] + epsilon[f]);
 					for (int i=0;i<grouplength[f];i++) {
 						int a=A[f][g][i];
 						double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;

@@ -710,18 +710,24 @@ public class DirichletEstimation {
 		for (int i = 0; i < iter; i++) {
 			summ = 0;
 			double[] summk= new double[K];
+			int count = 0;
 			for (int m = 0; m < M; m++) {
-				if (iter==0) {
-					nm[m] = BasicMath.sum(nmk[m]);
-				}
-				summ += digamma(BasicMath.sum(alpha) + BasicMath.sum(nmk[m]));
-				for (int k = 0; k < K; k++) {
-					summk[k] += digamma(alpha[k] + nmk[m][k]);
+				//ignore empty observations
+				if (BasicMath.sum(nmk[m]) > 0 ) {
+					count ++;
+					if (iter==0) {
+						nm[m] = BasicMath.sum(nmk[m]);
+					}
+					summ += digamma(BasicMath.sum(alpha) + BasicMath.sum(nmk[m]));
+					for (int k = 0; k < K; k++) {
+						summk[k] += digamma(alpha[k] + nmk[m][k]);
+					}
 				}
 			}
-			summ -= M * digamma(BasicMath.sum(alpha));
+			if (count == 0) break;
+			summ -= count * digamma(BasicMath.sum(alpha));
 			for (int k = 0; k < K; k++) {
-				summk[k] -= M * digamma(alpha[k]);
+				summk[k] -= count * digamma(alpha[k]);
 				alpha[k] = (alpha[k] * summk[k]) / (summ);
 			}
 			// System.out.println(alpha);
@@ -804,17 +810,17 @@ public class DirichletEstimation {
 
 		double alpha0 = 0;
 		double prec = 1e-5;
-		
+
 		for (int i = 0; i < iter; i++) {
 
 			summk = 0;
 			summ = 0;
 			for (int m = 0; m < M; m++) {
-							
+
 				double nm = BasicMath.sum(nmk[m]);
 				int K = nmk[m].length;
 				//we should only use this sampler if n >= 1 for all n. Otherwise, the estimates are wrong.
-				if (nm >= 1) {
+				//if (nm >= 1) {
 				//only makes sense if we have at least two dimensions.
 				if (K>1) {
 					for (int k = 0; k < K; k++) {
@@ -824,7 +830,7 @@ public class DirichletEstimation {
 
 					summ += K * ( (digamma(nm + (K * alpha)) - digamma(K * alpha)) );
 				}
-				}
+				//}
 			}
 			if (summ > 0) {
 				alpha = alpha * (summk/summ);
@@ -1079,7 +1085,7 @@ public class DirichletEstimation {
 		// FIXME: ARMS only works for higher alpha
 
 		//double[] alpha = { 0.35, 0.35, 0.05, 0.24, 0.31 };
-		
+
 		double[] alpha = { 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22, 0.22 };
 
 		System.out.println("original alpha");
@@ -1137,7 +1143,7 @@ public class DirichletEstimation {
 		System.out.println(alpha2);
 
 		double[][] nmk3 = {{0.1,0.1,1.8},{5.2,0.1,0.4},{0.5,0.1,1.7}};
-		
+
 		double alpha3 = estimateAlphaLikChanging(nmk3,1.0,200);
 		System.out.println("estimated alpha from counts 2");
 		System.out.println(alpha3);
@@ -1177,7 +1183,7 @@ public class DirichletEstimation {
 		System.out.println(getPrec(mp));
 		System.out.println(Vectors.print(getMean(mp)));
 		System.out.println(Vectors.print(getAlpha(mp)));
-		
+
 
 	}
 
