@@ -56,29 +56,33 @@ public class PracticalInference {
 	//number of top words returned for the topic file
 	public int topk = 100;
 	//Number of read docs (might repeat with the same docs)
-	public int RUNS = 1000;
+	public int RUNS = 200;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
-	public int BATCHSIZE = 16;
-	public int BATCHSIZE_GROUPS = 4096;
+	public int BATCHSIZE = 128;
+	public int BATCHSIZE_GROUPS = 128;
 	//How many observations do we take before updating alpha_1
 	public int BATCHSIZE_ALPHA = 1000;
 	//After how many steps a sample is taken to estimate alpha
-	public int SAMPLE_ALPHA = 100;
+	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
 	public int BURNIN = 0;
 	//Burn in phase for documents: How long till we update the
 	//topic distributions of context-clusters?
-	public int BURNIN_DOCUMENTS = 100;
+	public int BURNIN_DOCUMENTS = 0;
 	//how many instances of a word do we need to see before we put it in the dictionary?
 	//(this is only relevant when there is no dict file yet)
 	public int MIN_DICT_WORDS = 100;
+	//should the topics be randomly initialised?
+	public double INIT_RAND = 0;
 
 	//relative size of the training set
 	public double TRAINING_SHARE = 1.0;
 
-	public String dataset = "porn_full3";
+	public String dataset = "food2";
 	public String basedirectory;
+	//some string can be added to the results of save
+	public String save_prefix = "";
 
 	public int M = 0; //Number of Documents
 	public int C = 0; //Number of words in the corpus
@@ -89,7 +93,7 @@ public class PracticalInference {
 	public int[][] Cfc; //Number of documents for each cluster (FxCf)
 	public int[][] Cfg; //Number of documents for each group (FxCg)
 	public int[] N; //Number of Words per document
-	public int T = 25; //Number of truncated topics
+	public int T = 8; //Number of truncated topics
 	public HashMap<Integer,Integer> Ncounts; //Number of documents with N words
 
 	public int[][][] A; //Groups and their clusters
@@ -168,12 +172,12 @@ public class PracticalInference {
 	//public int rhotau = 2000;
 
 	public int rhos_document = 1;
-	public double rhokappa_document = rhokappa;
+	public double rhokappa_document = 0.5;
 	public int rhotau_document = 64;
 
-	public int rhos_hyper = 1;
-	public double rhokappa_hyper = rhokappa;
-	public int rhotau_hyper = 64;
+	public int rhos_group = 1;
+	public double rhokappa_group = 0.5;
+	public int rhotau_group = 64;
 
 	//tells the number of processed words
 	public int rhot = 0;
@@ -206,6 +210,7 @@ public class PracticalInference {
 	//Batch estimate of sumqf2 for stochastic updates
 	//private static double[] sumqf2temp;
 
+	private double[] featureprior;
 
 	//Counter: how many observations do we have per cluster? Dimension: F x |C[f]|
 	//We use this for doing batch updates of the cluster parameters and to calculate
@@ -214,7 +219,7 @@ public class PracticalInference {
 
 
 	//statistic over gamma, used to do batch-updates of clusters: sum of gamma
-	private double[][][][] sumqtemp2_clusters;
+	private double[][][][] tempsumqfgc;
 	//statistic over gamma, used to do batch-updates of features: sum of gamma
 	//private static double[] sumqtemp2_features;
 	//statistic over gamma, used to do batch-updates of clusters: prodct of gamma-1
@@ -253,7 +258,7 @@ public class PracticalInference {
 
 	public HashSet<Integer> empty_documents = new HashSet<Integer>();
 
-	public static void main (String[] args) {
+	public static void main2 (String[] args) {
 
 		PracticalInference pi = new PracticalInference();
 
@@ -285,6 +290,13 @@ public class PracticalInference {
 
 			int progress = pi.M / 50;
 			if (progress==0) progress = 1;
+
+			for (int m=0;m<Double.valueOf(pi.M)*pi.TRAINING_SHARE;m++) {
+				for (int k=0;k<pi.T;k++) {
+					pi.nmk[m][k]=pi.N[m]/Double.valueOf(pi.T);
+				}
+			}
+
 			for (int m=0;m<Double.valueOf(pi.M)*pi.TRAINING_SHARE;m++) {
 				if(m%progress == 0) {
 					System.out.print(".");
@@ -295,7 +307,7 @@ public class PracticalInference {
 			System.out.println();
 
 			pi.updateHyperParameters();
-			
+
 			if (pi.rhot_step%pi.SAVE_STEP==0) {
 				//store inferred variables
 				System.out.println("Storing variables...");
@@ -310,7 +322,48 @@ public class PracticalInference {
 
 	}
 
+	public void initialise () {
+		System.out.println("Reading settings...");
+		readSettings();
+		readDict();		
+		getParameters();
+		System.out.println("Processing documents...");
+		readDocs();
+		System.out.println("Estimating topics...");
+	}
+	
+	public void run () {
+		for (int i=0;i<RUNS;i++) {
 
+			System.out.println(dataset + " run " + i + " (alpha_0 "+alpha_0+" alpha_1 "+ alpha_1+ " beta_0 " + beta_0 + " gamma "+gamma + " delta " + delta[0]+ " epsilon " + epsilon[0]);
+
+			rhot_step++;
+			//get step size
+			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+			oneminusrhostkt_document = (1.0 - rhostkt_document);
+
+			int progress = M / 50;
+			if (progress==0) progress = 1;
+			for (int m=0;m<Double.valueOf(M)*TRAINING_SHARE;m++) {
+				if(m%progress == 0) {
+					System.out.print(".");
+				}
+
+				inferenceDoc(m);
+			}
+			System.out.println();
+
+			updateHyperParameters();
+
+			if (rhot_step%SAVE_STEP==0) {
+				//store inferred variables
+				System.out.println("Storing variables...");
+				save();
+			}
+
+		}
+	}
+	
 	public void readSettings() {
 
 		String dir = "/home/c/work/topicmodels/";
@@ -616,9 +669,11 @@ public class PracticalInference {
 				//												}
 				//												multrand[T-1] = rest;
 				//												nkt[k][t] = wordfreq[t] * multrand[k];
-				//nkt[k][t]= Math.random();
+				
+				nkt[k][t]= Math.random()*INIT_RAND;
+				
 				//nkt[k][t] = (Double.valueOf(C)/V * 1.0/ Double.valueOf(T)) * 0.9 + 0.1 * (0.5-Math.random()) * C/Double.valueOf(T);
-				//nk[k]+=nkt[k][t];
+				nk[k]+=nkt[k][t];
 
 				tempmkt[k][t] = 0.0;
 			}
@@ -641,16 +696,17 @@ public class PracticalInference {
 		//	rhot_cluster[f] = new int[Cf[f]];
 		//}
 		sumqfck = new double[F][][];
-		sumqtemp2_clusters = new double[F][][][];
+		tempsumqfgc = new double[F][][][];
 		//sumqtemp2_features = new double[F];
 		sumqtemp = new double[F][][][];
 		for (int f=0;f<F;f++) {
 			sumqfck_ge0[f] = new double[Cf[f]][T];
 			sumqfck[f] = new double[Cf[f]][T];
-			sumqtemp2_clusters[f] = new double[A[f].length][][];
+
+			tempsumqfgc[f] = new double[A[f].length][][];
 			sumqtemp[f] = new double[A[f].length][][];
 			for (int g=0;g<A[f].length;g++) {
-				sumqtemp2_clusters[f][g]=new double[A[f][g].length][T];
+				tempsumqfgc[f][g]=new double[A[f][g].length][T];
 				sumqtemp[f][g]=new double[A[f][g].length][T];
 			}
 		}
@@ -658,6 +714,12 @@ public class PracticalInference {
 
 		//sumqfgc = new double[F][];
 		sumqf = new double[F];
+		
+		featureprior = new double[F];
+		for (int f=0;f<F;f++) {
+			featureprior[f] = epsilon[f];
+		}
+		featureprior = BasicMath.normalise(featureprior);
 
 		//sumqf2temp = new double[F];
 		pi_kfc_noF = new double[F][][][];
@@ -688,7 +750,7 @@ public class PracticalInference {
 				sumqfgc[f][g] = new double[A[f][g].length];
 			}
 		}
-
+		
 	}
 
 	/**
@@ -791,7 +853,7 @@ public class PracticalInference {
 		return;
 
 	}
-
+	
 	public void inferenceDoc(int m) {
 
 		//if (N[m]==0) return;
@@ -820,24 +882,7 @@ public class PracticalInference {
 			//Tells the expected total number of times topic k was _not_ seen for feature f in cluster c in the currect document
 
 		}
-		//get words in random order - slightly improves model performance. In theory, all words and documents should be drawn randomly
-		//Collections.shuffle(wordset);
-
-		//For the first run...
-		//		if (rhot_step == 1) {
-		//
-		//					//random initial document-topic setting
-		//					for (int k=0;k<T;k++) {
-		//						nmk[m][k] =  Math.random();
-		//					}
-		//					nmk[m] = BasicMath.normalise(nmk[m]);
-		//					for (int k=0;k<T;k++) {
-		//						nmk[m][k] *= N[m];
-		//					}
-		//
-		//		}
-		//End of initialisation
-
+		
 		//probability of feature f given k
 		double[][] pk_f = new double[T][F];
 		//probability of feature x cluster x topic
@@ -849,14 +894,12 @@ public class PracticalInference {
 			}
 		}
 
-
 		//Prior of the document-topic distribution
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
 		double[] topic_prior = new double[T];
 		for (int f=0;f<F;f++) {
 			int g = group[f];
 			double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
-			double temp2 = (sumqf[f] + epsilon[f]);
 			for (int i=0;i<grouplength[f];i++) {
 				int a=A[f][g][i];
 				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
@@ -864,18 +907,20 @@ public class PracticalInference {
 				double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
 				for (int k=0;k<T;k++) {
 					double temp = 	(sumqfck[f][a][k] + (alpha_0 * pi_0[k])) * temp3;
-					topic_prior[k]+=temp*temp2;
-					pk_f[k][f]+=temp*temp2;
-					pk_fck[f][i][k] = temp*temp2;
+					double temp4 = temp*featureprior[f];
+					topic_prior[k]+=temp4;
+					pk_f[k][f]+=temp4;
+					pk_fck[f][i][k] = temp4;
 				}
 			}
 		}
-
+		
+		
 		for (int k=0;k<T;k++) {
-			pk_f[k] = BasicMath.normalise(pk_f[k]);
+			pk_f[k]=BasicMath.normalise(pk_f[k]);
 		}
+		
 
-		//get step size
 		double rhostkt_documentNm = rhostkt_document * N[m];
 
 		//Process words of the document
@@ -916,12 +961,11 @@ public class PracticalInference {
 				//normalise
 				q[k]/=qsum;
 
-				if ((Double.isInfinite(q[k]) || q[k]==1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
+				if ((Double.isInfinite(q[k]) || q[k]>1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
 					System.out.println("Error calculating gamma " + " " + "first part: " + (nmk[m][k] + alpha_1*topic_prior[k]) + " second part: " + (nkt[k][t] + beta_0) 
 							/ (nk[k] + beta_0V) + " m " + m+ " " + N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + " sumqmk " + sumqmk[k] + 
 							" qk " + q[k] + " nmk " + nmk[m][k] + " prior " + topic_prior[k] + " nkt " + nkt[k][t]+ " a0 " + alpha_0  + 
 							" alpha1 " + alpha_1 +" beta " + beta_0 + " betaV" + beta_0V);
-
 
 					for (int f=0;f<F;f++) {
 						int g = group[f];
@@ -993,6 +1037,13 @@ public class PracticalInference {
 		if (rhot%BATCHSIZE == 0 && rhot_step>BURNIN) {
 			updateTopicWordCounts();
 		}
+		
+		for (int f=0;f<F;f++) {
+		for (int k=0;k<T;k++) {
+			//TODO add feature probability here?
+			tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+		}
+		}
 		//TODO 2x?
 		if (rhot_step>BURNIN_DOCUMENTS) {
 
@@ -1004,10 +1055,6 @@ public class PracticalInference {
 				//increase count for that group
 				rhot_group[f][g]++;
 
-				for (int k=0;k<T;k++) {
-					//TODO add feature probability here?
-					tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
-				}
 
 				//update feature-counter
 				for (int i=0;i<grouplength[f];i++) {
@@ -1018,7 +1065,7 @@ public class PracticalInference {
 
 						//p(not_seeing_fik)
 						sumqtemp[f][g][i][k] += Math.log(topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k]);
-						sumqtemp2_clusters[f][g][i][k]+= topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k];
+						tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k];
 					}
 				}
 
@@ -1028,12 +1075,8 @@ public class PracticalInference {
 
 		}
 
-
-		//sumqk+=tables_per_topic_sum;
-
-
 		//take 10000 samples to estimate alpha_1
-		if (rhot_step>10*BURNIN) {
+		if (rhot_step>BURNIN_DOCUMENTS) {
 
 			//ignore documents containing only one word.
 			if (rhot%SAMPLE_ALPHA == 0 && N[m]>1) {
@@ -1048,8 +1091,7 @@ public class PracticalInference {
 					alpha_1_estimate_denominator-= BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1);
 					//this is for preventing updates after we saw only empty documents
 					if (sumnmk_ge0>0) {
-						double rhostkt = rho(rhos_hyper,rhotau_hyper,rhokappa_hyper, rhot/BATCHSIZE);
-						alpha_1 = (1.0-rhostkt) * alpha_1 + rhostkt * (sumnmk_ge0 / alpha_1_estimate_denominator);
+						alpha_1 = (sumnmk_ge0 / alpha_1_estimate_denominator);
 					}
 
 					//reset sumnmk_ge0
@@ -1062,55 +1104,27 @@ public class PracticalInference {
 		}
 
 	}
-
-
-	//	public void estimateGroupTopicDistribution(int f, int g) {
-	//
-	//		int grouplength = A[f][g].length;
-	//		for (int i=0;i<grouplength;i++) {
-	//
-	//			int a=A[f][g][i];
-	//
-	//			//We calculate the denominator for topic inference to save time
-	//			sumqfgc_denominator[f][g] = BasicMath.sum(sumqfgc[f][g]) + A[f][g].length*delta;
-	//			//We calculate the denominator for topic inference to save time
-	//			double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
-	//
-	//			for (int k=0;k<T;k++) {
-	//
-	//				pi_kfc_noF[f][g][i][k] = 			
-	//						//Topic probability for this group
-	//						((sumqfck[f][a][k] + alpha_0 * pi_0[k]) / sumqfck2_denominator)
-	//						//cluster probability in group
-	//						* (sumqfgc[f][g][i] + delta) 
-	//						/ (sumqfgc_denominator[f][g]);
-	//				//we do not multiply with alpha_1 and the probability for the features
-	//
-	//				if ((Double.isNaN(pi_kfc_noF[f][g][i][k]) || Double.isInfinite(pi_kfc_noF[f][g][i][k])) && !debug) {
-	//					System.out.println("pi " +pi_kfc_noF[f][g][i][k] + " " + alpha_1 + " " + alpha_0 + " " + sumqfck[f][a][k] + " " + sumqfgc[f][g][i] + " " +sumqf[f] + " " + ")"+ " " + sumqfgc_denominator[f][g] + " " + sumqfck2_denominator);
-	//					debug = true;
-	//				}
-	//
-	//
-	//			}
-	//
-	//		}
-	//	}
-
+	
 	/**
 	 * Here we do stochastic updates of the document-topic counts
 	 */
 	public synchronized void updateTopicWordCounts() {
 
-		for (int f=0;f<F;f++) {
-			//TODO: multiply with avg doc length
-			sumqf[f]=oneminusrhostkt_document * sumqf[f] +  rhostkt_document * tempsumqf[f] * (M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
-			tempsumqf[f] = 0;
-		}
 
 
 		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
 		double rhostktnormC = rhostkt * (C / Double.valueOf(BasicMath.sum(batch_words)));
+		
+		for (int f=0;f<F;f++) {
+			//TODO: multiply with avg doc length
+			sumqf[f]=(1.0-rhostkt) * sumqf[f] +  rhostkt * tempsumqf[f] * (M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
+			tempsumqf[f] = 0;
+			featureprior[f] = sumqf[f]+epsilon[f];
+		}
+		
+		featureprior = BasicMath.normalise(featureprior);
+		
+		
 
 
 		nk = new double[T];
@@ -1175,12 +1189,14 @@ public class PracticalInference {
 		//sumqfgc[f][group[f]][i] ok 
 		//sumqfg[f][group[f]] 
 
-		//we update if we saw all documents from the group OR the batchsize
+
+		//we update after we saw all documents from the group 
+		//OR if we saw BATCHSIZE_GROUPS documents
 		int BATCHSIZE_GROUP_MIN = Math.min(Cfg[f][g],BATCHSIZE_GROUPS);
 		if (rhot_group[f][g] % BATCHSIZE_GROUP_MIN == 0) {
 
 			//calculate update rate
-			double rhost_group = rho(rhos,rhotau,rhokappa,rhot_group[f][g]);
+			double rhost_group = rho(rhos_group,rhotau_group,rhokappa_group,rhot_group[f][g]);
 			double oneminusrho = 1.0-rhost_group;
 
 
@@ -1208,12 +1224,12 @@ public class PracticalInference {
 					sumqfck_ge0[f][a][k] = oneminusrho*sumqfck_ge0[f][a][k] + rhost_group * (1.0 - Math.exp((sumqtemp[f][g][i][k]*cluster_size)/BATCHSIZE_GROUP_MIN));
 
 					//update counts per cluster
-					sumqfck[f][a][k] = oneminusrho*sumqfck[f][a][k] + rhost_group * (cluster_size/Double.valueOf(BATCHSIZE_GROUP_MIN)) * sumqtemp2_clusters[f][g][i][k];
+					sumqfck[f][a][k] = oneminusrho*sumqfck[f][a][k] + rhost_group * (cluster_size/Double.valueOf(BATCHSIZE_GROUP_MIN)) * tempsumqfgc[f][g][i][k];
 
-					cluster_sum +=sumqtemp2_clusters[f][g][i][k];
+					cluster_sum +=tempsumqfgc[f][g][i][k];
 
 					//We have to reset the batch counts 
-					sumqtemp2_clusters[f][g][i][k] = 0;
+					tempsumqfgc[f][g][i][k] = 0;
 					sumqtemp[f][g][i][k] = 0;
 				}
 				sumqfgc[f][g][i]  = oneminusrhostkt_document*sumqfgc[f][g][i] + rhostkt_document * cluster_sum * (cluster_size/Double.valueOf(BATCHSIZE_GROUP_MIN));
@@ -1418,23 +1434,23 @@ public class PracticalInference {
 
 
 	public void save () {
-
+		
 		Save save = new Save();
-		save.saveVar(nkt, basedirectory+"nkt_"+rhot_step);
+		save.saveVar(nkt, basedirectory+save_prefix+"nkt_"+rhot_step);
 		save.close();
-		save.saveVar(pi_0, basedirectory+"pi0_"+rhot_step);
+		save.saveVar(pi_0, basedirectory+save_prefix+"pi0_"+rhot_step);
 		save.close();
-		save.saveVar(sumqf, basedirectory+"sumqf_"+rhot_step);
+		save.saveVar(sumqf, basedirectory+save_prefix+"sumqf_"+rhot_step);
 		save.close();
-		save.saveVar(alpha_0, basedirectory+"alpha_0_"+rhot_step);
+		save.saveVar(alpha_0, basedirectory+save_prefix+"alpha_0_"+rhot_step);
 		save.close();
-		save.saveVar(alpha_1, basedirectory+"alpha_1_"+rhot_step);
+		save.saveVar(alpha_1, basedirectory+save_prefix+"alpha_1_"+rhot_step);
 		save.close();
 
 		//We save the large document-topic file every 10 save steps, together with the perplexity
 		if ((rhot_step % (SAVE_STEP *10)) == 0) {
 
-			save.saveVar(perplexity(), basedirectory+"perplexity_"+rhot_step);
+			save.saveVar(perplexity(), basedirectory+save_prefix+"perplexity_"+rhot_step);
 
 		}
 		if (rhot_step == RUNS) {
@@ -1464,7 +1480,7 @@ public class PracticalInference {
 					doc_topic[m][k]/=sum;
 				}
 			}
-			save.saveVar(doc_topic, basedirectory+"doc_topic_"+rhot_step);
+			save.saveVar(doc_topic, basedirectory+save_prefix+"doc_topic_"+rhot_step);
 			save.close();
 		}
 
@@ -1479,7 +1495,7 @@ public class PracticalInference {
 				}
 			}
 
-			save.saveVar(feature_cluster_topics[f], basedirectory+"clusters_"+f+"_"+rhot_step);
+			save.saveVar(feature_cluster_topics[f], basedirectory+save_prefix+"clusters_"+f+"_"+rhot_step);
 			save.close();
 		}
 
@@ -1504,9 +1520,9 @@ public class PracticalInference {
 			}
 
 		}
-		save.saveVar(topktopics, basedirectory+"topktopics_"+rhot_step);
-		save.saveVar(delta, basedirectory+"delta_"+rhot_step);
-		save.saveVar(epsilon, basedirectory+"epsilon_"+rhot_step);
+		save.saveVar(topktopics, basedirectory+save_prefix+"topktopics_"+rhot_step);
+		save.saveVar(delta, basedirectory+save_prefix+"delta_"+rhot_step);
+		save.saveVar(epsilon, basedirectory+save_prefix+"epsilon_"+rhot_step);
 
 
 		save.saveVar("alpha_0 "+alpha_0+
@@ -1521,7 +1537,7 @@ public class PracticalInference {
 				"\nBURNIN "+BURNIN+
 				"\nBURNIN_DOCUMENTS "+BURNIN_DOCUMENTS+
 				"\nMIN_DICT_WORDS "+MIN_DICT_WORDS
-				,basedirectory+"others_"+rhot_step);
+				,basedirectory+save_prefix+"others_"+rhot_step);
 
 
 		//save counts for tables in clusters
@@ -1536,7 +1552,7 @@ public class PracticalInference {
 				}
 			}
 		}
-		save.saveVar(sumfck, basedirectory+"sumfck_"+rhot_step);
+		save.saveVar(sumfck, basedirectory+save_prefix+"sumfck_"+rhot_step);
 
 		double[] topic_ge0 = new double[T];
 		for (int k=0;k<T;k++) {
@@ -1553,13 +1569,13 @@ public class PracticalInference {
 			topic_ge0[k] = 1.0-topic_ge0[k];
 		}
 
-		save.saveVar(topic_ge0, basedirectory+"topic_ge0_"+rhot_step);
+		save.saveVar(topic_ge0, basedirectory+save_prefix+"topic_ge0_"+rhot_step);
 
 	}
 
 	public double perplexity () {
 
-		int testsize = (int) Math.round(TRAINING_SHARE * M);
+		int testsize = (int) Math.floor(TRAINING_SHARE * M);
 		if (testsize == 0) return 0;
 
 		double[][][] z = new double[testsize][][];
@@ -1610,6 +1626,7 @@ public class PracticalInference {
 						for (int k=0;k<T;k++) {
 							double temp = 	(sumqfck[f][a][k] + alpha_0 * pi_0[k])	* temp3;
 							topic_prior[k]+=temp*temp2;
+
 						}
 					}
 				}
@@ -1629,13 +1646,6 @@ public class PracticalInference {
 						nmk[m][k] -= termfreq * z[mt][n][k];
 					}
 
-					//update number of words seen
-					rhot_words_doc[m]+=termfreq;
-					if (rhot_step>BURNIN) {
-						//increase number of words seen in that batch
-						batch_words[t]+=termfreq;
-					}
-
 					//topic probabilities - q(z)
 					double[] q = new double[T];
 					//sum for normalisation
@@ -1649,24 +1659,17 @@ public class PracticalInference {
 								* (nkt[k][t] + beta_0) 
 								/ (nk[k] + beta_0V);
 
+
 						qsum+=q[k];
 
 					}
-
 
 					//Normalise gamma (sum=1), update counts and probabilities
 					for (int k=0;k<T;k++) {
 						//normalise
 						q[k]/=qsum;
 						z[mt][n][k]=q[k];
-
-						if ((Double.isInfinite(q[k]) || q[k]==1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
-							System.out.println("Gamma is infinite " + m+ " " + N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + " sumqmk " + sumqmk[k] + " qk " + q[k] + " nmk " + nmk[m][k] + " prior " + topic_prior[k] + " nkt " + nkt[k][t]+ " a0 " + alpha_0  + " a1 " + alpha_1 +" b " + beta_0);
-							debug = true;
-						}
-
 						nmk[m][k]+=termfreq*q[k];
-
 					}
 
 					n++;
@@ -1715,7 +1718,7 @@ public class PracticalInference {
 				n++;
 			}
 
-
+			for (int k=0;k<T;k++) nmk[m][k] = 0;
 		}
 
 		//get perplexity

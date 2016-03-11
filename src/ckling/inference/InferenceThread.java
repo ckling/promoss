@@ -3,22 +3,19 @@ package ckling.inference;
 class InferenceThread extends Thread {	
 	
 	private PracticalInference pi;
-	public int id;
-	private int start;
-	private int end;
+	private int id;
+	private int rhot;
 	
-	public InferenceThread (PracticalInference pi, int start, int end, int id) {
+	public InferenceThread (PracticalInference pi, int id, int rhot) {
 		super ("Inference thread "+id);
 		this.pi = pi;
-		this.start = start;
-		this.end = end;
+		this.rhot = rhot;
+
 		start();
 	}
 	
 	public void run() {
-		for (int m=start; m<end; m++) {
-			pi.inferenceDoc(m);
-		}
+			pi.inferenceDoc(id);
 	}
 
 	
