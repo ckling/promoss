@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.knowceans.corpus.Dictionary;
 import org.knowceans.util.DirichletEstimation;
 import org.knowceans.util.Gamma;
@@ -1315,7 +1315,6 @@ public class PracticalInference {
 		for (int k=0;k<T;k++) {
 			pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 		}
-
 		for (int k=0;k<T;k++) {
 			pi_0[k]=pi_[k];
 			int sort_index = index_reverted[k];
@@ -1603,8 +1602,6 @@ public class PracticalInference {
 				int[] grouplength = new int[F];
 				int[] group = groups[m];
 
-				//Expectation(number of tables)
-				double[] sumqmk = new double[T];
 
 				for (int f=0;f<F;f++) {
 					//Number of clusters of the group

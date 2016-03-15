@@ -7,9 +7,9 @@ import ckling.text.Text;
 public class TopicModel {
 
 
-	public static void main (String[] args) throws InterruptedException {
+	public static void main (String[] args)  {
 
-		food8();
+		//food8();
 
 		//food25();
 
@@ -30,6 +30,8 @@ public class TopicModel {
 		
 		//pornT(Integer.valueOf(args[0]));
 		//pornT(Integer.valueOf(50));
+		ppxpornNolink(args[0],Integer.valueOf(args[1]),Integer.valueOf(args[2]));
+		
 	
 	}
 
@@ -77,15 +79,15 @@ public class TopicModel {
 			
 			//new parameters:
 			pi.dataset = "food3";
-			pi.save_prefix = "topic25b";
-			pi.T=50;
+			pi.save_prefix = "topic25c";
+			pi.T=15;
 			pi.TRAINING_SHARE = 1.0;
 			pi.delta_fix = 10;
-			pi.BATCHSIZE = 128;
-			pi.BATCHSIZE_GROUPS = 128;
+			pi.BATCHSIZE = 8;
+			pi.BATCHSIZE_GROUPS = 8;
 			pi.RUNS = 200;
-			pi.INIT_RAND=1;
-			pi.BURNIN = pi.BURNIN_DOCUMENTS=10;
+			pi.INIT_RAND=0;
+			pi.BURNIN = pi.BURNIN_DOCUMENTS=0;
 			pi.SAMPLE_ALPHA=1;
 			pi.rhokappa=pi.rhokappa_document = 0.5;
 
@@ -694,6 +696,94 @@ public class TopicModel {
 			System.out.println("Perplexity: " + perplexity);
 
 		}
+	}
+
+	
+
+	public static void ppxpornNolink(String ds, int K, int bs) {
+
+		
+		Text ppx_file = new Text();
+
+
+		
+		
+			PracticalInference pi = new PracticalInference();
+
+			pi.dataset = ds;
+			pi.save_prefix = "nl";
+			pi.T=K;
+			pi.MIN_DICT_WORDS = 100;
+			pi.TRAINING_SHARE = 0.8;
+			pi.delta_fix = 0;
+			pi.BATCHSIZE = bs;
+			pi.BATCHSIZE_GROUPS = bs;
+			//pi.gamma = 10;
+			pi.beta_0 = 0.1;
+			pi.RUNS = 200;
+			pi.SAMPLE_ALPHA=1000;
+			pi.BURNIN = 0;
+			pi.BURNIN_DOCUMENTS=0;
+			pi.rhokappa=pi.rhokappa_document = 0.5;
+
+
+
+			//ppx_file.write("/home/c/ppx_test_"+pi.dataset+"_"+pi.T , "", false);
+
+
+			pi.readSettings();
+
+			System.out.println("Reading dictionary...");
+			pi.readDict();		
+
+			System.out.println("Initialising parameters...");
+			pi.getParameters();
+
+			System.out.println("Processing documents...");
+
+			pi.readDocs();
+
+			System.out.println("Estimating topics...");
+
+			for (int i=0;i<pi.RUNS;i++) {
+
+				System.out.println("Run " + i + " (alpha_0 "+pi.alpha_0+" alpha_1 "+ pi.alpha_1+ " beta_0 " + pi.beta_0 + " gamma "+pi.gamma + " delta " + pi.delta[0]+ " epsilon " + pi.epsilon[0]);
+
+				if (i > pi.BURNIN)
+					ppx_file.writeLine("/home/c/ppx_testnl", pi.dataset + " " + pi.T + " " + i + " " + pi.perplexity(), true);
+
+				pi.rhot_step++;
+				//get step size
+				pi.rhostkt_document = pi.rho(pi.rhos_document,pi.rhotau_document,pi.rhokappa_document,pi.rhot_step);
+				pi.oneminusrhostkt_document = (1.0 - pi.rhostkt_document);
+
+				int progress = pi.M / 50;
+				if (progress==0) progress = 1;
+				for (int m=0;m<Double.valueOf(pi.M)*pi.TRAINING_SHARE;m++) {
+					if(m%progress == 0) {
+						System.out.print(".");
+					}
+
+					pi.inferenceDoc(m);
+				}
+				System.out.println();
+
+				pi.updateHyperParameters();
+
+
+				if (pi.rhot_step%pi.SAVE_STEP==0) {
+					//store inferred variables
+					System.out.println("Storing variables...");
+					pi.save();
+				}
+
+			}
+
+			double perplexity = pi.perplexity();
+
+			System.out.println("Perplexity: " + perplexity);
+
+		
 	}
 
 
