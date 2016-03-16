@@ -36,8 +36,8 @@ This is the practical collapsed stochastic variational Bayesian inference (PCSVB
 
 A detailed tutorial and documentation of the HMDP is in preparation.
 
-In future versions, I plan
+In future versions, there will be:
 - support for typical metadata, i.e. temporal and geographical context
 - a distributed version of PCSVB of HMDP based on Hadoop 
 
-The idea is to create a easy-to-use, scalable topic model for arbitrary context.
+The goal is to create a easy-to-use, scalable topic model for arbitrary context.
