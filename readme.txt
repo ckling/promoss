@@ -4,7 +4,7 @@ Hierarchical Multi-Dirichlet Process Topic Model (HMDP topic model)
 
 (C) Copyright 2016, Christoph Carl Kling
 
-Using functions from "Knoceans" by Gregor Heinrich Gregor Heinrich (gregor :: arbylon : net)
+Knoceans by Gregor Heinrich Gregor Heinrich (gregor :: arbylon : net)
 published under GNU GPL.
 
 Tartarus Snowball stemmer by Martin Porter and Richard Boulton published under 
