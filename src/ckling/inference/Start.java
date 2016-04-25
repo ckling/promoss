@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory;
 
 import ckling.text.Text;
 
-public class TopicModel {
+public class Start {
 
 
 	public static void main (String[] args)  {
@@ -30,12 +30,41 @@ public class TopicModel {
 		
 		//pornT(Integer.valueOf(args[0]));
 		//pornT(Integer.valueOf(50));
-		ppxpornNolink(args[0],Integer.valueOf(args[1]),Integer.valueOf(args[2]));
 		
+		
+		//ppxpornNolink(args[0],Integer.valueOf(args[1]),Integer.valueOf(args[2]));
+		
+		//ppxpornNolink("p1",100,8);
+		polseb();
 	
 	}
 
+	public static void polseb() {
 
+		PracticalInference pi = new PracticalInference();
+
+		pi.dataset = "polseb";
+		pi.save_prefix = "100";
+		pi.T=100;
+		pi.TRAINING_SHARE = 1.0;
+		pi.delta_fix = 10;
+		pi.BATCHSIZE = 128;
+		pi.BATCHSIZE_GROUPS = 128;
+		pi.RUNS = 100;
+		pi.BURNIN = 0;
+		pi.alpha_1 = 0.1;
+		pi.MIN_DICT_WORDS = 100;
+		pi.INIT_RAND = 1;
+		pi.BURNIN_DOCUMENTS=1;
+		pi.SAMPLE_ALPHA=1;
+		pi.rhokappa=pi.rhokappa_document = 0.5;
+
+
+		pi.initialise();
+		pi.run();
+
+}
+	
 	public static void food8() {
 
 			PracticalInference pi = new PracticalInference();
@@ -864,6 +893,7 @@ public class TopicModel {
 
 		}
 	}
+
 
 
 
