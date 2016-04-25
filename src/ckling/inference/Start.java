@@ -41,7 +41,7 @@ public class Start {
 
 	public static void polseb() {
 
-		PracticalInference pi = new PracticalInference();
+		HMDP pi = new HMDP();
 
 		pi.dataset = "polseb";
 		pi.save_prefix = "100";
@@ -67,7 +67,7 @@ public class Start {
 	
 	public static void food8() {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = "food3";
 			pi.save_prefix = "topic8b";
@@ -92,7 +92,7 @@ public class Start {
 	public static void food25() {
 
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = "food3";
 			pi.save_prefix = "topic25b";
@@ -129,7 +129,7 @@ public class Start {
 	public static void pornT(int T) {
 		
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = "porn_full3";
 			pi.T=T;
@@ -165,7 +165,7 @@ public class Start {
 	public static void lkml50() {
 		Thread thread = new Thread() {	    public void run() {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = "test5";
 			pi.save_prefix = "lkml50c";
@@ -201,7 +201,7 @@ public class Start {
 			
 			for (int bs : batchsizes) {
 				
-				PracticalInference pi = new PracticalInference();
+				HMDP pi = new HMDP();
 				
 				pi.dataset = "food3";
 				pi.save_prefix = "";
@@ -289,7 +289,7 @@ public class Start {
 			//int[] batchsizes = {8};
 			Text ppx_file = new Text();
 			
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 			
 			pi.dataset = "food3";
 			pi.save_prefix = "food8learn";
@@ -369,7 +369,7 @@ public class Start {
 
 	public static void topicfood() {
 
-		PracticalInference pi = new PracticalInference();
+		HMDP pi = new HMDP();
 
 		pi.dataset = "food2";
 		pi.T=25;
@@ -389,7 +389,7 @@ public class Start {
 	public static void topicporn() {
 		Thread thread = new Thread() {	    public void run() {
 
-		PracticalInference pi = new PracticalInference();
+		HMDP pi = new HMDP();
 
 		pi.dataset = "porn_full3";
 		pi.save_prefix = "fas";
@@ -461,7 +461,7 @@ public class Start {
 
 	public static void test5() {
 
-		PracticalInference pi = new PracticalInference();
+		HMDP pi = new HMDP();
 
 		pi.dataset = "test5";
 		pi.T=50;
@@ -487,7 +487,7 @@ public class Start {
 
 		for (double kappa : kappas) {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.BATCHSIZE=4096;
 			pi.dataset = "porn_full3";
@@ -566,7 +566,7 @@ public class Start {
 		int[] burnins = {64,32,16,8};
 		for (int burnin : burnins) {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.BURNIN=0;
 			pi.BURNIN_DOCUMENTS=0;
@@ -655,7 +655,7 @@ public class Start {
 		int[] burnins = {4,8,16,32,64};
 		for (int burnin : burnins) {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.BURNIN=10;
 			pi.BURNIN_DOCUMENTS=1;
@@ -737,7 +737,7 @@ public class Start {
 
 		
 		
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = ds;
 			pi.save_prefix = "nl";
@@ -824,7 +824,7 @@ public class Start {
 
 		for (int bs : batchsizes) {
 
-			PracticalInference pi = new PracticalInference();
+			HMDP pi = new HMDP();
 
 			pi.dataset = "porn_full3";
 			pi.T=25;

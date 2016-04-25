@@ -49,7 +49,7 @@ import ckling.text.Text;
 
 
 
-public class PracticalInference {
+public class HMDP {
 
 	//We have a debugging mode for checking the parameters
 	public boolean debug = false;
@@ -260,7 +260,7 @@ public class PracticalInference {
 
 	public static void main2 (String[] args) {
 
-		PracticalInference pi = new PracticalInference();
+		HMDP pi = new HMDP();
 
 
 
