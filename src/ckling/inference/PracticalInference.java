@@ -110,7 +110,7 @@ public class PracticalInference {
 	public double[] delta;
 
 	//decides if delta is fixed or not.
-	public double delta_fix = 10;
+	public double delta_fix = 0;
 
 	//Dirichlet parameter for multinomial over features
 	public double[] epsilon;
@@ -531,7 +531,8 @@ public class PracticalInference {
 					cluster[i-2] = Integer.valueOf(lineSplit[i]);
 
 					//Find out about the maximum cluster ID. The number of clusters is this ID +1
-					Cf[f] = Math.max(Cf[f],cluster[i-2] + 1);
+					Cf[f] = 
+							Math.max(Cf[f],cluster[i-2] + 1);
 				}
 
 				if(A[f].length - 1 < groupID) {
