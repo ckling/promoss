@@ -9,7 +9,9 @@ public class Start {
 
 	public static void main (String[] args)  {
 
-		//food8();
+			
+		
+		food8();
 
 		//food25();
 
@@ -35,9 +37,88 @@ public class Start {
 		//ppxpornNolink(args[0],Integer.valueOf(args[1]),Integer.valueOf(args[2]));
 		
 		//ppxpornNolink("p1",100,8);
-		polseb();
+		//polseb();
 	
 	}
+	
+	
+	
+	public static void startHMDP(String[] args) {
+		HMDP model = new HMDP();
+		
+		for (int i=0; i < args.length; i++) {
+			
+			
+			if (args[i].equals("-dir")) 
+				model.basedirectory = args[++i];
+			
+			if (args[i].equals("-K")) 
+				model.K = Integer.valueOf(args[++i]);
+						
+			if (args[i].equals("-twords")) 
+				model.topk = Integer.valueOf(args[++i]);
+					
+			if (args[i].equals("-savestep")) 
+				savestep = Integer.valueOf(args[++i]);
+			
+			if (args[i].equals("-delta")) 
+				delta = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-niters")) 
+				niters = Integer.valueOf(args[++i]);
+			
+			if (args[i].equals("-alpha")) 
+				alpha = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-beta")) 
+				beta = Double.valueOf(args[++i]);
+									
+			if (args[i].equals("-zeta")) 
+				zeta = Double.valueOf(args[++i]);
+						
+			if (args[i].equals("-gammaa")) 
+				gammaa = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-gammab")) 
+				gammab = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-alpha0a")) 
+				alpha0a = Double.valueOf(args[++i]);
+
+			if (args[i].equals("-alpha0b")) 
+				alpha0b = Double.valueOf(args[++i]);
+
+			if (args[i].equals("-Alphaa")) 
+				Alphaa = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-Alphab")) 
+				Alphab = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-betaa")) 
+				betaa = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-betab")) 
+				betab = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-sampleHyper")) 
+				sampleHyper = Boolean.valueOf(args[++i]);
+			
+			if (args[i].equals("-runs")) 
+				runs = Integer.valueOf(args[++i]);
+			
+			if (args[i].equals("-alpha0")) 
+				alpha0 = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-Alpha")) 
+				Alpha = Double.valueOf(args[++i]);
+			
+			if (args[i].equals("-gamma")) 
+				gamma = Double.valueOf(args[++i]);
+			
+		}
+	}
+	
+	
 
 	public static void polseb() {
 
@@ -45,7 +126,7 @@ public class Start {
 
 		pi.dataset = "polseb";
 		pi.save_prefix = "100";
-		pi.T=100;
+		pi.K=100;
 		pi.TRAINING_SHARE = 1.0;
 		pi.delta_fix = 10;
 		pi.BATCHSIZE = 128;
@@ -71,7 +152,7 @@ public class Start {
 
 			pi.dataset = "food3";
 			pi.save_prefix = "topic8b";
-			pi.T=8;
+			pi.K=8;
 			pi.TRAINING_SHARE = 1.0;
 			pi.delta_fix = 10;
 			pi.BATCHSIZE = 64;
@@ -96,7 +177,7 @@ public class Start {
 
 			pi.dataset = "food3";
 			pi.save_prefix = "topic25b";
-			pi.T=25;
+			pi.K=25;
 			pi.TRAINING_SHARE = 1.0;
 			pi.delta_fix = 10;
 			pi.BATCHSIZE = 128;
@@ -109,7 +190,7 @@ public class Start {
 			//new parameters:
 			pi.dataset = "food3";
 			pi.save_prefix = "topic25c";
-			pi.T=15;
+			pi.K=15;
 			pi.TRAINING_SHARE = 1.0;
 			pi.delta_fix = 10;
 			pi.BATCHSIZE = 8;
@@ -132,8 +213,8 @@ public class Start {
 			HMDP pi = new HMDP();
 
 			pi.dataset = "porn_full3";
-			pi.T=T;
-			pi.save_prefix = "faster_"+pi.T+"_";
+			pi.K=T;
+			pi.save_prefix = "faster_"+pi.K+"_";
 			pi.MIN_DICT_WORDS = 100;
 			pi.TRAINING_SHARE = 1;
 			pi.delta_fix = 10;
@@ -169,7 +250,7 @@ public class Start {
 
 			pi.dataset = "test5";
 			pi.save_prefix = "lkml50c";
-			pi.T=50;
+			pi.K=50;
 			pi.TRAINING_SHARE = 1;
 			pi.delta_fix = 10;
 			pi.BATCHSIZE = 4096;
@@ -205,7 +286,7 @@ public class Start {
 				
 				pi.dataset = "food3";
 				pi.save_prefix = "";
-				pi.T=8;
+				pi.K=8;
 				pi.TRAINING_SHARE = 0.8;
 				pi.delta_fix = 10;
 				pi.BATCHSIZE = 4096;
@@ -219,7 +300,7 @@ public class Start {
 				pi.rhokappa=pi.rhokappa_document = 0.5;
 			pi.BATCHSIZE = bs;
 			pi.BATCHSIZE_GROUPS = bs;
-			String ppxfilename = "/home/c/ppx_test2_"+pi.dataset+"_"+pi.T;
+			String ppxfilename = "/home/c/ppx_test2_"+pi.dataset+"_"+pi.K;
 
 			
 			pi.readSettings();
@@ -293,7 +374,7 @@ public class Start {
 			
 			pi.dataset = "food3";
 			pi.save_prefix = "food8learn";
-			pi.T=8;
+			pi.K=8;
 			pi.TRAINING_SHARE = 0.8;
 			pi.delta_fix = 10;
 			pi.BATCHSIZE = 25;
@@ -302,7 +383,7 @@ public class Start {
 			pi.BURNIN = pi.BURNIN_DOCUMENTS=0;
 			pi.rhokappa=pi.rhokappa_document = 0.5;
 			
-			String ppxfilename = "/home/c/ppx_lr_"+pi.dataset+"_"+pi.T;
+			String ppxfilename = "/home/c/ppx_lr_"+pi.dataset+"_"+pi.K;
 			ppx_file.write(ppxfilename , "", false);
 			
 			for (double lr : learningrate) {
@@ -372,7 +453,7 @@ public class Start {
 		HMDP pi = new HMDP();
 
 		pi.dataset = "food2";
-		pi.T=25;
+		pi.K=25;
 		pi.TRAINING_SHARE = 1.0;
 		pi.delta_fix = 10;
 		pi.BATCHSIZE = 8;
@@ -393,7 +474,7 @@ public class Start {
 
 		pi.dataset = "porn_full3";
 		pi.save_prefix = "fas";
-		pi.T=25;
+		pi.K=25;
 		pi.MIN_DICT_WORDS = 100;
 		pi.TRAINING_SHARE = 0.8;
 		pi.delta_fix = 0;
@@ -408,7 +489,7 @@ public class Start {
 		pi.rhokappa=pi.rhokappa_document = 0.5;
 		
 		Text ppx_file = new Text();
-		String ppxfilename = "/home/c/ppx_lr_"+pi.dataset+"_"+pi.T;
+		String ppxfilename = "/home/c/ppx_lr_"+pi.dataset+"_"+pi.K;
 		ppx_file.write(ppxfilename , "", false);
 
 		pi.initialise();
@@ -464,7 +545,7 @@ public class Start {
 		HMDP pi = new HMDP();
 
 		pi.dataset = "test5";
-		pi.T=50;
+		pi.K=50;
 		pi.TRAINING_SHARE = 1.0;
 		pi.delta_fix = 10;
 		pi.BATCHSIZE = 4096;
@@ -491,14 +572,14 @@ public class Start {
 
 			pi.BATCHSIZE=4096;
 			pi.dataset = "porn_full3";
-			pi.T=25;
+			pi.K=25;
 			pi.TRAINING_SHARE = 0.8;
 			pi.delta_fix = 0;
 			pi.RUNS = 200;
 
 
 
-			ppx_file.write("/home/c/kappa_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.T , "", false);
+			ppx_file.write("/home/c/kappa_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.K , "", false);
 
 			pi.rhokappa=pi.rhokappa_document=kappa;
 
@@ -572,7 +653,7 @@ public class Start {
 			pi.BURNIN_DOCUMENTS=0;
 			pi.BATCHSIZE=burnin;
 			pi.dataset = "food2";
-			pi.T=25;
+			pi.K=25;
 			pi.beta_0=0.1;
 			//pi.alpha_1=1;
 			//pi.alpha_0=1;
@@ -585,7 +666,7 @@ public class Start {
 			
 			pi.rhokappa_group = 0.5;
 
-			String dest = "/home/c/batch_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.T;
+			String dest = "/home/c/batch_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.K;
 
 			ppx_file.write(dest , "", false);
 
@@ -661,14 +742,14 @@ public class Start {
 			pi.BURNIN_DOCUMENTS=1;
 			pi.BATCHSIZE=burnin;
 			pi.dataset = "porn_full3";
-			pi.T=25;
+			pi.K=25;
 			pi.TRAINING_SHARE = 0.8;
 			pi.delta_fix = 10;
 			pi.RUNS = 200;
 			pi.rhokappa=pi.rhokappa_document=0.5;
 
 
-			String dest = "/home/c/burnin_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.T;
+			String dest = "/home/c/burnin_test_"+pi.dataset+"_"+pi.BATCHSIZE+"_"+pi.K;
 
 			ppx_file.write(dest , "", false);
 
@@ -741,7 +822,7 @@ public class Start {
 
 			pi.dataset = ds;
 			pi.save_prefix = "nl";
-			pi.T=K;
+			pi.K=K;
 			pi.MIN_DICT_WORDS = 100;
 			pi.TRAINING_SHARE = 0.8;
 			pi.delta_fix = 0;
@@ -779,7 +860,7 @@ public class Start {
 				System.out.println("Run " + i + " (alpha_0 "+pi.alpha_0+" alpha_1 "+ pi.alpha_1+ " beta_0 " + pi.beta_0 + " gamma "+pi.gamma + " delta " + pi.delta[0]+ " epsilon " + pi.epsilon[0]);
 
 				if (i > pi.BURNIN)
-					ppx_file.writeLine("/home/c/ppx_testnl", pi.dataset + " " + pi.T + " " + i + " " + pi.perplexity(), true);
+					ppx_file.writeLine("/home/c/ppx_testnl", pi.dataset + " " + pi.K + " " + i + " " + pi.perplexity(), true);
 
 				pi.rhot_step++;
 				//get step size
@@ -827,13 +908,13 @@ public class Start {
 			HMDP pi = new HMDP();
 
 			pi.dataset = "porn_full3";
-			pi.T=25;
+			pi.K=25;
 			pi.TRAINING_SHARE = 0.8;
 			pi.delta_fix = 0;
 
 
 
-			ppx_file.write("/home/c/ppx_test_"+pi.dataset+"_"+pi.T , "", false);
+			ppx_file.write("/home/c/ppx_test_"+pi.dataset+"_"+pi.K , "", false);
 
 			pi.BATCHSIZE = bs;
 			pi.BATCHSIZE_GROUPS = bs;

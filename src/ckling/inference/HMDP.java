@@ -93,14 +93,14 @@ public class HMDP {
 	public int[][] Cfc; //Number of documents for each cluster (FxCf)
 	public int[][] Cfg; //Number of documents for each group (FxCg)
 	public int[] N; //Number of Words per document
-	public int T = 8; //Number of truncated topics
+	public int K = 8; //Number of truncated topics
 	public HashMap<Integer,Integer> Ncounts; //Number of documents with N words
 
 	public int[][][] A; //Groups and their clusters
 
 	public ArrayList<ArrayList<Set<Integer>>> affected_groups; //Which clusters are affected by changes in group g; F x G x ...
 
-	private double concentration_init = Math.min(0.1,5.0/T); 
+	private double concentration_init = Math.max(0.1,5.0/K); 
 
 	public double alpha_0 = concentration_init;
 
@@ -292,8 +292,8 @@ public class HMDP {
 			if (progress==0) progress = 1;
 
 			for (int m=0;m<Double.valueOf(pi.M)*pi.TRAINING_SHARE;m++) {
-				for (int k=0;k<pi.T;k++) {
-					pi.nmk[m][k]=pi.N[m]/Double.valueOf(pi.T);
+				for (int k=0;k<pi.K;k++) {
+					pi.nmk[m][k]=pi.N[m]/Double.valueOf(pi.K);
 				}
 			}
 
@@ -366,10 +366,10 @@ public class HMDP {
 	
 	public void readSettings() {
 
-		String dir = "/home/c/work/topicmodels/";
+		String dir = "~/work/topicmodels/";
 
 		if (!new File(dir).exists()) {
-			dir = "/home/c/work/topicmodels/";
+			dir = "~/work/topicmodels/";
 		}	
 
 		basedirectory = dir+dataset+"/";
@@ -624,12 +624,12 @@ public class HMDP {
 
 		batch_words = new int[V];
 
-		mkt = new double[T][V];	
-		tempmkt = new double[T][V];
+		mkt = new double[K][V];	
+		tempmkt = new double[K][V];
 
-		nk = new double[T];
-		nkt = new double[T][V];	
-		tempnkt = new double[T][V];	
+		nk = new double[K];
+		nkt = new double[K][V];	
+		tempnkt = new double[K][V];	
 
 		//count the number of documents in each group
 		Cfg = new int[F][];
@@ -656,10 +656,10 @@ public class HMDP {
 
 		N = new int[M];
 
-		nmk = new double[M][T];
+		nmk = new double[M][K];
 
 		for (int t=0; t < V; t++) {
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 				//												//Random assignments of words to topics
 				//												double[] multrand = new double[T];
 				//												double rest = 1.0;
@@ -679,12 +679,12 @@ public class HMDP {
 				tempmkt[k][t] = 0.0;
 			}
 		}
-		pi_0 = new double[T];
-		ahat = new double[T];
-		bhat = new double[T];
+		pi_0 = new double[K];
+		ahat = new double[K];
+		bhat = new double[K];
 
 		pi_0[0] = 1.0 / (1.0+gamma);
-		for (int i=1;i<T;i++) {
+		for (int i=1;i<K;i++) {
 			pi_0[i]=(1.0 / (1.0+gamma)) * (1.0-pi_0[i-1]);
 		}
 		pi_0 = BasicMath.normalise(pi_0);
@@ -701,14 +701,14 @@ public class HMDP {
 		//sumqtemp2_features = new double[F];
 		sumqtemp = new double[F][][][];
 		for (int f=0;f<F;f++) {
-			sumqfck_ge0[f] = new double[Cf[f]][T];
-			sumqfck[f] = new double[Cf[f]][T];
+			sumqfck_ge0[f] = new double[Cf[f]][K];
+			sumqfck[f] = new double[Cf[f]][K];
 
 			tempsumqfgc[f] = new double[A[f].length][][];
 			sumqtemp[f] = new double[A[f].length][][];
 			for (int g=0;g<A[f].length;g++) {
-				tempsumqfgc[f][g]=new double[A[f][g].length][T];
-				sumqtemp[f][g]=new double[A[f][g].length][T];
+				tempsumqfgc[f][g]=new double[A[f][g].length][K];
+				sumqtemp[f][g]=new double[A[f][g].length][K];
 			}
 		}
 
@@ -727,9 +727,9 @@ public class HMDP {
 		for (int f=0;f<F;f++) {
 			pi_kfc_noF[f] = new double[A[f].length][][]; 
 			for (int g=0;g<A[f].length;g++) {
-				pi_kfc_noF[f][g] = new double[A[f][g].length][T];
+				pi_kfc_noF[f][g] = new double[A[f][g].length][K];
 				for (int i=0;i<A[f][g].length;i++) {
-					for (int k = 0; k < T; k++) {
+					for (int k = 0; k < K; k++) {
 						//for every group: get topic distribution of clusters and their weight 
 						//(the weight of the clusters) for the group
 						pi_kfc_noF[f][g][i][k] = pi_0[k]/((double)A[f][g].length);
@@ -869,7 +869,7 @@ public class HMDP {
 		int[] group = groups[m];
 
 		//Expectation(number of tables)
-		double[] sumqmk = new double[T];
+		double[] sumqmk = new double[K];
 
 		//Stochastic cluster updates: tmkfc unkown (tables!)
 		//-> get table counts per cluster (or estimate it)
@@ -885,19 +885,19 @@ public class HMDP {
 		}
 		
 		//probability of feature f given k
-		double[][] pk_f = new double[T][F];
+		double[][] pk_f = new double[K][F];
 		//probability of feature x cluster x topic
 		double[][][] pk_fck = new double[F][][];
 		for (int f=0;f<F;f++) {
 			pk_fck[f] = new double[grouplength[f]][];
 			for (int i=0;i<grouplength[f];i++) {
-				pk_fck[f][i] = new double[T];
+				pk_fck[f][i] = new double[K];
 			}
 		}
 
 		//Prior of the document-topic distribution
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
-		double[] topic_prior = new double[T];
+		double[] topic_prior = new double[K];
 		for (int f=0;f<F;f++) {
 			int g = group[f];
 			double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
@@ -906,7 +906,7 @@ public class HMDP {
 				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
 				//cluster probability in group
 				double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					double temp = 	(sumqfck[f][a][k] + (alpha_0 * pi_0[k])) * temp3;
 					double temp4 = temp*featureprior[f];
 					topic_prior[k]+=temp4;
@@ -917,7 +917,7 @@ public class HMDP {
 		}
 		
 		
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			pk_f[k]=BasicMath.normalise(pk_f[k]);
 		}
 		
@@ -940,11 +940,11 @@ public class HMDP {
 			}
 
 			//topic probabilities - q(z)
-			double[] q = new double[T];
+			double[] q = new double[K];
 			//sum for normalisation
 			double qsum = 0.0;
 
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_1*topic_prior[k])
@@ -958,7 +958,7 @@ public class HMDP {
 
 
 			//Normalise gamma (sum=1), update counts and probabilities
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 				//normalise
 				q[k]/=qsum;
 
@@ -982,7 +982,7 @@ public class HMDP {
 							//cluster probability in group
 							System.out.println(" f " + f + " i " + i + " sumqfgc[m][f][i] " + sumqfgc[f][i] + " delta[f] " + delta[f]);
 
-							for (int k2=0;k2<T;k2++) {
+							for (int k2=0;k2<K;k2++) {
 								System.out.println(" f " + f + " a "+ a + " k " + k2 + " sumqfck[f][a][k]" + sumqfck[f][a][k] + " pi0[k] " + pi_0[k]);  
 							}
 						}
@@ -1027,8 +1027,8 @@ public class HMDP {
 
 
 
-		double[] topic_ge_0 = new double[T];
-		for (int k=0;k<T;k++) {
+		double[] topic_ge_0 = new double[K];
+		for (int k=0;k<K;k++) {
 			//Probability that we saw the given topic
 			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
 		}
@@ -1040,7 +1040,7 @@ public class HMDP {
 		}
 		
 		for (int f=0;f<F;f++) {
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			//TODO add feature probability here?
 			tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
 		}
@@ -1062,7 +1062,7 @@ public class HMDP {
 
 					//how often did we see this cluster already?
 					//rhot_cluster[f][i]++;
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 
 						//p(not_seeing_fik)
 						sumqtemp[f][g][i][k] += Math.log(topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k]);
@@ -1128,8 +1128,8 @@ public class HMDP {
 		
 
 
-		nk = new double[T];
-		for (int k=0;k<T;k++) {
+		nk = new double[K];
+		for (int k=0;k<K;k++) {
 			for (int v=0;v<V;v++) {
 				double oneminusrhostkt = (1.0 - rhostkt);
 
@@ -1158,7 +1158,7 @@ public class HMDP {
 					//reset batch counts
 					tempnkt[k][v] = 0;
 					//reset word counts in the last topic iteration
-					if (k+1==T) {
+					if (k+1==K) {
 						batch_words[v] = 0;
 					}
 				}
@@ -1169,7 +1169,7 @@ public class HMDP {
 		}
 
 		//reset
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			for (int t=0;t<V;t++) {
 				tempmkt[k][t] = 0.0;
 			}
@@ -1215,7 +1215,7 @@ public class HMDP {
 				double cluster_sum = 0.0;
 				//total documents in cluster - remember that this includes documents from other groups
 				int cluster_size = Cfc[f][a];
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 
 					//update table counts for the global topic distribution:
 					//-> Probability of seeing topic k once in each cluster?
@@ -1258,10 +1258,10 @@ public class HMDP {
 	public void updateGlobalTopicDistribution() {
 
 		//sum over tables
-		double[] sumfck = new double[T];
+		double[] sumfck = new double[K];
 
 		//Start with pseudo-counts from the Beta prior
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			bhat[k]=gamma;
 		}
 		//Now add observed estimated counts
@@ -1271,7 +1271,7 @@ public class HMDP {
 			//A[f] holds the cluster indices for each cluster of each feature and thus gives us the 
 			//number of clusters per feature by A[f].length
 			for (int i=0;i<Cf[f];i++) {
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					//We estimate pi_0 by looking at the documents of each cluster of each feature.
 
 					//OLD:
@@ -1288,12 +1288,12 @@ public class HMDP {
 		}
 
 		//now add this sum to ahat
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			ahat[k]=1.0+sumfck[k];
 		}
 
 
-		double[] ahat_copy = new double[T];
+		double[] ahat_copy = new double[K];
 		System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 		//get indices of sticks ordered by size (given by ahat)
 		int[] index = ArrayTool.sortArray(ahat_copy);
@@ -1303,20 +1303,20 @@ public class HMDP {
 		int[] index_reverted = ArrayTool.reverseIndex(index);
 
 		//bhat is the sum over the counts of all topics > k
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			int sort_index = index_reverted[k];
-			for (int k2=sort_index+1;k2<T;k2++) {
+			for (int k2=sort_index+1;k2<K;k2++) {
 				int sort_index_greater = index[k2];
 				bhat[k] += sumfck[sort_index_greater];
 			}
 		}
 
-		double[] pi_ = new double[T];
+		double[] pi_ = new double[K];
 		//TODO: 1-pi
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 		}
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			pi_0[k]=pi_[k];
 			int sort_index = index_reverted[k];
 			for (int l=0;l<sort_index;l++) {
@@ -1328,11 +1328,11 @@ public class HMDP {
 
 		//MAP estimation for gamma (Sato (6))
 		double gamma_denominator = 0.0;
-		for (int k=0;k<T-1;k++) {
+		for (int k=0;k<K-1;k++) {
 			gamma_denominator += Gamma.digamma0(ahat[k] + bhat[k])- Gamma.digamma0(bhat[k]);
 		}
 
-		gamma = (T -1) / gamma_denominator;
+		gamma = (K -1) / gamma_denominator;
 
 
 	}
@@ -1368,13 +1368,13 @@ public class HMDP {
 			}
 
 			double beta_0_denominator = 0.0;
-			for (int k=0; k < T; k++) {
+			for (int k=0; k < K; k++) {
 				//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
 				beta_0_denominator += Gamma.digamma0(nk[k]+beta_0*V);
 			}
-			beta_0_denominator -= T * Gamma.digamma0(beta_0*V);
+			beta_0_denominator -= K * Gamma.digamma0(beta_0*V);
 			beta_0 = 0;
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 				for (int t = 0; t < V; t++) {
 					beta_0 += mkt[k][t];
 					if (!debug && (mkt[k][t] == 0 || Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
@@ -1455,9 +1455,9 @@ public class HMDP {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic = new double[M][T];
+			double[][] doc_topic = new double[M][K];
 			for (int m=0;m<M;m++) {
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					doc_topic[m][k]  = 0;
 				}
 			}
@@ -1470,13 +1470,13 @@ public class HMDP {
 					int g = group[f];
 					grouplength[f] = A[f][g].length;
 					for (int i=0;i<grouplength[f];i++) {
-						for (int k=0;k<T;k++) {
+						for (int k=0;k<K;k++) {
 							doc_topic[m][k]+=pi_kfc_noF[f][g][i][k];
 						}
 					}
 				}
 				double sum = BasicMath.sum(doc_topic[m]);
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					doc_topic[m][k]/=sum;
 				}
 			}
@@ -1487,10 +1487,10 @@ public class HMDP {
 		double[][][] feature_cluster_topics = new double[F][][];
 
 		for (int f=0; f<F;f++) {
-			feature_cluster_topics[f] = new double[Cf[f]][T];
+			feature_cluster_topics[f] = new double[Cf[f]][K];
 			for (int a=0;a<Cf[f];a++) {
 				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a]) + alpha_0;
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					feature_cluster_topics[f][a][k]=(sumqfck[f][a][k] + alpha_0 * pi_0[k]) / sumqfck2_denominator;
 				}
 			}
@@ -1504,9 +1504,9 @@ public class HMDP {
 		}
 
 
-		String[][] topktopics = new String[T*2][topk];
+		String[][] topktopics = new String[K*2][topk];
 
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < V; v++){
@@ -1541,10 +1541,10 @@ public class HMDP {
 
 
 		//save counts for tables in clusters
-		double[] sumfck = new double[T];
+		double[] sumfck = new double[K];
 		for (int f=0;f<F;f++) {
 			for (int i=0;i<Cf[f];i++) {
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					//NEW:
 					//Table counts like in Teh, Collapsed Variational Inference for HDP (but with 0-order Taylor approximation)
 					double a0pik=alpha_0 * pi_0[k];
@@ -1554,18 +1554,18 @@ public class HMDP {
 		}
 		save.saveVar(sumfck, basedirectory+save_prefix+"sumfck_"+rhot_step);
 
-		double[] topic_ge0 = new double[T];
-		for (int k=0;k<T;k++) {
+		double[] topic_ge0 = new double[K];
+		for (int k=0;k<K;k++) {
 			topic_ge0[k] = 1.0;
 		}
 		for (int f=0;f<F;f++) {
 			for (int i=0;i<Cf[f];i++) {
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					topic_ge0[k] *= 1.0-sumqfck_ge0[f][i][k];
 				}
 			}
 		}
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 			topic_ge0[k] = 1.0-topic_ge0[k];
 		}
 
@@ -1586,7 +1586,7 @@ public class HMDP {
 		for (int m = testsize; m<M; m++) {
 			int doclength = wordsets[m].size();
 			totalLength+=doclength;
-			z[m-testsize] = new double[doclength][T];
+			z[m-testsize] = new double[doclength][K];
 		}
 
 		int runmax = 20;
@@ -1611,7 +1611,7 @@ public class HMDP {
 
 				//Prior of the document-topic distribution
 				//(This is a mixture of the cluster-topic distributions of the clusters of the document
-				double[] topic_prior = new double[T];
+				double[] topic_prior = new double[K];
 				for (int f=0;f<F;f++) {
 					int g = group[f];
 					double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + A[f][g].length*delta[f];
@@ -1621,7 +1621,7 @@ public class HMDP {
 						double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
 						//cluster probability in group
 						double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
-						for (int k=0;k<T;k++) {
+						for (int k=0;k<K;k++) {
 							double temp = 	(sumqfck[f][a][k] + alpha_0 * pi_0[k])	* temp3;
 							topic_prior[k]+=temp*temp2;
 
@@ -1640,16 +1640,16 @@ public class HMDP {
 					int termfreq = e.getValue();
 
 					//remove old counts 
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						nmk[m][k] -= termfreq * z[mt][n][k];
 					}
 
 					//topic probabilities - q(z)
-					double[] q = new double[T];
+					double[] q = new double[K];
 					//sum for normalisation
 					double qsum = 0.0;
 
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 
 						q[k] = 	//probability of topic given feature & group
 								(nmk[m][k] + alpha_1*topic_prior[k])
@@ -1663,7 +1663,7 @@ public class HMDP {
 					}
 
 					//Normalise gamma (sum=1), update counts and probabilities
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						//normalise
 						q[k]/=qsum;
 						z[mt][n][k]=q[k];
@@ -1694,14 +1694,14 @@ public class HMDP {
 				double lik = 0;
 
 				//singe assignment
-				double[] zsum = new double[T];
+				double[] zsum = new double[K];
 				zsum[0] = z[mt][n][0];
-				for (int k=1;k<T;k++) {
+				for (int k=1;k<K;k++) {
 					zsum[k]=zsum[k-1]+ z[mt][n][k];
 				}
 				double u = Math.random();
 				int s;
-				for (s = 0; s<T;s++) {
+				for (s = 0; s<K;s++) {
 					if (u<zsum[s]) break;
 				}
 
@@ -1716,7 +1716,7 @@ public class HMDP {
 				n++;
 			}
 
-			for (int k=0;k<T;k++) nmk[m][k] = 0;
+			for (int k=0;k<K;k++) nmk[m][k] = 0;
 		}
 
 		//get perplexity

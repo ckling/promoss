@@ -40,4 +40,34 @@ In future versions, there will be:
 - support for typical metadata, i.e. temporal and geographical context
 - a distributed version of PCSVB of HMDP based on Hadoop 
 
-The goal is to create a easy-to-use, scalable topic model for arbitrary context.
+The goal is to create an easy-to-use, scalable topic model for arbitrary context.
+
+
+java -Xmx4000M -jar hmdp.jar -directory "/home/c/work/topicmodels/ml/" -T 100 -TRAINING_SHARE 1.0 -BATCHSIZE 128 -BATCHSIZE_GROUPS 128 -RUNS 100 -BURNIN 0 
+
+
+-T			Integer. Number of truncated topics
+-RUNS			Integer. Number of iterations the sampler will run. Default: 200
+-SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+-TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+-BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
+-BATCHSIZE_GROUPS	Integer. Batch size for group-specific parameter estimation. Default: BATCHSIZE
+-BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+-BURNIN_DOCUMENTS	Integer. Gives the number of sampling iterations where the group-specific parameters are not updated yet. Default: 0
+-INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
+-SAMPLE_ALPHA		Integer. Every SAMPLE_ALPHAth document is used to estimate alpha_1. Default: 1
+-BATCHSIZE_ALPHA	Integer. How many observations do we take before updating alpha_1. Default: 1000
+-MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
+-save_prefix		String. If given, this String is appended to all output files.
+-delta_fix 		If set, delta is fixed and set to this value.
+-alpha_0		Double. Initial value of alpha_0. Default: 1
+-alpha_1		Double. Initial value of alpha_1. Default: 1
+-rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
+-rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
+-rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
+-rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
+-rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
+-rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
+-rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
+-rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
+-rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
