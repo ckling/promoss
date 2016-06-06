@@ -71,3 +71,7 @@ java -Xmx4000M -jar hmdp.jar -directory "/home/c/work/topicmodels/ml/" -T 100 -T
 -rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
 -rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
 -rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
+-processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces.
+-stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
+-stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
+-language		String. Currently "en" and "de" are available languages for stemming.

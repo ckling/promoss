@@ -112,6 +112,8 @@ public class TopicModel {
 		if (args[i].equals("-SAVE_STEP")) 
 			pi.SAVE_STEP = Integer.valueOf(args[++i]);
 		
+		if (args[i].equals("-processed")) 
+			pi.processed = Boolean.valueOf(args[++i]);
 		
 		
 		}

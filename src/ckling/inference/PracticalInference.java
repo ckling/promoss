@@ -35,10 +35,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
+
 import org.knowceans.corpus.Dictionary;
 import org.knowceans.util.DirichletEstimation;
 import org.knowceans.util.Gamma;
 import org.knowceans.util.Pair;
+
 import ckling.functions.ArrayTool;
 import ckling.math.BasicMath;
 import ckling.text.Load;
@@ -131,8 +133,9 @@ public class PracticalInference {
 	public Boolean stopwords = false;
 	//Should words be stemmed? (using the Snowball stemmer)
 	public Boolean stemming = false;
+	//Should words be separated using regular expressions, or is the text processed already?
+	public Boolean processed = true;
 
-	
 	public String dictfile;
 	public String documentfile;
 	public String groupfile;
@@ -338,7 +341,7 @@ public class PracticalInference {
 		readDocs();
 		System.out.println("Estimating topics...");
 	}
-	
+
 	public void run () {
 		for (int i=0;i<RUNS;i++) {
 
@@ -370,7 +373,7 @@ public class PracticalInference {
 
 		}
 	}
-	
+
 	public void readSettings() {
 
 		if (rhos_document < 0) 
@@ -382,16 +385,16 @@ public class PracticalInference {
 			rhotau_document = rhotau;
 		if (rhotau_group < 0) 
 			rhotau_group = rhotau;
-		
+
 		if (rhokappa_document < 0) 
 			rhokappa_document = rhokappa;
 		if (rhokappa_group < 0) 
 			rhokappa_group = rhokappa;
-		
+
 		if (BATCHSIZE_GROUPS < 0)
 			BATCHSIZE_GROUPS = BATCHSIZE;
-		
-		
+
+
 		// Folder names, files etc. - TODO should be set via args later
 		dictfile = directory+"words.txt";
 		//textfile contains the group-IDs for each feature dimension of the document
@@ -478,14 +481,14 @@ public class PracticalInference {
 		String line;
 		if (!new File(dictfile).exists()) {
 
-			
 
-			if (documentText == null) {
+
+			if (!processed && documentText == null) {
 				documentText = new Text();
 				documentText.setLang(language);
 				documentText.setStopwords(stopwords);
 				documentText.setStem(stemming);
-		
+
 			}
 
 			//create the dict from all the words in the document
@@ -497,20 +500,38 @@ public class PracticalInference {
 
 				String[] lineSplit = line.split(" ",2);
 				if (lineSplit.length > 1) {
-					documentText.setText(lineSplit[1]);
-					
-					Iterator<String> words = documentText.getTerms();
 
-					while(words.hasNext()) {
-					String word = words.next();
-					int freq = 1;
-					if (hs.containsKey(word)) {
-						freq += hs.get(word);
+					if (processed) {
+						String[] lineSplit2 = lineSplit[1].split(" ");
+						for(int i = 0; i < lineSplit2.length; i++) {
+							String word = lineSplit2[i];
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
+					}
+					else {
+
+						documentText.setText(lineSplit[1]);
+
+						Iterator<String> words = documentText.getTerms();
+
+						while(words.hasNext()) {
+							String word = words.next();
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
 					}
 
-					hs.put(word,freq);
-				}
-				
 				}
 
 			}
@@ -705,9 +726,9 @@ public class PracticalInference {
 				//												}
 				//												multrand[T-1] = rest;
 				//												nkt[k][t] = wordfreq[t] * multrand[k];
-				
+
 				nkt[k][t]= Math.random()*INIT_RAND;
-				
+
 				//nkt[k][t] = (Double.valueOf(C)/V * 1.0/ Double.valueOf(T)) * 0.9 + 0.1 * (0.5-Math.random()) * C/Double.valueOf(T);
 				nk[k]+=nkt[k][t];
 
@@ -750,7 +771,7 @@ public class PracticalInference {
 
 		//sumqfgc = new double[F][];
 		sumqf = new double[F];
-		
+
 		featureprior = new double[F];
 		for (int f=0;f<F;f++) {
 			featureprior[f] = epsilon[f];
@@ -786,7 +807,7 @@ public class PracticalInference {
 				sumqfgc[f][g] = new double[A[f][g].length];
 			}
 		}
-		
+
 	}
 
 	/**
@@ -845,23 +866,41 @@ public class PracticalInference {
 				}
 
 				if (docSplit.length>1) {
-					documentText.setText(docSplit[1]);
-					Iterator<String> words = documentText.getTerms();
-
-					while(words.hasNext()) {
-						String word = words.next();
-						if (dict.contains(word)) {
-							int wordID = dict.getID(word);
-							if (distinctWords.containsKey(wordID)) {
-								int count = distinctWords.get(wordID);
-								distinctWords.put(wordID, count+1);
+					if (processed) {
+						String[] lineSplit2 = docSplit[1].split(" ");
+						for(int i = 0; i < lineSplit2.length; i++) {
+							String word = lineSplit2[i];
+							if (dict.contains(word)) {
+								int wordID = dict.getID(word);
+								if (distinctWords.containsKey(wordID)) {
+									int count = distinctWords.get(wordID);
+									distinctWords.put(wordID, count+1);
+								}
+								else {
+									distinctWords.put(wordID, 1);
+								}
 							}
-							else {
-								distinctWords.put(wordID, 1);
+
+						}
+					}
+					else {
+						documentText.setText(docSplit[1]);
+						Iterator<String> words = documentText.getTerms();
+
+						while(words.hasNext()) {
+							String word = words.next();
+							if (dict.contains(word)) {
+								int wordID = dict.getID(word);
+								if (distinctWords.containsKey(wordID)) {
+									int count = distinctWords.get(wordID);
+									distinctWords.put(wordID, count+1);
+								}
+								else {
+									distinctWords.put(wordID, 1);
+								}
 							}
 						}
 					}
-
 					Set<Entry<Integer, Integer>> wordset = distinctWords.entrySet();
 
 					if (m%100 == 0)
@@ -870,6 +909,7 @@ public class PracticalInference {
 					wordsets[m]=wordset;
 					groups[m]=group;
 					m++;
+
 				}
 
 			}
@@ -889,7 +929,7 @@ public class PracticalInference {
 		return;
 
 	}
-	
+
 	public void inferenceDoc(int m) {
 
 		//if (N[m]==0) return;
@@ -918,7 +958,7 @@ public class PracticalInference {
 			//Tells the expected total number of times topic k was _not_ seen for feature f in cluster c in the currect document
 
 		}
-		
+
 		//probability of feature f given k
 		double[][] pk_f = new double[T][F];
 		//probability of feature x cluster x topic
@@ -950,12 +990,12 @@ public class PracticalInference {
 				}
 			}
 		}
-		
-		
+
+
 		for (int k=0;k<T;k++) {
 			pk_f[k]=BasicMath.normalise(pk_f[k]);
 		}
-		
+
 
 		double rhostkt_documentNm = rhostkt_document * N[m];
 
@@ -1073,12 +1113,12 @@ public class PracticalInference {
 		if (rhot%BATCHSIZE == 0 && rhot_step>BURNIN) {
 			updateTopicWordCounts();
 		}
-		
+
 		for (int f=0;f<F;f++) {
-		for (int k=0;k<T;k++) {
-			//TODO add feature probability here?
-			tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
-		}
+			for (int k=0;k<T;k++) {
+				//TODO add feature probability here?
+				tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+			}
 		}
 		//TODO 2x?
 		if (rhot_step>BURNIN_DOCUMENTS) {
@@ -1140,7 +1180,7 @@ public class PracticalInference {
 		}
 
 	}
-	
+
 	/**
 	 * Here we do stochastic updates of the document-topic counts
 	 */
@@ -1150,17 +1190,17 @@ public class PracticalInference {
 
 		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
 		double rhostktnormC = rhostkt * (C / Double.valueOf(BasicMath.sum(batch_words)));
-		
+
 		for (int f=0;f<F;f++) {
 			//TODO: multiply with avg doc length
 			sumqf[f]=(1.0-rhostkt) * sumqf[f] +  rhostkt * tempsumqf[f] * (M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
 			tempsumqf[f] = 0;
 			featureprior[f] = sumqf[f]+epsilon[f];
 		}
-		
+
 		featureprior = BasicMath.normalise(featureprior);
-		
-		
+
+
 
 
 		nk = new double[T];
@@ -1469,7 +1509,7 @@ public class PracticalInference {
 
 
 	public void save () {
-		
+
 		Save save = new Save();
 		save.saveVar(nkt, directory+save_prefix+"nkt_"+rhot_step);
 		save.close();
