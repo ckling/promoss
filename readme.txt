@@ -1,5 +1,5 @@
 ***************************
-Hierarchical Multi-Dirichlet Process Topic Model (HMDP topic model)
+Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
 ***************************
 
 (C) Copyright 2016, Christoph Carl Kling
@@ -15,12 +15,12 @@ Richard Boulton.
 Java Delaunay Triangulation (JDT) by boaz88 :: gmail : com published under Apache License 2.0 
 (http://www.apache.org/licenses/LICENSE-2.0)
 
-PCFSTM is free software; you can redistribute it and/or modify it 
+HMDP is free software; you can redistribute it and/or modify it 
 under the terms of the GNU General Public License as published by the Free 
 Software Foundation; either version 3 of the License, or (at your option) 
 any later version.
 
-PCFSTM is distributed in the hope that it will be useful, but WITHOUT 
+HMDP is distributed in the hope that it will be useful, but WITHOUT 
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
@@ -79,6 +79,7 @@ Example file:
 0 10 9 10 11
 
 The first line reads: For context 0, documents which are assigned to context group 0 draw their topics from context cluster 0 and context cluster 1.
+If no groups.txt is given, all context groups will be linked to a context cluster with the same ID, which means that all context clusters are independent.
 
 
 ***************************
