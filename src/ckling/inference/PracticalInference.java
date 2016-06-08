@@ -290,7 +290,7 @@ public class PracticalInference {
 
 		for (int i=0;i<pi.RUNS;i++) {
 
-			System.out.println("Run " + i + " (alpha_0 "+pi.alpha_0+" alpha_1 "+ pi.alpha_1+ " beta_0 " + pi.beta_0 + " gamma "+pi.gamma + " delta " + pi.delta[0]+ " epsilon " + pi.epsilon[0]);
+			System.out.println("Run " + i + " (alpha_0 "+pi.alpha_0+" alpha_1 "+ pi.alpha_1+ " beta_0 " + pi.beta_0 + " gamma "+pi.gamma + " delta " + pi.delta[0]+ " epsilon " + pi.epsilon[0] + ")");
 
 
 			pi.rhot_step++;
@@ -1452,7 +1452,7 @@ public class PracticalInference {
 			for (int k=0;k<T;k++) {
 				for (int t = 0; t < V; t++) {
 					beta_0 += mkt[k][t];
-					if (!debug && (mkt[k][t] == 0 || Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
+					if (!debug && (Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
 						System.out.println("mkt " + k + " " + t + ": " + mkt[k][t] + " nkt: " +  nkt[k][t]);
 						debug = true;
 					}

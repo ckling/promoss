@@ -45,7 +45,9 @@ The goal is to create an easy-to-use, scalable topic model for arbitrary context
 ***************************
 Example command line usage
 ***************************
-java -Xmx4000M -jar hmdp.jar -directory "/home/c/work/topicmodels/ml/" -T 100 -TRAINING_SHARE 1.0 -BATCHSIZE 128 -BATCHSIZE_GROUPS 128 -RUNS 100 -BURNIN 0 
+java -Xmx4000M -jar hmdp.jar -directory "PATH_OF_HMDP/demo/ml/" -T 5 -TRAINING_SHARE 1.0 -BATCHSIZE 128 -BATCHSIZE_GROUPS 128 -RUNS 100 -BURNIN 0 -processed true -MIN_DICT_WORDS 10
+
+This will sample topics from a demo dataset of 1000 messages of the linux kernel mailing list. Messages are already stemmed and stopwords were removed. There are 1000 clusters for the first four contexts (which are the timeline and the yearly, weekly and daily cycle). Many clusters are empty, because the original dataset contained >3m documents. This is just for testing if the algorithm runs, a demo dataset  with nicer results is in preparation.
 
 
 ***************************
@@ -56,7 +58,7 @@ texts.txt
 --------------------------- 
 Each line corresponds to a document. First, the context group IDs (for each context one) are given, separated by commas. The context group in context 0 is given first, then the context group in context 1 and so on. Then follows a space and the words of the documents separated by spaces. 
 Example file:
-254,531,790,157,0  claus exist distribut origin softwar distributor agre gpl
+254,531,790,157,0  exist distribut origin softwar distributor agre gpl
 254,528,789,157,0  gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
 254,901,700,157,0  dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
 254,838,691,157,0  gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
@@ -103,9 +105,10 @@ Optional parameters:
 -BATCHSIZE_ALPHA	Integer. How many observations do we take before updating alpha_1. Default: 1000
 -MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
 -save_prefix		String. If given, this String is appended to all output files.
--delta_fix 		If set, delta is fixed and set to this value.
 -alpha_0		Double. Initial value of alpha_0. Default: 1
 -alpha_1		Double. Initial value of alpha_1. Default: 1
+-epsilon		Comma-separated double. Dirichlet prior over the weights of contexts. Comma-separated double values, with dimensionality equal to the number of contexts.
+-delta_fix 		If set, delta is fixed and set to this value. Otherwise delta is learned during inference.
 -rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
 -rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
 -rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1

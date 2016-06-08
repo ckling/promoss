@@ -115,7 +115,15 @@ public class TopicModel {
 		if (args[i].equals("-processed")) 
 			pi.processed = Boolean.valueOf(args[++i]);
 		
-		
+		if (args[i].equals("-epsilon")) {
+			String[] argssplit = args[++i].split(",");
+			double[] epsilon = new double[argssplit.length]; 
+			for (int j=0;j<epsilon.length;j++) {
+				epsilon[j] = Double.valueOf(argssplit[j]);
+			}
+			pi.epsilon = epsilon;
+		}
+				
 		}
 		
 		pi.initialise();
