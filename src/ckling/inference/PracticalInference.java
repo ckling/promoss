@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-//import org.apache.commons.lang3.ArrayUtils;
-
 import org.knowceans.corpus.Dictionary;
 import org.knowceans.util.DirichletEstimation;
 import org.knowceans.util.Gamma;
