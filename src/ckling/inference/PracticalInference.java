@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
+//import org.apache.commons.lang3.ArrayUtils;
 
 import org.knowceans.corpus.Dictionary;
 import org.knowceans.util.DirichletEstimation;
@@ -58,7 +58,7 @@ public class PracticalInference {
 	//number of top words returned for the topic file
 	public int topk = 100;
 	//Number of read docs (might repeat with the same docs)
-	public int RUNS = 200;
+	public int RUNS = 500;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
 	public int BATCHSIZE = 128;
@@ -135,6 +135,8 @@ public class PracticalInference {
 	public Boolean stemming = false;
 	//Should words be separated using regular expressions, or is the text processed already?
 	public Boolean processed = true;
+	//Store some zeros for empty documents in the doc_topic matrix?
+	public Boolean store_empty = false;
 
 	public String dictfile;
 	public String documentfile;
@@ -249,12 +251,12 @@ public class PracticalInference {
 	//private static double sumqk;
 
 
-	//Helper variable: word frequencies
-	public int[] wordfreq;
 
 	//document-words (M x doclength)
 	public Set<Entry<Integer, Integer>>[] wordsets;
-	//document groups (M x F)
+	//document groups (M+empty_documents.size() x F)
+	//we first have the groups of the non-empty documents
+	//followed by the groups of the empty documents
 	public int[][] groups;
 
 	//group-cluster-topic distributions F x G x C x T excluding feature distribution
@@ -270,7 +272,7 @@ public class PracticalInference {
 
 	public static void main2 (String[] args) {
 
-		PracticalInference pi = new PracticalInference();
+		CopyOfPracticalInference pi = new CopyOfPracticalInference();
 
 
 
@@ -411,7 +413,6 @@ public class PracticalInference {
 		// The file contains words, one in each row
 
 		int line_number=0;
-		wordfreq = new int[V];
 		Text dictText = new Text();
 
 		String line;
@@ -447,8 +448,6 @@ public class PracticalInference {
 
 				for (int i=1;i<lineSplit.length;i++) {
 					if (dict.contains(lineSplit[i])) {
-						int wordid = dict.getID(lineSplit[i]);
-						wordfreq[Integer.valueOf(wordid)]++;
 						C++;
 					}
 				}
@@ -838,11 +837,13 @@ public class PracticalInference {
 
 			return ;
 		}
-		else {
-			wordsets = new Set[M];
-			groups = new int[M][F];
-		}
-
+		
+		wordsets = new Set[M];
+		groups = new int[M+empty_documents.size()][F];
+		//Counter for the index of the groups of empty documents
+		//They are added after the group information of the regular documents
+		int empty_counter = 0;
+		
 		if (documentText == null) {
 			documentText = new Text();
 			documentText.setLang(language);
@@ -854,7 +855,6 @@ public class PracticalInference {
 		int line_number = 0;
 		while ((line = documentText.readLine(documentfile))!=null) {
 			line_number++;
-			if (!empty_documents.contains(line_number)) {
 				HashMap<Integer,Integer> distinctWords = new HashMap<Integer, Integer>();
 
 				String[] docSplit = line.split(" ",2);
@@ -864,6 +864,8 @@ public class PracticalInference {
 				for (int f=0; f<F; f++) {
 					group[f] = Integer.valueOf(groupString[f]);
 				}
+
+				if (!empty_documents.contains(line_number)) {
 
 				if (docSplit.length>1) {
 					if (processed) {
@@ -909,10 +911,15 @@ public class PracticalInference {
 					wordsets[m]=wordset;
 					groups[m]=group;
 					m++;
+				}
+				else {
+					groups[M+empty_counter]=group;
+					empty_counter++;
+				}
 
 				}
 
-			}
+			
 		}
 
 		for (m=0;m<M;m++) {
@@ -1213,7 +1220,7 @@ public class PracticalInference {
 				//update word-topic-tables for estimating tau
 				mkt[k][v] *= oneminusrhostkt;
 				if(!debug && Double.isInfinite(mkt[k][v])) {
-					System.out.println("mkt pre " + Double.valueOf(wordfreq[v])/batch_words[v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
+					System.out.println("mkt pre " + mkt[k][v] );
 					debug = true;
 				}
 
@@ -1226,7 +1233,7 @@ public class PracticalInference {
 					//identical for the other words in the corpus.
 					mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(C / Double.valueOf(BasicMath.sum(batch_words)))));
 					if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
-						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] + " " + Double.valueOf(wordfreq[v])/batch_words[v]);
+						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] );
 						debug = true;
 					}
 
@@ -1371,10 +1378,8 @@ public class PracticalInference {
 		double[] ahat_copy = new double[T];
 		System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 		//get indices of sticks ordered by size (given by ahat)
-		int[] index = ArrayTool.sortArray(ahat_copy);
-		//large sticks come first, so reverse order
-		ArrayUtils.reverse(index);
-
+		int[] index = ArrayTool.sortArray(ahat_copy,"desc");
+		
 		int[] index_reverted = ArrayTool.reverseIndex(index);
 
 		//bhat is the sum over the counts of all topics > k
@@ -1420,7 +1425,8 @@ public class PracticalInference {
 
 			//Update alpha_0 using the table counts per cluster
 			//Cf is the number of clusters per feature
-			if (alpha_0 > 0.0001) {
+
+			//because otherwise the model would not make sense (we would use HDP otherwise)
 				int zeros = 0;
 				double alpha_0_denominator = 0;
 				for (int f = 0; f < F; f++) {
@@ -1438,10 +1444,9 @@ public class PracticalInference {
 				alpha_0_denominator -= (BasicMath.sum(Cf) - zeros) * Gamma.digamma0(alpha_0);
 
 				//sumqfck_ge0 => number of tables
-
 				alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
-			}
 
+			
 			double beta_0_denominator = 0.0;
 			for (int k=0; k < T; k++) {
 				//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
@@ -1530,31 +1535,89 @@ public class PracticalInference {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic = new double[M][T];
-			for (int m=0;m<M;m++) {
-				for (int k=0;k<T;k++) {
-					doc_topic[m][k]  = 0;
-				}
-			}
-			for (int m=0;m<M;m++) {
-
-				doc_topic[m]  = nmk[m];
-				int[] group = groups[m];
-				int[] grouplength = new int[F]; 
-				for (int f =0; f<F;f++) {
-					int g = group[f];
-					grouplength[f] = A[f][g].length;
-					for (int i=0;i<grouplength[f];i++) {
-						for (int k=0;k<T;k++) {
-							doc_topic[m][k]+=pi_kfc_noF[f][g][i][k];
-						}
+			double[][] doc_topic;
+			if (store_empty) {
+				
+				//index counter for empty documents
+				int empty_counter = 0;
+				//#documents including empty documents
+				int Me = M+empty_documents.size();
+				doc_topic = new double[Me][T];
+				for (int m=0;m<Me;m++) {
+					for (int k=0;k<T;k++) {
+						doc_topic[m][k]  = 0;
 					}
 				}
-				double sum = BasicMath.sum(doc_topic[m]);
-				for (int k=0;k<T;k++) {
-					doc_topic[m][k]/=sum;
+				int m = 0;
+				for (int me=0;me<Me;me++) {
+					if (empty_documents.contains(me)) {
+						doc_topic[me]  = new double[T];
+						int[] group = groups[M+empty_counter];
+						int[] grouplength = new int[F]; 
+						for (int f =0; f<F;f++) {
+							int g = group[f];
+							grouplength[f] = A[f][g].length;
+							for (int i=0;i<grouplength[f];i++) {
+								for (int k=0;k<T;k++) {
+									doc_topic[me][k]+=pi_kfc_noF[f][g][i][k];
+								}
+							}
+						}
+						double sum = BasicMath.sum(doc_topic[me]);
+						for (int k=0;k<T;k++) {
+							doc_topic[me][k]/=sum;
+						}
+						empty_counter++;
+					}
+					else {				
+						doc_topic[me]  = nmk[m];
+						int[] group = groups[m];
+						int[] grouplength = new int[F]; 
+						for (int f =0; f<F;f++) {
+							int g = group[f];
+							grouplength[f] = A[f][g].length;
+							for (int i=0;i<grouplength[f];i++) {
+								for (int k=0;k<T;k++) {
+									doc_topic[me][k]+=pi_kfc_noF[f][g][i][k];
+								}
+							}
+						}
+						double sum = BasicMath.sum(doc_topic[me]);
+						for (int k=0;k<T;k++) {
+							doc_topic[me][k]/=sum;
+						}
+						m++;
+					}
+				}
+
+			}
+			else {
+				doc_topic = new double[M][T];
+				for (int m=0;m<M;m++) {
+					for (int k=0;k<T;k++) {
+						doc_topic[m][k]  = 0;
+					}
+				}
+				for (int m=0;m<M;m++) {
+					doc_topic[m]  = nmk[m];
+					int[] group = groups[m];
+					int[] grouplength = new int[F]; 
+					for (int f =0; f<F;f++) {
+						int g = group[f];
+						grouplength[f] = A[f][g].length;
+						for (int i=0;i<grouplength[f];i++) {
+							for (int k=0;k<T;k++) {
+								doc_topic[m][k]+=pi_kfc_noF[f][g][i][k];
+							}
+						}
+					}
+					double sum = BasicMath.sum(doc_topic[m]);
+					for (int k=0;k<T;k++) {
+						doc_topic[m][k]/=sum;
+					}						
 				}
 			}
+
 			save.saveVar(doc_topic, directory+save_prefix+"doc_topic_"+rhot_step);
 			save.close();
 		}
