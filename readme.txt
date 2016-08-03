@@ -83,6 +83,10 @@ Example file:
 The first line reads: For context 0, documents which are assigned to context group 0 draw their topics from context cluster 0 and context cluster 1.
 If no groups.txt is given, all context groups will be linked to a context cluster with the same ID, which means that all context clusters are independent.
 
+--------------------------- 
+words.txt
+--------------------------- 
+This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
 
 ***************************
 Mandatory parameter
