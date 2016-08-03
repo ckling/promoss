@@ -34,18 +34,8 @@
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target name="Start">
-        <java classname="ckling.inference.Start" failonerror="true" fork="yes">
-            <classpath refid="hmdp.classpath"/>
-        </java>
-    </target>
-    <target name="TopicModel (1)">
+    <target name="HMDP">
         <java classname="ckling.inference.TopicModel" failonerror="true" fork="yes">
-            <classpath refid="hmdp.classpath"/>
-        </java>
-    </target>
-    <target name="TransformData">
-        <java classname="ckling.tools.TransformData" failonerror="true" fork="yes">
             <classpath refid="hmdp.classpath"/>
         </java>
     </target>

@@ -348,7 +348,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -435,7 +435,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -629,7 +629,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -717,7 +717,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -800,7 +800,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -886,7 +886,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 
@@ -965,7 +965,7 @@ public class TopicModel {
 			pi.readDict();		
 
 			System.out.println("Initialising parameters...");
-			pi.getParameters();
+			pi.initParameters();
 
 			System.out.println("Processing documents...");
 

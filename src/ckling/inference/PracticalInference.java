@@ -270,7 +270,7 @@ public class PracticalInference {
 
 	public static void main2 (String[] args) {
 
-		CopyOfPracticalInference pi = new CopyOfPracticalInference();
+		PracticalInference pi = new PracticalInference();
 
 
 
@@ -280,7 +280,7 @@ public class PracticalInference {
 		pi.readDict();		
 
 		System.out.println("Initialising parameters...");
-		pi.getParameters();
+		pi.initParameters();
 
 		System.out.println("Processing documents...");
 
@@ -336,7 +336,7 @@ public class PracticalInference {
 		System.out.println("Reading settings...");
 		readSettings();
 		readDict();		
-		getParameters();
+		initParameters();
 		System.out.println("Processing documents...");
 		readDocs();
 		System.out.println("Estimating topics...");
@@ -652,7 +652,7 @@ public class PracticalInference {
 	}
 
 	//set Parameters
-	public void getParameters() {
+	public void initParameters() {
 		readFfromTextfile();
 		System.out.println("Reading groups...");
 
@@ -713,23 +713,12 @@ public class PracticalInference {
 
 		for (int t=0; t < V; t++) {
 			for (int k=0;k<T;k++) {
-				//												//Random assignments of words to topics
-				//												double[] multrand = new double[T];
-				//												double rest = 1.0;
-				//												for (int k2=0;k2<T-1;k2++) {
-				//													double rand = Math.random();
-				//													multrand[k2]= rand * rest;
-				//													rest *= (1.0-rand);
-				//												}
-				//												multrand[T-1] = rest;
-				//												nkt[k][t] = wordfreq[t] * multrand[k];
 
 				nkt[k][t]= Math.random()*INIT_RAND;
-
-				//nkt[k][t] = (Double.valueOf(C)/V * 1.0/ Double.valueOf(T)) * 0.9 + 0.1 * (0.5-Math.random()) * C/Double.valueOf(T);
 				nk[k]+=nkt[k][t];
 
 				tempmkt[k][t] = 0.0;
+				
 			}
 		}
 		pi_0 = new double[T];
@@ -766,7 +755,6 @@ public class PracticalInference {
 		}
 
 
-		//sumqfgc = new double[F][];
 		sumqf = new double[F];
 
 		featureprior = new double[F];
