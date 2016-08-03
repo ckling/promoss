@@ -5,25 +5,12 @@
               directory with the processing instruction <?eclipse.ant.import?>
               as the first entry and export the buildfile again. --><project basedir="." default="build" name="hmdp">
     <property environment="env"/>
-    <property name="ECLIPSE_HOME" value="../../../../../usr/lib/eclipse"/>
-    <property name="tools.location" value="../tools"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.7"/>
     <property name="source" value="1.7"/>
-    <path id="tools.classpath">
-        <pathelement location="${tools.location}/bin"/>
-        <pathelement location="${tools.location}/../lib/nekohtml.jar"/>
-        <pathelement location="${tools.location}/../lib/xercesImpl.jar"/>
-        <pathelement location="${tools.location}/../lib/xercesSamples.jar"/>
-        <pathelement location="${tools.location}/../lib/xml-apis.jar"/>
-        <pathelement location="${tools.location}/../lib/stemmer.jar"/>
-        <pathelement location="${tools.location}/../lib/mysql-connector-java-5.1.36-bin.jar"/>
-    </path>
     <path id="hmdp.classpath">
         <pathelement location="bin"/>
-        <path refid="tools.classpath"/>
-        <pathelement location="../lib/jdt.jar"/>
-        <pathelement location="../lib/commons-lang3-3.4.jar"/>
+        <pathelement location="lib/tools.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -36,17 +23,9 @@
     <target name="clean">
         <delete dir="bin"/>
     </target>
-    <target depends="clean" name="cleanall">
-        <ant antfile="build.xml" dir="${tools.location}" inheritAll="false" target="clean"/>
-    </target>
+    <target depends="clean" name="cleanall"/>
     <target depends="build-subprojects,build-project" name="build"/>
-    <target name="build-subprojects">
-        <ant antfile="build.xml" dir="${tools.location}" inheritAll="false" target="build-project">
-            <propertyset>
-                <propertyref name="build.compiler"/>
-            </propertyset>
-        </ant>
-    </target>
+    <target name="build-subprojects"/>
     <target depends="init" name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
@@ -55,19 +34,6 @@
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
-        <copy todir="${ant.library.dir}">
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </copy>
-        <unzip dest="${ant.library.dir}">
-            <patternset includes="jdtCompilerAdapter.jar"/>
-            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
-        </unzip>
-    </target>
-    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
-        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
-        <antcall target="build"/>
-    </target>
     <target name="Start">
         <java classname="ckling.inference.Start" failonerror="true" fork="yes">
             <classpath refid="hmdp.classpath"/>
