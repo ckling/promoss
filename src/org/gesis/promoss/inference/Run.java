@@ -190,11 +190,7 @@ public class Run {
 		}
 		else if (method.equals("LDA")) {
 
-			//TODO: insert in importer
-			String params ="G(1000)";
-
 			LDA_CSVB lda = new LDA_CSVB();
-
 
 			for (int i=0; i < args.length; i++) {
 
@@ -273,9 +269,6 @@ public class Run {
 				else if (args[i].equals("-store_empty")) 
 					lda.store_empty = Boolean.valueOf(args[++i]);
 
-				//G;T(L1000,Y100,M10,W10,D10);N
-				else if (args[i].equals("-meta_params")) 
-					params = args[++i];
 				//Skip method parameter
 				else if (args[i].equals("-method")) 
 					i++;
