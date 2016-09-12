@@ -3,14 +3,17 @@
               Any modifications will be overwritten.
               To include a user specific buildfile here, simply create one in the same
               directory with the processing instruction <?eclipse.ant.import?>
-              as the first entry and export the buildfile again. --><project basedir="." default="build" name="hmdp">
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="promoss">
     <property environment="env"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.7"/>
     <property name="source" value="1.7"/>
-    <path id="hmdp.classpath">
+    <path id="promoss.classpath">
         <pathelement location="bin"/>
-        <pathelement location="lib/tools.jar"/>
+        <pathelement location="../lib/stemmer.jar"/>
+        <pathelement location="../lib/nekohtml.jar"/>
+        <pathelement location="../lib/xercesImpl.jar"/>
+        <pathelement location="../lib/quickhull3d.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -30,13 +33,73 @@
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
             <src path="src"/>
-            <classpath refid="hmdp.classpath"/>
+            <classpath refid="promoss.classpath"/>
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target name="HMDP">
-        <java classname="ckling.inference.TopicModel" failonerror="true" fork="yes">
-            <classpath refid="hmdp.classpath"/>
+    <target name="Start">
+        <java classname="org.gesis.promoss.inference.Start" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
         </java>
     </target>
+    <target name="RandomSamplers">
+        <java classname="org.gesis.promoss.tools.probabilistic.RandomSamplers" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="Run">
+        <java classname="org.gesis.promoss.inference.Run" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="LBFGS">
+        <java classname="org.gesis.promoss.inference.LBFGS" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="DoubleFormat">
+        <java classname="org.gesis.promoss.tools.probabilistic.DoubleFormat" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="DirichletEstimation">
+        <java classname="org.gesis.promoss.tools.probabilistic.DirichletEstimation" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="ArrayUtils">
+        <java classname="org.gesis.promoss.tools.probabilistic.ArrayUtils" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="TransformData">
+        <java classname="org.gesis.promoss.tools.TransformData" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="Experiments">
+        <java classname="org.gesis.promoss.inference.Experiments" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+    <target name="DMR">
+        <java classname="org.gesis.promoss.inference.DMR" failonerror="true" fork="yes">
+            <classpath refid="promoss.classpath"/>
+        </java>
+    </target>
+
+    <target name="build-jar">
+       <jar destfile="promoss.jar"
+          basedir="bin"
+          includes="org/gesis/promoss/**"
+          excludes="**.class">
+          <zipgroupfileset dir="lib" includes="*.jar" excludes=""/>
+
+          <manifest>
+             <attribute name="Main-Class" value="org.gesis.promoss.inference.Run"/>
+             <attribute name="Class-Path" value="${promoss.classpath}"/>
+          </manifest>
+       </jar>
+    </target>
+
 </project>

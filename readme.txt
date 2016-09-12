@@ -1,51 +1,44 @@
-***************************
-Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
-***************************
+******************************************************
+------------------------------------------------------
+Promoss Topic Modelling Toolbox
+------------------------------------------------------
+******************************************************
 
 (C) Copyright 2016, Christoph Carl Kling
 
-Knoceans by Gregor Heinrich Gregor Heinrich (gregor :: arbylon : net)
-published under GNU GPL.
+Promoss makes use of multiple free software packages -- thanks to the authors of:
 
-Tartarus Snowball stemmer by Martin Porter and Richard Boulton published under 
-BSD License (see http://www.opensource.org/licenses/bsd-license.html ), with Copyright 
-(c) 2001, Dr Martin Porter, and (for the Java developments) Copyright (c) 2002, 
-Richard Boulton. 
+Knoceans by Gregor Heinrich Gregor Heinrich (gregor :: arbylon : net) published under GNU GPL.
 
-Java Delaunay Triangulation (JDT) by boaz88 :: gmail : com published under Apache License 2.0 
-(http://www.apache.org/licenses/LICENSE-2.0)
+Tartarus Snowball stemmer by Martin Porter and Richard Boulton published under BSD License (see http://www.opensource.org/licenses/bsd-license.html ), with Copyright (c) 2001, Dr Martin Porter, and (for the Java developments) Copyright (c) 2002, Richard Boulton. 
 
-HMDP is free software; you can redistribute it and/or modify it 
-under the terms of the GNU General Public License as published by the Free 
-Software Foundation; either version 3 of the License, or (at your option) 
-any later version.
+Quickhull3D Copyright by John E. Lloyd, 2004. 
 
-HMDP is distributed in the hope that it will be useful, but WITHOUT 
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+Apache Xerces Java and NekoHTML are released under Apache License 2.0.
 
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-Place, Suite 330, Boston, MA 02111-1307 USA
+Promoss is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
-***************************
-Notes
-***************************
+Promoss is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-This is the practical collapsed stochastic variational Bayesian inference (PCSVB) for the HMDP.
+You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-A detailed tutorial and documentation of the HMDP is in preparation.
+###########################
+Building the jar file
+###########################
+You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
+ant build-jar
 
-In future versions, there will be:
-- support for typical metadata, i.e. temporal and geographical context
-- a distributed version of PCSVB of HMDP based on Hadoop 
-
-The goal is to create an easy-to-use, scalable topic model for arbitrary context.
+###########################
+Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
+###########################
+An efficient topic model which uses arbitrary document metadata!
+(Practical collapsed stochastic variational inference for hierarchical multi-Dirichlet process topic models) 
 
 ***************************
 Example command line usage
 ***************************
-java -Xmx4000M -jar hmdp.jar -directory "PATH_OF_HMDP/demo/ml/" -T 5 -TRAINING_SHARE 1.0 -BATCHSIZE 128 -BATCHSIZE_GROUPS 128 -RUNS 100 -BURNIN 0 -processed true -MIN_DICT_WORDS 10
+java -Xmx11000M -jar promoss.jar -directory /home/c/work/topicmodels/ml7/ -meta_params "T(L1000,W1000,D10,Y100,M20);N" -MIN_DICT_WORDS 1000
+
 
 This will sample topics from a demo dataset of 1000 messages of the linux kernel mailing list. Messages are already stemmed and stopwords were removed. There are 1000 clusters for the first four contexts (which are the timeline and the yearly, weekly and daily cycle). Many clusters are empty, because the original dataset contained >3m documents. This is just for testing if the algorithm runs, a demo dataset  with nicer results is in preparation.
 
@@ -53,21 +46,47 @@ This will sample topics from a demo dataset of 1000 messages of the linux kernel
 ***************************
 Input file format
 ***************************
+There is two standard input formats for the data.
+The first is based on raw, unclustered metadata stored in meta.txt and the corpus, stored in corpus.txt
+The second is based on already clustered data (texts.txt) with given document groups defined in groups.txt (groups of documents share the same parent clusters in the Promoss).
+When running the code, the script first looks for a texts.txt and a groups.txt. If any of those documents is missing, the script looks for the corpus.txt and meta.txt, from which it generates the texts.txt and corpus.txt.
+Finally, a groups file with the groups of the documents and a wordsets file with the processed documents in SVMlight format are created.
+
 --------------------------- 
-texts.txt
+Variant 1: corpus.txt
+--------------------------- 
+Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
+#Example file:#
+exist distribut origin softwar distributor agre gpl
+gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
+dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
+gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+
+--------------------------- 
+Variant 1: meta.txt
+--------------------------- 
+Here we give the metadata values separated by semicolons. Possible metadata are geographical coordinates (latitude and longitude separated by comma), UNIX timestamps (in seconds), nominal values (e.g. category names, numbers) or oordinal variables (stored numbers which correspond to the ordering). The metadata types have to be specified via the -meta_params parameter (see below for a description).
+#Example file:#
+33.150051,-114.365448;1139316299000;1
+34.150051,-118.365448;1139316058000;2
+43.59772,-116.235705;1139261931000;3
+14.559243,120.982732;1139256458000;2
+
+--------------------------- 
+Variant 2: texts.txt
 --------------------------- 
 Each line corresponds to a document. First, the context group IDs (for each context one) are given, separated by commas. The context group in context 0 is given first, then the context group in context 1 and so on. Then follows a space and the words of the documents separated by spaces. 
-Example file:
+#Example file:#
 254,531,790,157,0  exist distribut origin softwar distributor agre gpl
 254,528,789,157,0  gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
 254,901,700,157,0  dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
 254,838,691,157,0  gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
 
 --------------------------- 
-groups.txt
+Variant 2: groups.txt
 --------------------------- 
 Each line gives the parent context clusters of a context group. Data are separated by spaces. The first column gives the context id, the second column gives the group ID of the context group, and then the IDs of the context clusters from which the documents of that context group draw their topics are given.
-Example file:
+#Example file:#
 0 0 0 1
 0 1 0 1 2
 0 2 1 2 3
@@ -89,9 +108,35 @@ words.txt
 This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
 
 ***************************
+Output files
+***************************
+Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
+After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+
+***************************
 Mandatory parameter
 ***************************
 -directory 		String. Gives the directory of the texts.txt and groups.txt file.
+
+***************************
+Mandatory Parameters when Using corpus.txt and meta.txt (Input Variant 1)
+***************************
+-meta_params		String. Specifies the metadata types and gives the desired clustering. Types of metadata are given separated by semicolons (and correspond to the number of different metadata in the meta.txt file. Possible datatypes are:
+			G	Geographical coordinates. The number of desired clusters is specified in brackets, i.e. G(1000) will cluster the documents into 1000 clusters based on the geographical coordinates. (Technical detail: we use EM to fit a mixture of fisher distributions.)
+			T	UNIX timestamps (in seconds). The number of clusters (based on binning) is given in brackets, and there can be multiple clusterings based on a binning on the timeline or temporal cycles. This is indicated by a letter followed by the number of desired clusters:
+				L	Binning based on the timeline. Example: L1000 gives 1000 bins.
+				Y	Binning based on the yearly cycle. Example: L1000 gives 1000 bins.
+				M	Binning based on the monthly cycle. Example: L1000 gives 1000 bins.
+				W	Binning based on the weekly cycle. Example: L1000 gives 1000 bins.
+				D	Binning based on the daily  cycle. Example: L1000 gives 1000 bins.
+			O	Ordinal values (numbers)
+			N	Nominal values (text strings)
+			
+
+			Example usage: 
+			-meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
+			
+			This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
 
 ***************************
 Optional parameters:
@@ -122,7 +167,82 @@ Optional parameters:
 -rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
 -rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
 -rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
--processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces.
+-processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
 -stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
 -stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
 -language		String. Currently "en" and "de" are available languages for stemming.
+-store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
+-topk			Integer. Set the number of top words returned in the topktopics file of the output.
+
+
+
+###########################
+Latent Dirichlet Allocation (LDA)
+###########################
+Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
+
+
+***************************
+Example command line usage
+***************************
+java -Xmx11000M -jar promoss.jar -directory /home/c/work/topicmodels/ml7/ -method "LDA" -MIN_DICT_WORDS 1000 -T 5
+
+
+***************************
+Input files
+***************************
+The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
+
+--------------------------- 
+corpus.txt
+--------------------------- 
+Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
+#Example file:#
+exist distribut origin softwar distributor agre gpl
+gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
+dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
+gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+
+--------------------------- 
+words.txt
+--------------------------- 
+This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
+
+***************************
+Output files
+***************************
+Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
+After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+
+***************************
+Mandatory parameter
+***************************
+-directory 		String. Gives the directory of the texts.txt and groups.txt file.
+
+
+***************************
+Optional parameters:
+***************************
+-T			Integer. Number of truncated topics
+-RUNS			Integer. Number of iterations the sampler will run. Default: 200
+-SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+-TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+-BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
+-BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+-INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
+-MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
+-save_prefix		String. If given, this String is appended to all output files.
+-alpha			Double. Initial value of alpha_0. Default: 1
+-rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
+-rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
+-rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
+-rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
+-rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
+-rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
+-processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
+-stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
+-stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
+-language		String. Currently "en" and "de" are available languages for stemming.
+-store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
+-topk			Integer. Set the number of top words returned in the topktopics file of the output.
+
