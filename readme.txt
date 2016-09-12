@@ -23,10 +23,21 @@ Promoss is distributed in the hope that it will be useful, but WITHOUT ANY WARRA
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 ###########################
-Building the jar file
+First steps
 ###########################
+
+***************************
+Building the jar file
+***************************
 You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
-ant build-jar
+ant || ant build-jar
+
+(The ant build might yield errors for packages under development which can be ignored.)
+
+***************************
+Demo files
+***************************
+If you would like to have demo files to play around with, just 
 
 ###########################
 Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
@@ -37,7 +48,7 @@ An efficient topic model which uses arbitrary document metadata!
 ***************************
 Example command line usage
 ***************************
-java -Xmx11000M -jar promoss.jar -directory /home/c/work/topicmodels/ml7/ -meta_params "T(L1000,W1000,D10,Y100,M20);N" -MIN_DICT_WORDS 1000
+java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -meta_params "T(L1000,W1000,D10,Y100,M20);N" -MIN_DICT_WORDS 1000
 
 
 This will sample topics from a demo dataset of 1000 messages of the linux kernel mailing list. Messages are already stemmed and stopwords were removed. There are 1000 clusters for the first four contexts (which are the timeline and the yearly, weekly and daily cycle). Many clusters are empty, because the original dataset contained >3m documents. This is just for testing if the algorithm runs, a demo dataset  with nicer results is in preparation.
@@ -67,10 +78,10 @@ Variant 1: meta.txt
 --------------------------- 
 Here we give the metadata values separated by semicolons. Possible metadata are geographical coordinates (latitude and longitude separated by comma), UNIX timestamps (in seconds), nominal values (e.g. category names, numbers) or oordinal variables (stored numbers which correspond to the ordering). The metadata types have to be specified via the -meta_params parameter (see below for a description).
 #Example file:#
-33.150051,-114.365448;1139316299000;1
-34.150051,-118.365448;1139316058000;2
-43.59772,-116.235705;1139261931000;3
-14.559243,120.982732;1139256458000;2
+33.150051,-114.365448;1139316299;1
+34.150051,-118.365448;1139316058;2
+43.59772,-116.235705;1139261931;3
+14.559243,120.982732;1139256458;2
 
 --------------------------- 
 Variant 2: texts.txt
@@ -185,7 +196,7 @@ Collapsed stochastic variational inference for LDA with an asymmetric document-t
 ***************************
 Example command line usage
 ***************************
-java -Xmx11000M -jar promoss.jar -directory /home/c/work/topicmodels/ml7/ -method "LDA" -MIN_DICT_WORDS 1000 -T 5
+java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DICT_WORDS 1000 -T 5
 
 
 ***************************
