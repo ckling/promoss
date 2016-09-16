@@ -23,27 +23,27 @@ public class Save {
 	 * @param var
 	 * @param filename
 	 */
-	public void saveVar (Set<Entry<Integer, Integer>>[] var, String filename) {
+	public void saveVar (Set<Entry<Integer, Short>>[] var, String filename) {
 
 		checkFile(filename);
 
 		for (int i=0;i<var.length;i++)  {
 
 			saveVar(var[i],filename);
-			text.write(filename, "\n", true);
 
 		}
 
 	}
 	
-	public void saveVar (Set<Entry<Integer, Integer>> var, String filename) {
+	
+	public void saveVar (Set<Entry<Integer, Short>> var, String filename) {
 
 		checkFile(filename);
 
 		if (var==null || var.isEmpty()) return;
 		
 		int sum = 0;
-		for (Entry<Integer,Integer> e : var) {	
+		for (Entry<Integer,Short> e : var) {	
 			sum += e.getValue();
 		}
 		//first sign is the sum over the words of the document
@@ -51,7 +51,7 @@ public class Save {
 
 		
 		int i=0;
-		for (Entry<Integer,Integer> e : var) {	
+		for (Entry<Integer,Short> e : var) {	
 
 			i++;
 			String key_val = e.getKey() + ":" + e.getValue();
@@ -61,10 +61,12 @@ public class Save {
 			}
 
 		}
+		text.write(filename, "\n", true);
+
 
 	}
 
-	public void saveVar (int[][] var, String filename) {
+	public void saveVar (Object[][] var, String filename) {
 
 		checkFile(filename);
 
@@ -77,7 +79,7 @@ public class Save {
 
 	}
 
-	public void saveVar (int[] var, String filename) {
+	public void saveVar (Object[] var, String filename) {
 
 		checkFile(filename);
 
@@ -92,11 +94,11 @@ public class Save {
 
 	}
 
-	public void saveVar (int var, String filename) {
+	public void saveVar (Object var, String filename) {
 
 		checkFile(filename);
 
-		text.write(filename, ""+var, true);
+		text.write(filename, String.valueOf(var), true);
 
 
 	}

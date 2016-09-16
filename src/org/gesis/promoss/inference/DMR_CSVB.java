@@ -67,8 +67,10 @@ public class DMR_CSVB {
 	//Burn in phase: how long to wait till updating nkt?
 	public int BURNIN = 0;
 	//Burn in phase for documents: How long till we update the
-	//topic distributions of context-clusters?
-	public int BURNIN_DOCUMENTS = 0;
+	//parameters of the regression. As in Mallet: 20
+	public int BURNIN_DOCUMENTS = 20;
+	//How often to train the DMR?
+	public int optimizeInterval = 20;
 	//should the topics be randomly initialised?
 	public double INIT_RAND = 1;
 
@@ -205,12 +207,11 @@ public class DMR_CSVB {
 
 			updateHyperParameters();
 			
-			
-			
+			if (rhot > BURNIN_DOCUMENTS &&  rhot % optimizeInterval == 0) {
 			//Here we train the Dirichlet-Multinomial Regression using original Mallet code
 			if (dmr == null) {
 				dmr = new DMR(c.meta, nmk);
-				optimizer = new LimitedMemoryBFGS(dmr);
+				optimizer = new LimitedMemoryBFGS(dmr);				
 			}
 			else {
 				//update observations
@@ -242,15 +243,18 @@ public class DMR_CSVB {
 					System.out.println ("K: " + k + " F: "+f + "  " + params[k*F+f]);
 				}
 			}
-			
-			Save save = new Save();
-			save.saveVar(perplexity(), "/home/c/dmr"+save_prefix+"perplexity");
-			
+			}
+		
 
 			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
 				//store inferred variables
 				System.out.println("Storing variables...");
 				save();
+			}
+			
+			if (rhot > BURNIN_DOCUMENTS){
+			Save save = new Save();
+			save.saveVar(perplexity()+"\n", "/home/c/dmr"+save_prefix+"perplexity");
 			}
 
 		}
@@ -275,7 +279,6 @@ public class DMR_CSVB {
 			rhokappa_document = rhokappa;
 				
 		c.readFfromTextfile();
-		System.out.println("Reading groups...");
 
 		c.V = c.dict.length();
 
@@ -297,8 +300,6 @@ public class DMR_CSVB {
 
 		rhot_words_doc=new int[c.M];
 	
-		c.N = new int[c.M];
-
 		nmk = new double[c.M][T];
 
 		for (int t=0; t < c.V; t++) {
@@ -310,8 +311,6 @@ public class DMR_CSVB {
 			}
 		}
 		
-		System.out.println("Initialising count variables...");
-
 	}
 
 
@@ -319,37 +318,32 @@ public class DMR_CSVB {
 
 	public void inferenceDoc(int m) {
 
-		//if (c.N[m]==0) return;
-
-		Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
-		//if (wordset == null || wordset.isEmpty()) return;
-
 		//increase counter of documents seen
 		rhot++;
-
-		int[] grouplength = new int[c.F];
-		double[] meta = c.meta[m];
 
 		//Expectation(number of tables)
 		double[] sumqmk = new double[T];
 
-		double rhostkt_documentNm = rhostkt_document * c.N[m];
+		double rhostkt_documentNm = rhostkt_document * c.getN(m);
 		
 		double[] alpha_m = null;
-		if (rhot_step > 1) {
+		if (rhot_step > BURNIN_DOCUMENTS) {
 			alpha_m = dmr.predict(m);
 		}
 		else {
 			alpha_m = alpha;
 		}
 
+		int[] termIDs = c.getTermIDs(m);
+		short[] termFreqs = c.getTermFreqs(m);
+		
 		//Process words of the document
-		for (Entry<Integer,Integer> e : wordset) {
+		for (int i=0;i<termIDs.length;i++) {
 
 			//term index
-			int t = e.getKey();
+			int t = termIDs[i];
 			//How often doas t appear in the document?
-			int termfreq = e.getValue();
+			int termfreq = termFreqs[i];
 
 			//update number of words seen
 			rhot_words_doc[m]+=termfreq;
@@ -374,7 +368,7 @@ public class DMR_CSVB {
 						/ (nk[k] + beta_V);
 
 				qsum+=q[k];
-
+				
 			}
 
 
@@ -386,7 +380,7 @@ public class DMR_CSVB {
 				if ((Double.isInfinite(q[k]) || q[k]>1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
 					System.out.println("Error calculating gamma " +
 							" second part: " + (nkt[k][t] + beta) / (nk[k] + beta_V) + 
-							" m " + m+ " " + c.N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
+							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
 							" sumqmk " + sumqmk[k] + 
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
@@ -410,7 +404,7 @@ public class DMR_CSVB {
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
 				//in case the document contains only this word, we do not use nmk
-				if (c.N[m] != termfreq) {
+				if (c.getN(m) != termfreq) {
 
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
@@ -418,8 +412,10 @@ public class DMR_CSVB {
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.N[m] * q[k];
+						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k];
 					}
+					
+					//if (m==0) System.out.println(nmk[m][k] );
 
 				}
 
@@ -629,45 +625,45 @@ public class DMR_CSVB {
 		int testsize = (int) Math.floor(TRAINING_SHARE * c.M);
 		if (testsize == 0) return 0;
 
-		double[][][] z = new double[testsize][][];
-
 		int totalLength = 0;
 		double likelihood = 0;
 
 		for (int m = testsize; m < c.M; m++) {
-			int doclength = c.wordsets[m].size();
-			totalLength+=doclength;
-			z[m-testsize] = new double[doclength][T];
+			totalLength+=c.getN(m);
 		}
 
 		int runmax = 20;
 
+
+
+		
 		for (int m = testsize; m < c.M; m++) {
+			
+
+			int[] termIDs = c.getTermIDs(m);
+			short[] termFreqs = c.getTermFreqs(m);
+						
+			int doclength = termIDs.length;
+			double[][] z = new double[doclength][T];
+			
 			double[] alpha_m = dmr.predict(m);
 
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
-
-				//document index in test set, for z
-				int mt = m-testsize;
-
-				Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
-
-				double[] meta = c.meta[m];
 								
 				//word index
 				int n = 0;
 				//Process words of the document
-				for (Entry<Integer,Integer> e : wordset) {
-
+				for (int i=0;i<termIDs.length;i++) {
+					
 					//term index
-					int t = e.getKey();
+					int t = termIDs[i];
 					//How often doas t appear in the document?
-					int termfreq = e.getValue();
+					int termfreq = termFreqs[i];
 
 					//remove old counts 
 					for (int k=0;k<T;k++) {
-						nmk[m][k] -= termfreq * z[mt][n][k];
+						nmk[m][k] -= termfreq * z[n][k];
 					}
 
 					//topic probabilities - q(z)
@@ -694,7 +690,7 @@ public class DMR_CSVB {
 					for (int k=0;k<T;k++) {
 						//normalise
 						q[k]/=qsum;
-						z[mt][n][k]=q[k];
+						z[n][k]=q[k];
 						nmk[m][k]+=termfreq*q[k];
 					}
 
@@ -702,38 +698,21 @@ public class DMR_CSVB {
 				}
 			}
 
-		}
-
-		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
-		for (int m = testsize; m < c.M; m++) {
-
-			//document index in test set, for z
-			int mt = m-testsize;
-
-			Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
-
 			int n=0;
-			for (Entry<Integer,Integer> e : wordset) {
-
-				int termfreq = e.getValue();
+			//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
+			
+			for (int i=0;i<termIDs.length;i++) {
+				
 				//term index
-				int t = e.getKey();
+				int t = termIDs[i];
+				//How often does t appear in the document?
+				int termfreq = termFreqs[i];
 
 				double lik = 0;
-
-				//singe assignment
-				double[] zsum = new double[T];
-				zsum[0] = z[mt][n][0];
-				for (int k=1;k<T;k++) {
-					zsum[k]=zsum[k-1]+ z[mt][n][k];
+				
+				for (int k=0;k<T;k++) {
+					lik +=   z[n][k] * (nkt[k][t] + beta) / (nk[k] + beta_V);				
 				}
-				double u = Math.random();
-				int s;
-				for (s = 0; s<T;s++) {
-					if (u<zsum[s]) break;
-				}
-
-				lik +=   (nkt[s][t] + beta) / (nk[s] + beta_V);
 				//				for (int k=0;k<T;k++) {
 				//					lik +=  z[mt][n][k] * (nkt[k][t] + beta) / (nk[k] + betaV);
 				//				}
@@ -745,6 +724,7 @@ public class DMR_CSVB {
 			}
 
 			for (int k=0;k<T;k++) nmk[m][k] = 0;
+
 		}
 
 		//get perplexity

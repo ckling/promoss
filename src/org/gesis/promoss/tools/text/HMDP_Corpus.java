@@ -209,8 +209,8 @@ public class HMDP_Corpus extends Corpus {
 		if (wordsets!=null && groups != null) {
 
 			for (int m=0;m<M;m++) {
-				Set<Entry<Integer, Integer>> wordset = wordsets[m];
-				for (Entry<Integer,Integer> e : wordset) {
+				Set<Entry<Integer, Short>> wordset = wordsets[m];
+				for (Entry<Integer,Short> e : wordset) {
 					N[m]+=e.getValue();
 				}		
 			}	
@@ -236,7 +236,7 @@ public class HMDP_Corpus extends Corpus {
 		int line_number = 0;
 		while ((line = documentText.readLine(documentfile))!=null) {
 			line_number++;
-			HashMap<Integer,Integer> distinctWords = new HashMap<Integer, Integer>();
+			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
 			String[] docSplit = line.split(" ",2);
 			String[] groupString = docSplit[0].split(",");
@@ -257,10 +257,10 @@ public class HMDP_Corpus extends Corpus {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
 									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									distinctWords.put(wordID, (short) (count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short) 1);
 								}
 							}
 
@@ -276,15 +276,15 @@ public class HMDP_Corpus extends Corpus {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
 									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									distinctWords.put(wordID, (short) (count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short) 1);
 								}
 							}
 						}
 					}
-					Set<Entry<Integer, Integer>> wordset = distinctWords.entrySet();
+					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
@@ -306,8 +306,8 @@ public class HMDP_Corpus extends Corpus {
 		System.out.println("");
 
 		for (m=0;m<M;m++) {
-			Set<Entry<Integer, Integer>> wordset = wordsets[m];
-			for (Entry<Integer,Integer> e : wordset) {
+			Set<Entry<Integer, Short>> wordset = wordsets[m];
+			for (Entry<Integer,Short> e : wordset) {
 				N[m]+=e.getValue();
 			}
 		}

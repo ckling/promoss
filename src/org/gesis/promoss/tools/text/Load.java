@@ -6,46 +6,49 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.gesis.promoss.tools.math.BasicMath;
+
 public class Load {
 	
-	private static Text text;
+	private Text text;
 	//here we store the name of the currently open file
 	//we have to open a new text object when we see
 	//a new filename.
-	private static String currentFile;
+	private String currentFile;
 	
-	
+	public Load() {
+	}
 
 	/**
 	 * Read document from SVMlight format
 	 * @param filename
 	 * @return
 	 */
-	public Set<Entry<Integer, Integer>>[] readVarSet (String filename) {
+	public Set<Entry<Integer, Short>>[] readVarSet (String filename) {
 		if (! new File(filename).exists()) return null;
 
 		checkFile(filename);
 		String line;
 
 		int N=0;
-		while((line = text.readLine(filename))!=null) {
+		while(text.readLine(filename)!=null) {
 			N++;
 		}
 		@SuppressWarnings("unchecked")
-		Set<Entry<Integer, Integer>>[] var = new Set[N];
+		Set<Entry<Integer, Short>>[] var = new Set[N];
 		checkFile(filename);
 		int n=0;
 		while((line = text.readLine(filename))!=null) {
-			HashMap<Integer,Integer> distinctWords = new HashMap<Integer, Integer>();
+			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 			if(!line.equals("")) {
 				String[] lineSplit = line.split(" ");
-				//first we have the total number of words, which we ignoe
+				//first we have the total number of words, which we ignore
 				for (int i=1;i<lineSplit.length;i++) {
 					String word = lineSplit[i];
 					String[] key_val = word.split(":");
 					String key = key_val[0];
 					String val = key_val[1];
-					distinctWords.put(Integer.valueOf(key),Integer.valueOf(val));
+					distinctWords.put(Integer.valueOf(key),Short.valueOf(val));
 				}
 			}
 			var[n]=distinctWords.entrySet();
@@ -53,6 +56,61 @@ public class Load {
 		}
 		return var;
 
+	}
+	
+	/**
+	 * @param filename
+	 * @return Number of words per document
+	 */
+	public boolean readSVMlight (String filename, Corpus c) {
+		if (!checkFile(filename)) {
+			return false;
+		}
+		int M=0;
+		while(text.readLine(filename)!=null) {
+			M++;
+		}
+		c.M = M;
+		int[] N = new int[M];
+		int[][] termIDs = new int[M][];
+		short[][] termFreqs = new short[M][];
+		
+		checkFile(filename);		
+		String line = null;
+		
+		//document index counter
+		int m = 0;
+		
+		while((line = text.readLine(filename))!=null) {
+			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
+			if(!line.equals("")) {
+				String[] lineSplit = line.split(" ");
+				
+				//number of terms is the number of splits -1
+				int terms = lineSplit.length -1;
+				
+				termIDs[m] = new int[terms];
+				termFreqs[m] = new short[terms];
+				
+				//first we have the total number of words, which we ignore
+				for (int i=1;i<lineSplit.length;i++) {
+					String word = lineSplit[i];
+					String[] key_val = word.split(":");
+					String key = key_val[0];
+					String val = key_val[1];
+					N[m]+=Integer.valueOf(val);
+					termIDs[m][i-1] = Integer.valueOf(key);
+					termFreqs[m][i-1] = Short.valueOf(val);
+				}
+			}
+			m++;
+		}
+		c.setN(N);
+		c.setTermIDs(termIDs);
+		c.setTermFreqs(termFreqs);
+		c.C = BasicMath.sum(N);
+		
+		return true;
 	}
 
 

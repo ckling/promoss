@@ -31,21 +31,18 @@ public class DMR_Corpus extends Corpus {
 
 		//Try to read parsed documents
 		Load load = new Load();
-		wordsets = load.readVarSet(directory+"wordsets");
+
 		meta = load.readFileDouble2(directory+"meta");
-		if (wordsets!=null && meta != null) {
-
-			for (int m=0;m<M;m++) {
-				Set<Entry<Integer, Integer>> wordset = wordsets[m];
-				for (Entry<Integer,Integer> e : wordset) {
-					N[m]+=e.getValue();
-				}		
-			}	
-
-			return ;
+		//Try to read parsed documents
+		if (load.readSVMlight(directory+"wordsets", this) && meta != null) {			
+			return;
 		}
+		
+		termIDs = new int[M][];
+		termFreqs = new short[M][];
+		
+		Save saveSVMlight = new Save();
 
-		wordsets = new Set[M];
 		meta = new double[M+empty_documents.size()][F];
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
@@ -66,7 +63,7 @@ public class DMR_Corpus extends Corpus {
 		int line_number = 0;
 		while ((line = documentText.readLine(documentfile))!=null && (metaline = metaText.readLine(metafile))!=null) {
 			line_number++;
-			HashMap<Integer,Integer> distinctWords = new HashMap<Integer, Integer>();
+			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
 			String[] docSplit = line.split(" ");
 			String[] metaString = metaline.split(",");
@@ -86,10 +83,10 @@ public class DMR_Corpus extends Corpus {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
 									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									distinctWords.put(wordID, (short) (count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short) 1);
 								}
 							}
 
@@ -105,20 +102,38 @@ public class DMR_Corpus extends Corpus {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
 									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									distinctWords.put(wordID, (short) (count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short) 1);
 								}
 							}
 						}
 					}
-					Set<Entry<Integer, Integer>> wordset = distinctWords.entrySet();
+					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
 
-					wordsets[m]=wordset;
+					saveSVMlight.saveVar(wordset, directory+"wordsets");
+					
+					int[] docTermIDs = new int[wordset.size()];
+					short[] docTermFreqs = new short[wordset.size()];
+					
+					int i=0;
+					for (Entry<Integer,Short> e : wordset) {
+						int key = e.getValue();
+						short value = e.getValue();
+						docTermIDs[i] = key;
+						docTermFreqs[i] = value;
+						N[m]+=value;
+						i++;
+					}
+					
+					termIDs[m]=docTermIDs;
+					termFreqs[m]=docTermFreqs;
+
+					
 					meta[m]=meta_value;
 					m++;
 				}
@@ -134,15 +149,8 @@ public class DMR_Corpus extends Corpus {
 
 		System.out.println("");
 
-		for (m=0;m<M;m++) {
-			Set<Entry<Integer, Integer>> wordset = wordsets[m];
-			for (Entry<Integer,Integer> e : wordset) {
-				N[m]+=e.getValue();
-			}
-		}
 
 		Save save = new Save();
-		save.saveVar(wordsets, directory+"wordsets");
 		save.saveVar(meta, directory+"meta");
 
 		return;

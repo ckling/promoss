@@ -749,6 +749,59 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
+	
+
+
+	public static double[] estimateAlphaLik(float[][] nmk, double[] alpha) {
+		int iter = 200;
+		double summ;
+		int M = nmk.length;
+		int K = nmk[0].length;
+		double[] alpha0 = new double[K];
+		double prec = 1e-5;
+
+		double[] nm = new double[M];
+
+		// alpha = ( a - 1 + alpha * [sum_m sum_k digamma(alpha + mnk) -
+		// digamma(alpha)] ) /
+		// ( b + K * [sum_m digamma(K * alpha + nm) - digamma(K * alpha)] )
+
+		for (int i = 0; i < iter; i++) {
+			summ = 0;
+			double[] summk= new double[K];
+			int count = 0;
+			for (int m = 0; m < M; m++) {
+				//ignore empty observations
+				if (BasicMath.sum(nmk[m]) > 0 ) {
+					count ++;
+					if (iter==0) {
+						nm[m] = BasicMath.sum(nmk[m]);
+					}
+					summ += digamma(BasicMath.sum(alpha) + BasicMath.sum(nmk[m]));
+					for (int k = 0; k < K; k++) {
+						summk[k] += digamma(alpha[k] + nmk[m][k]);
+					}
+				}
+			}
+			if (count == 0) break;
+			summ -= count * digamma(BasicMath.sum(alpha));
+			for (int k = 0; k < K; k++) {
+				summk[k] -= count * digamma(alpha[k]);
+				alpha[k] = (alpha[k] * summk[k]) / (summ);
+			}
+			// System.out.println(alpha);
+			// System.out.println(Math.abs(alpha - alpha0));
+			double diffsum = 0;
+			for (int k = 0; k < K; k++) {
+				diffsum += alpha[k] - alpha0[k];
+			}
+			if (diffsum < prec) {
+				return alpha;
+			}
+			alpha0 = alpha;
+		}
+		return alpha;
+	}
 
 	/**
 	 * fixpoint iteration on alpha using counts as input and estimating by Polya
@@ -851,6 +904,59 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
+	
+
+	/**
+	 * fixpoint iteration for calculating alpha for several Dirichlet-multinomial distributions 
+	 * with changing K (maximum given by maxK)
+	 * 
+	 * @param nmk number of observations
+	 * @param alpha old estimate for alpha
+	 * @param iter number of iterations for estimation.
+	 * @return
+	 */
+	public static double estimateAlphaLikChanging(float[][] nmk,
+			double alpha, int iter) {
+		double summk,summ;
+		int M = nmk.length;
+
+		double alpha0 = 0;
+		double prec = 1e-5;
+
+		for (int i = 0; i < iter; i++) {
+
+			summk = 0;
+			summ = 0;
+			for (int m = 0; m < M; m++) {
+
+				double nm = BasicMath.sum(nmk[m]);
+				int K = nmk[m].length;
+				//we should only use this sampler if n >= 1 for all n. Otherwise, the estimates are wrong.
+				//if (nm >= 1) {
+				//only makes sense if we have at least two dimensions.
+				if (K>1) {
+					for (int k = 0; k < K; k++) {
+						summk += digamma(alpha + nmk[m][k]);
+					}
+					summk -= K * digamma(alpha);
+
+					summ += K * ( (digamma(nm + (K * alpha)) - digamma(K * alpha)) );
+				}
+				//}
+			}
+			if (summ > 0) {
+				alpha = alpha * (summk/summ);
+			}
+
+			// System.out.println(alpha);
+			// System.out.println(Math.abs(alpha - alpha0));
+			if (Math.abs(alpha - alpha0) < prec) {
+				return alpha;
+			}
+			alpha0 = alpha;
+		}
+		return alpha;
+	}
 
 	/**
 	 * fixpoint iteration for calculating alpha for several Dirichlet-multinomial distributions 
@@ -869,6 +975,27 @@ public class DirichletEstimation {
 			length+=nmk[f].length;
 		}
 		double[][] nmknew = new double[length][];
+
+		int count = 0;
+		for (int f=0;f<nmk.length;f++) 
+		{
+			int length2 = nmk[f].length;
+			for (int i=0;i<length2;i++) {
+				nmknew[count++] = nmk[f][i]; 
+			}
+		}
+
+		return estimateAlphaLikChanging(nmknew, alpha, iter);
+	}
+	
+	public static double estimateAlphaLikChanging(float[][][] nmk,
+			double alpha, int iter) {
+
+		int length=0;
+		for (int f=0;f<nmk.length;f++) {
+			length+=nmk[f].length;
+		}
+		float[][] nmknew = new float[length][];
 
 		int count = 0;
 		for (int f=0;f<nmk.length;f++) 

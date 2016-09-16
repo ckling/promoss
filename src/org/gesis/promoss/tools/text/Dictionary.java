@@ -63,9 +63,10 @@ public class Dictionary {
 		return id2word.get(id);
 	}
 	
-	public Integer getID (String word){
+	public int getID (String word){
 		return word2id.get(word);
 	}
+	
 	
 	//----------------------------------------------------
 	// checking methods

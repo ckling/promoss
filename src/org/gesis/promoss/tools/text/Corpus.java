@@ -30,8 +30,12 @@ public class Corpus {
 	public double TRAINING_SHARE = 1.0;
 	
 	//document-words (M x doclength)
-	public Set<Entry<Integer, Integer>>[] wordsets;
-		
+	//public Set<Entry<Integer, Short>>[] wordsets;
+	
+	//Terms and their frequencies of documents
+	protected int[][] termIDs;
+	protected short[][] termFreqs;
+	
 	//In case that there is no numeric corpus file
 	//What language shall we use for processing?
 	public String language = "en";	
@@ -48,37 +52,57 @@ public class Corpus {
 	public int M = 0; //Number of Documents
 	public int C = 0; //Number of words in the corpus
 	public int V = 0; //Number of distinct words in the corpus, read from dictfile
-	public int[] N; //Number of Words per document
+	protected int[] N; //Number of Words per document
 
+	/**
+	 * @param m Document ID
+	 * @return Array of distinct term IDs of a document
+	 */
+	public int[] getTermIDs(int m) {
+		return termIDs[m];
+	}
 	
+	public int[][] getTermIDs() {
+		return termIDs;
+	}
+
+	public void setTermIDs(int[][] termIDs) {
+		this.termIDs = termIDs;
+	}
 	
+	/**
+	 * @param m Document ID
+	 * @return Array of frequencies (for the term IDs of a document)
+	 */
+	public short[] getTermFreqs(int m) {
+		return termFreqs[m];
+	}
+	
+	public short[][] getTermFreqs() {
+		return termFreqs;
+	}
+
+	public void setTermFreqs(short[][] termFreqs) {
+		this.termFreqs = termFreqs;
+	}
+	
+	public int getN(int m) {
+		return N[m];
+	}
+	public void setN(int[] N) {
+		this.N = N;
+	}
 	
 	public void readCorpusSize() {
 		
-		//Try to read parsed documents
 		Load load = new Load();
-		wordsets = load.readVarSet(directory+"wordsets");
-		
-		if (wordsets!=null) {
-			M = wordsets.length;
-			N = new int[M];
-			
-			for (int m=0;m<M;m++) {
-				Set<Entry<Integer, Integer>> wordset = wordsets[m];
-				if (wordset.isEmpty()) {
-					empty_documents.add(m);
-				}
-				for (Entry<Integer,Integer> e : wordset) {
-					N[m]+=e.getValue();
-				}		
-				C += N[m];
-			}	
-			
-			
+
+		//Try to read parsed documents
+		if (load.readSVMlight(directory+"wordsets", this)) {			
 			return;
 		}
 		
-		// Read dictionary from file
+		// Else read dictionary from file
 		// The file contains words, one in each row
 
 		int line_number=0;
@@ -136,14 +160,11 @@ public class Corpus {
 		String line;
 		if (!new File(dictfile).exists()) {
 
-
-
 			if (!processed && documentText == null) {
 				documentText = new Text();
 				documentText.setLang(language);
 				documentText.setStopwords(stopwords);
 				documentText.setStem(stemming);
-
 			}
 
 			//create the dict from all the words in the document
@@ -217,12 +238,12 @@ public class Corpus {
 	@SuppressWarnings("unchecked")
 	public void readDocs() {
 		
-		if (wordsets!=null) {
-
+		if (termIDs!=null && termFreqs!=null) {
 			return ;
 		}
 
-		wordsets = new Set[M];
+		termIDs = new int[M][];
+		termFreqs = new short[M][];
 		
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
@@ -238,9 +259,11 @@ public class Corpus {
 		String line = ""; 
 		int m=0;
 		int line_number = 0;
+		Save saveSVMlight = new Save();
+		
 		while ((line = documentText.readLine(documentfile))!=null) {
 			line_number++;
-			HashMap<Integer,Integer> distinctWords = new HashMap<Integer, Integer>();
+			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
 			String[] docSplit = line.split(" ");
 
@@ -253,11 +276,11 @@ public class Corpus {
 							if (dict.contains(word)) {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
-									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									short count = distinctWords.get(wordID);
+									distinctWords.put(wordID, (short)(count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short)1);
 								}
 							}
 
@@ -273,20 +296,33 @@ public class Corpus {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
 									int count = distinctWords.get(wordID);
-									distinctWords.put(wordID, count+1);
+									distinctWords.put(wordID, (short) (count+1));
 								}
 								else {
-									distinctWords.put(wordID, 1);
+									distinctWords.put(wordID, (short) 1);
 								}
 							}
 						}
 					}
-					Set<Entry<Integer, Integer>> wordset = distinctWords.entrySet();
+					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
 
-					wordsets[m]=wordset;
+					saveSVMlight.saveVar(wordset, directory+"wordsets");
+					
+					int[] docTermIDs = new int[wordset.size()];
+					short[] docTermFreqs = new short[wordset.size()];
+					
+					int i=0;
+					for (Entry<Integer,Short> e : wordset) {
+						int key = e.getValue();
+						short value = e.getValue();
+						docTermIDs[i] = key;
+						docTermFreqs[i] = value;
+						N[m]+=value;
+						i++;
+					}
 					
 					m++;
 				}
@@ -300,16 +336,6 @@ public class Corpus {
 		}
 
 		System.out.println("");
-
-		for (m=0;m<M;m++) {
-			Set<Entry<Integer, Integer>> wordset = wordsets[m];
-			for (Entry<Integer,Integer> e : wordset) {
-				N[m]+=e.getValue();
-			}
-		}
-
-		Save save = new Save();
-		save.saveVar(wordsets, directory+"wordsets");
 
 		return;
 

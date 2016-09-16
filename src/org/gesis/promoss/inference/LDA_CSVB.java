@@ -28,8 +28,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
@@ -88,14 +86,13 @@ public class LDA_CSVB {
 	public Boolean store_empty = true;
 
 	//Estimated number of times term t appeared in topic k
-	public double[][] nkt;
+	public float[][] nkt;
 	//Estimated number of times term t appeared in topic k in the batch
-	private double[][] tempnkt;
+	private float[][] tempnkt;
 	//Estimated number of words in topic k
-	public double[] nk;
-
+	public float[] nk;
 	//Topic "counts" per document
-	public double[][] nmk;
+	public float[][] nmk;
 
 	public int rhos = 1;
 	public double rhokappa = 0.5;
@@ -109,8 +106,7 @@ public class LDA_CSVB {
 	public int rhot = 0;
 	//tells the number of the current run)
 	public int rhot_step = 0;
-	//tells the number of words seen in this document
-	private int[] rhot_words_doc;
+
 
 	//count number of words seen in the batch
 	//remember that rhot counts the number of documents, not words
@@ -127,8 +123,7 @@ public class LDA_CSVB {
 
 	//counts, how many documents we observed in the batch to estimate alpha
 	public int alpha_batch_counter = 0;
-
-
+	
 	LDA_CSVB() {
 		c = new Corpus();
 	}
@@ -156,7 +151,7 @@ public class LDA_CSVB {
 	public void run () {
 		for (int i=0;i<RUNS;i++) {
 
-			System.out.println(c.directory + " run " + i + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
+			System.out.println(c.directory + " run " + i + " (avg. alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta + ")");
 
 			rhot_step++;
 			//get step size
@@ -215,23 +210,21 @@ public class LDA_CSVB {
 
 		batch_words = new int[c.V];
 
-		nk = new double[T];
-		nkt = new double[T][c.V];	
-		tempnkt = new double[T][c.V];	
+		nk = new float[T];
+		nkt = new float[T][c.V];	
+		tempnkt = new float[T][c.V];	
 
 		
 		
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
-		rhot_words_doc=new int[c.M];
-	
-		nmk = new double[c.M][T];
+		nmk = new float[c.M][T];
 
 		for (int t=0; t < c.V; t++) {
 			for (int k=0;k<T;k++) {
 
-				nkt[k][t]= Math.random()*INIT_RAND;
+				nkt[k][t]= (float) (Math.random()*INIT_RAND);
 				nk[k]+=nkt[k][t];
 
 			}
@@ -246,26 +239,23 @@ public class LDA_CSVB {
 
 	public void inferenceDoc(int m) {
 
-		Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
-
 		//increase counter of documents seen
 		rhot++;
 
-		//Expectation(number of tables)
-		double[] sumqmk = new double[T];
+		double rhostkt_documentNm = rhostkt_document * c.getN(m);
 
-		double rhostkt_documentNm = rhostkt_document * c.N[m];
-
+		int[] termIDs = c.getTermIDs(m);
+		short[] termFreqs = c.getTermFreqs(m);
+		
 		//Process words of the document
-		for (Entry<Integer,Integer> e : wordset) {
+		for (int i=0;i<termIDs.length;i++) {
 
 			//term index
-			int t = e.getKey();
+			int t = termIDs[i];
 			//How often doas t appear in the document?
-			int termfreq = e.getValue();
+			int termfreq = termFreqs[i];
 
 			//update number of words seen
-			rhot_words_doc[m]+=termfreq;
 			if (rhot_step>BURNIN) {
 				//increase number of words seen in that batch
 				batch_words[t]+=termfreq;
@@ -297,8 +287,8 @@ public class LDA_CSVB {
 				if ((Double.isInfinite(q[k]) || q[k]>1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
 					System.out.println("Error calculating gamma " +
 							" second part: " + (nkt[k][t] + beta) / (nk[k] + beta_V) + 
-							" m " + m+ " " + c.N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
-							" sumqmk " + sumqmk[k] + 
+							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
+							" sumqmk " + 
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
 							" nkt " + nkt[k][t]+ 	
@@ -317,19 +307,16 @@ public class LDA_CSVB {
 					tempnkt[k][t]+=q[k]*termfreq;
 				}
 
-				//update probability of _not_ seeing k in the current document
-				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
-
 				//in case the document contains only this word, we do not use nmk
-				if (c.N[m] != termfreq) {
+				if (c.getN(m) != termfreq) {
 
 					//update document-topic counts
 					if (termfreq==1) {
-						nmk[m][k] = oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k];
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.N[m] * q[k];
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
 
 				}
@@ -339,12 +326,6 @@ public class LDA_CSVB {
 		}
 		//End of loop over document words
 
-
-		double[] topic_ge_0 = new double[T];
-		for (int k=0;k<T;k++) {
-			//Probability that we saw the given topic
-			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
-		}
 
 		//We update global topic-word counts in batches (mini-batches lead to local optima)
 		//after a burn-in phase
@@ -366,7 +347,7 @@ public class LDA_CSVB {
 
 		
 
-		nk = new double[T];
+		nk = new float[T];
 		for (int k=0;k<T;k++) {
 			for (int v=0;v<c.V;v++) {
 				double oneminusrhostkt = (1.0 - rhostkt);
@@ -441,12 +422,12 @@ public class LDA_CSVB {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic;
+			float[][] doc_topic;
 			if (store_empty) {
 
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
-				doc_topic = new double[Me][T];
+				doc_topic = new float[Me][T];
 				for (int m=0;m<Me;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -455,9 +436,9 @@ public class LDA_CSVB {
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
-						doc_topic[me]  = new double[T];
+						doc_topic[me]  = new float[T];
 						for (int k=0;k<T;k++) {
-							doc_topic[me][k] = 1.0 / T;
+							doc_topic[me][k] = (float) (1.0 / T);
 						}
 					}
 					else {				
@@ -469,7 +450,7 @@ public class LDA_CSVB {
 
 			}
 			else {
-				doc_topic = new double[c.M][T];
+				doc_topic = new float[c.M][T];
 				for (int m=0;m < c.M;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -528,41 +509,39 @@ public class LDA_CSVB {
 		int testsize = (int) Math.floor(TRAINING_SHARE * c.M);
 		if (testsize == 0) return 0;
 
-		double[][][] z = new double[testsize][][];
-
 		int totalLength = 0;
 		double likelihood = 0;
 
 		for (int m = testsize; m < c.M; m++) {
-			int doclength = c.wordsets[m].size();
-			totalLength+=doclength;
-			z[m-testsize] = new double[doclength][T];
+			totalLength+=c.getN(m);
 		}
 
 		int runmax = 20;
 
 		for (int m = testsize; m < c.M; m++) {
+			
+			int[] termIDs = c.getTermIDs(m);
+			short[] termFreqs = c.getTermFreqs(m);
+			
+			int termlength = termIDs.length;
+			double[][] z = new double[termlength][T];
+			
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
-
-				//document index in test set, for z
-				int mt = m-testsize;
-
-				Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
 
 				//word index
 				int n = 0;
 				//Process words of the document
-				for (Entry<Integer,Integer> e : wordset) {
+				for (int i=0;i<termIDs.length;i++) {
 
 					//term index
-					int t = e.getKey();
+					int t = termIDs[i];
 					//How often doas t appear in the document?
-					int termfreq = e.getValue();
-
+					int termfreq = termFreqs[i];
+							
 					//remove old counts 
 					for (int k=0;k<T;k++) {
-						nmk[m][k] -= termfreq * z[mt][n][k];
+						nmk[m][k] -= termfreq * z[n][k];
 					}
 
 					//topic probabilities - q(z)
@@ -587,58 +566,42 @@ public class LDA_CSVB {
 					for (int k=0;k<T;k++) {
 						//normalise
 						q[k]/=qsum;
-						z[mt][n][k]=q[k];
+						z[n][k]=q[k];
 						nmk[m][k]+=termfreq*q[k];
 					}
 
 					n++;
 				}
 			}
-
-		}
-
-		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
-		for (int m = testsize; m < c.M; m++) {
-
-			//document index in test set, for z
-			int mt = m-testsize;
-
-			Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
+			
 
 			int n=0;
-			for (Entry<Integer,Integer> e : wordset) {
+			for (int i=0;i<termFreqs.length;i++) {
 
-				int termfreq = e.getValue();
 				//term index
-				int t = e.getKey();
+				int t = termIDs[i];
+				int termFreq = termFreqs[i];
 
 				double lik = 0;
 
-				//singe assignment
-				double[] zsum = new double[T];
-				zsum[0] = z[mt][n][0];
-				for (int k=1;k<T;k++) {
-					zsum[k]=zsum[k-1]+ z[mt][n][k];
-				}
-				double u = Math.random();
-				int s;
-				for (s = 0; s<T;s++) {
-					if (u<zsum[s]) break;
+				for (int k=0;k<T;k++) {
+					lik +=   z[n][k] * (nkt[k][t] + beta) / (nk[k] + beta_V);				
 				}
 
-				lik +=   (nkt[s][t] + beta) / (nk[s] + beta_V);
-				//				for (int k=0;k<T;k++) {
-				//					lik +=  z[mt][n][k] * (nkt[k][t] + beta) / (nk[k] + betaV);
-				//				}
-				likelihood+=termfreq * Math.log(lik);
-
-
+				likelihood+=termFreq * Math.log(lik);
 
 				n++;
 			}
 
 			for (int k=0;k<T;k++) nmk[m][k] = 0;
+			
 		}
+		
+		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
+		
+
+			
+		
 
 		//get perplexity
 		return (Math.exp(- likelihood / Double.valueOf(totalLength)));

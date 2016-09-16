@@ -304,8 +304,8 @@ public class HMDP_PCSVB {
 
 
 		c.readFfromTextfile();
+		
 		System.out.println("Reading groups...");
-
 		c.readGroups(); //if there is an unseen Group mentioned
 
 		c.V = c.dict.length();
@@ -379,8 +379,6 @@ public class HMDP_PCSVB {
 		}
 		pi_0 = BasicMath.normalise(pi_0);
 
-		System.out.println("Initialising count variables...");
-
 		sumqfck_ge0 = new double[c.F][][];
 		//rhot_cluster = new int[c.F][];
 		//for (int f=0;f<c.F;f++) {
@@ -450,7 +448,7 @@ public class HMDP_PCSVB {
 
 		//if (c.N[m]==0) return;
 
-		Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
+		Set<Entry<Integer, Short>> wordset = c.wordsets[m];
 		//if (wordset == null || wordset.isEmpty()) return;
 
 		//increase counter of documents seen
@@ -516,7 +514,7 @@ public class HMDP_PCSVB {
 		double rhostkt_documentNm = rhostkt_document * c.N[m];
 
 		//Process words of the document
-		for (Entry<Integer,Integer> e : wordset) {
+		for (Entry<Integer, Short> e : wordset) {
 
 			//term index
 			int t = e.getKey();
@@ -1035,8 +1033,6 @@ public class HMDP_PCSVB {
 			//gamma prior Gamma(1,1), Minka
 			//beta_0 = DirichletEstimation.estimateAlphaMap(nkt,nk,beta_0,1.0,1.0);
 
-			//TODO zeta, delta: feature-choice (f), group-choice (delta)
-
 			//epsilon = DirichletEstimation.estimateAlphaLik(sumqf,epsilon);
 
 			//		for (int i=0;i<sumqfgc.length;i++) {
@@ -1288,7 +1284,7 @@ public class HMDP_PCSVB {
 
 		for (int m = testsize; m < c.M; m++) {
 			int doclength = c.wordsets[m].size();
-			totalLength+=doclength;
+			totalLength+=c.N[m];
 			z[m-testsize] = new double[doclength][T];
 		}
 
@@ -1301,7 +1297,7 @@ public class HMDP_PCSVB {
 				//document index in test set, for z
 				int mt = m-testsize;
 
-				Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
+				Set<Entry<Integer, Short>> wordset = c.wordsets[m];
 
 				int[] grouplength = new int[c.F];
 				int[] group = c.groups[m];
@@ -1335,7 +1331,7 @@ public class HMDP_PCSVB {
 				//word index
 				int n = 0;
 				//Process words of the document
-				for (Entry<Integer,Integer> e : wordset) {
+				for (Entry<Integer, Short> e : wordset) {
 
 					//term index
 					int t = e.getKey();
@@ -1385,10 +1381,10 @@ public class HMDP_PCSVB {
 			//document index in test set, for z
 			int mt = m-testsize;
 
-			Set<Entry<Integer, Integer>> wordset = c.wordsets[m];
+			Set<Entry<Integer, Short>> wordset = c.wordsets[m];
 
 			int n=0;
-			for (Entry<Integer,Integer> e : wordset) {
+			for (Entry<Integer, Short> e : wordset) {
 
 				int termfreq = e.getValue();
 				//term index
@@ -1396,19 +1392,11 @@ public class HMDP_PCSVB {
 
 				double lik = 0;
 
-				//singe assignment
-				double[] zsum = new double[T];
-				zsum[0] = z[mt][n][0];
-				for (int k=1;k<T;k++) {
-					zsum[k]=zsum[k-1]+ z[mt][n][k];
-				}
-				double u = Math.random();
-				int s;
-				for (s = 0; s<T;s++) {
-					if (u<zsum[s]) break;
+				for (int k=0;k<T;k++) {
+					lik +=   z[m][n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);	
 				}
 
-				lik +=   (nkt[s][t] + beta_0) / (nk[s] + beta_0V);
+				
 				//				for (int k=0;k<T;k++) {
 				//					lik +=  z[mt][n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);
 				//				}

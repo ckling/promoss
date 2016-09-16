@@ -24,6 +24,30 @@ public class BasicMath {
 
 	}
 	
+	public static double sum(float[][] a) {
+
+		double result = 0;
+		for (int i = 0;i < a.length; i++) {
+
+			result += sum(a[i]);
+
+		}
+		return(result);
+
+	}
+	
+	public static double sum(float[] a) {
+
+		double result = 0;
+		for (int i = 0;i < a.length; i++) {
+
+			result += a[i];
+
+		}
+		return(result);
+
+	}
+	
 	public static double sum(double[] a) {
 
 		double result = 0;
@@ -236,6 +260,14 @@ public class BasicMath {
 	}
 	
 	public static double[] normalise (double[] x) {
+		double sum = sum(x);
+		for (int i=0;i<x.length;i++) {
+			x[i]/=sum;
+		}
+		return x;
+	}
+
+	public static float[] normalise (float[] x) {
 		double sum = sum(x);
 		for (int i=0;i<x.length;i++) {
 			x[i]/=sum;

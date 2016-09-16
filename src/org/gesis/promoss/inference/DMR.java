@@ -1,11 +1,11 @@
 package org.gesis.promoss.inference;
 
 
-import org.gesis.promoss.inference.LBFGS.Function;
-import org.gesis.promoss.inference.LBFGS.Params;
-import org.gesis.promoss.inference.LBFGS.ProgressCallback;
-import org.gesis.promoss.inference.LBFGS.Result;
-import org.gesis.promoss.inference.LBFGS.Status;
+//import org.gesis.promoss.inference.LBFGS.Function;
+//import org.gesis.promoss.inference.LBFGS.Params;
+//import org.gesis.promoss.inference.LBFGS.ProgressCallback;
+//import org.gesis.promoss.inference.LBFGS.Result;
+//import org.gesis.promoss.inference.LBFGS.Status;
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 
@@ -13,6 +13,9 @@ import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.OptimizationException;
 import cc.mallet.topics.DMROptimizable;
+import cc.mallet.types.Dirichlet;
+import cc.mallet.types.FeatureVector;
+import cc.mallet.types.Instance;
 
 
 
@@ -44,6 +47,11 @@ public class DMR implements Optimizable.ByGradientValue {
 	
 	public double[] parameters;
 	
+	//TODO parameters from Mallet
+	private boolean cachedValueStale;
+	private double cachedValue;
+	private int numGetValueCalls;
+
 	
 	
 	public static void main(String[] args) {
@@ -73,10 +81,9 @@ public class DMR implements Optimizable.ByGradientValue {
 
 		
 		  DMR dmr = new DMR(X, Y);
-		  dmr.dmr_test(X, Y);
+		  //dmr.dmr_test(X, Y);
 		  
 		  //if (1==1)return;
-		  System.out.println("-----------------");
 
 			LimitedMemoryBFGS optimizer = new LimitedMemoryBFGS(dmr);
 
@@ -87,14 +94,16 @@ public class DMR implements Optimizable.ByGradientValue {
 				// step size too small
 			}
 			double[] params = new double[dmr.getNumParameters()];
+			
+			
 			dmr.getParameters(params);
 			int K = dmr.K;
 			int F = dmr.F;
-			for (int k=0;k<K;k++) {
-				for (int f=0;f<F;f++) {
-					System.out.println ("K: " + k + " F: "+f + "  " + params[k*F+f]);
-				}
-			}
+			//for (int k=0;k<K;k++) {
+			//	for (int f=0;f<F;f++) {
+			//		System.out.println ("K: " + k + " F: "+f + "  " + params[k*F+f]);
+			//	}
+			//}
 		
 	}
 	
@@ -213,12 +222,12 @@ public class DMR implements Optimizable.ByGradientValue {
 		for (int m=0;m<M;m++) {
 			double[] scores = predict(m);
 			double sumPrediction = BasicMath.sum(scores);
-			double gamma_diff_global = Gamma.lgamma0(sumPrediction) - Gamma.lgamma0(sumPrediction + BasicMath.sum(observations[m]));
+			double gamma_diff_global = Dirichlet.logGammaStirling(sumPrediction) - Dirichlet.logGammaStirling(sumPrediction + BasicMath.sum(observations[m]));
 			if (!Double.isNaN(gamma_diff_global)) {
 				logLik+=gamma_diff_global;
 			}
 			for (int i = 0; i < K; i++) {
-				double gamma_diff_local = Gamma.lgamma0(scores[i] + observations[m][i]) - Gamma.lgamma0(scores[i]);
+				double gamma_diff_local = Dirichlet.logGammaStirling(scores[i] + observations[m][i]) - Dirichlet.logGammaStirling(scores[i]);
 				if (!Double.isNaN(gamma_diff_local)) {
 					logLik+=gamma_diff_local;
 				}
@@ -245,12 +254,81 @@ public class DMR implements Optimizable.ByGradientValue {
 		}
 
 		
-		System.out.println("lik: " + logLik);
+		//System.out.println("lik: " + logLik);
 		
 		return logLik;
 
 
 	}
+	
+	/** The log probability of the observed count vectors given the features. */
+	public double getValue2 () {
+
+		if (! cachedValueStale) { return cachedValue; }
+
+		numGetValueCalls++;
+		cachedValue = 0;
+
+		// Incorporate likelihood of data
+		double value = 0.0;
+		
+		for (int m=0;m<M;m++) {
+
+			double[] scores = predict(m);
+			
+			double sumScores = BasicMath.sum(scores);
+
+			// This is really an int, but since FeatureVectors are defined as doubles, 
+			//  avoid casting.
+			double totalLength = 0;
+
+			for (int i = 0; i < K; i++) {
+				double count = observations[m][i];
+				value += (Dirichlet.logGammaStirling(scores[i] + count) -
+						  Dirichlet.logGammaStirling(scores[i]));
+				totalLength += count;
+			}
+
+			value -= (Dirichlet.logGammaStirling(sumScores + totalLength) -
+					  Dirichlet.logGammaStirling(sumScores));
+                    
+			// Error Checking:
+    
+		
+			if (Double.isInfinite(value)) {
+
+				cachedValue -= value;
+				cachedValueStale = false;
+				return -value;
+			}
+
+			//System.out.println(value);
+
+			cachedValue += value;
+                
+		}
+
+		// Incorporate prior on parameters
+
+		double prior = 0;
+
+		// The log of a gaussian prior is x^2 / -2sigma^2
+
+		for (int label = 0; label < K; label++) {
+			for (int feature = 0; feature < F - 1; feature++) {
+				double param = parameters[label*F + feature];
+				prior -= (param) * (param) / (2 * gaussianPriorVariance);
+			}
+		}
+
+		cachedValue += prior;
+		cachedValueStale = false;
+		
+		//System.out.println("lik: "+cachedValue);
+		
+		return cachedValue;
+	}
+
 
 
 
@@ -286,7 +364,7 @@ public class DMR implements Optimizable.ByGradientValue {
 						diff += Gamma.digamma0(scores[k]+observations[m][k] 
 								-  Gamma.digamma0(scores[k]));
 						
-					if (m==0) System.out.println("diff " + k + " " + f + " " + metadata[m][f] + " " +  parameters[k*F+f] + " " + scores[k]+ " " + observations[m][k] + " " + digammaDifferenceForSums +  " " + diff);
+					//if (m==0) System.out.println("diff " + k + " " + f + " " + metadata[m][f] + " " +  parameters[k*F+f] + " " + scores[k]+ " " + observations[m][k] + " " + digammaDifferenceForSums +  " " + diff);
 
 					
 					gradient[k*F+f]+= (digammaDifferenceForSums + diff)
@@ -312,113 +390,113 @@ public class DMR implements Optimizable.ByGradientValue {
 		System.arraycopy(gradient, 0, buffer, 0, gradient.length);
 	}
 
-	static double[] dmr_test(final double[][] X, final double[][] Y) {
+//	static double[] dmr_test(final double[][] X, final double[][] Y) {
+//
+//		final DMR dmr = new DMR(X,Y);
+//
+//		Function f = new Function() {
+//			@Override
+//			public double evaluate(double[] lambda, double[] g, int n, double step) {
+//				//g = dmr.getValueGradient(lambda);
+//				dmr.setParameters(lambda);
+//				dmr.getValueGradient(g);
+//			
+//				System.out.println("Likelihood " + dmr.getValue());
+//				return dmr.getValue();
+//			}
+//		};
+//		
+//		Params p = new Params();
+//		p.m = 4;
+//		ProgressCallback cb = new ProgressCallback() {
+//			@Override
+//			public int apply(double[] x, double[] g, double fx, double xnorm,
+//					double gnorm, double step, int n, int k, Status ls) {
+//				return 0;
+//			}
+//		};
+//		double[] coef = new double[(X[0].length+1) * Y[0].length];
+//		for (int i=0;i<coef.length;i++) {
+//			coef[i]=0;
+//		}
+//		Result r = LBFGS.lbfgs(coef, f, cb, p);
+//
+//		for (int i=0;i<coef.length;i++) {
+//			System.out.println(coef[i]);
+//		}
+//		
+//		return coef;
+//	}
+//
+//	static void linreg_test(final double[][] X, final double[] Y) {
+//		final int Nfeat = X[0].length;
+//		Function f = new Function() {
+//			@Override
+//			public double evaluate(double[] beta, double[] g, int n, double step) {
+//				double sqloss = 0;
+//				for (int j=0; j<Nfeat; j++) {
+//					g[j]=0;
+//				}
+//				for (int i=0; i<n; i++) {
+//					double pred = BasicMath.innerProduct(beta, X[i]);
+//					double resid = pred - Y[i];
+//					sqloss += Math.pow(resid, 2);
+//					for (int j=0; j<Nfeat; j++) {
+//						g[j] += X[i][j] * resid;
+//					}
+//					for (int j=0; j<Nfeat; j++) {
+//						System.out.println("gradient "+j+": "+g[j] + " " + beta[j]);
+//					}
+//				}
+//
+//				for (int j=0; j<g.length; j++) {
+//					System.out.println(beta[j]);
+//				}
+//
+//				System.out.println("lik:"+sqloss);
+//
+//				return sqloss;
+//			}
+//		};
+//		Params p = new Params();
+//		ProgressCallback cb = new ProgressCallback() {
+//			@Override
+//			public int apply(double[] x, double[] g, double fx, double xnorm,
+//					double gnorm, double step, int n, int k, Status ls) {
+//				return 0;
+//			}
+//		};
+//		double[] coef = new double[Nfeat];
+//		LBFGS.lbfgs(coef, f, cb, p);
+//
+//		for (int i=0;i<coef.length;i++) {
+//			System.out.println(coef[i]);
+//		}
+//	}
 
-		final DMR dmr = new DMR(X,Y);
-
-		Function f = new Function() {
-			@Override
-			public double evaluate(double[] lambda, double[] g, int n, double step) {
-				//g = dmr.getValueGradient(lambda);
-				dmr.setParameters(lambda);
-				dmr.getValueGradient(g);
-			
-				System.out.println("Likelihood " + dmr.getValue());
-				return dmr.getValue();
-			}
-		};
-		
-		Params p = new Params();
-		p.m = 4;
-		ProgressCallback cb = new ProgressCallback() {
-			@Override
-			public int apply(double[] x, double[] g, double fx, double xnorm,
-					double gnorm, double step, int n, int k, Status ls) {
-				return 0;
-			}
-		};
-		double[] coef = new double[(X[0].length+1) * Y[0].length];
-		for (int i=0;i<coef.length;i++) {
-			coef[i]=0;
-		}
-		Result r = LBFGS.lbfgs(coef, f, cb, p);
-
-		for (int i=0;i<coef.length;i++) {
-			System.out.println(coef[i]);
-		}
-		
-		return coef;
-	}
-
-	static void linreg_test(final double[][] X, final double[] Y) {
-		final int Nfeat = X[0].length;
-		Function f = new Function() {
-			@Override
-			public double evaluate(double[] beta, double[] g, int n, double step) {
-				double sqloss = 0;
-				for (int j=0; j<Nfeat; j++) {
-					g[j]=0;
-				}
-				for (int i=0; i<n; i++) {
-					double pred = BasicMath.innerProduct(beta, X[i]);
-					double resid = pred - Y[i];
-					sqloss += Math.pow(resid, 2);
-					for (int j=0; j<Nfeat; j++) {
-						g[j] += X[i][j] * resid;
-					}
-					for (int j=0; j<Nfeat; j++) {
-						System.out.println("gradient "+j+": "+g[j] + " " + beta[j]);
-					}
-				}
-
-				for (int j=0; j<g.length; j++) {
-					System.out.println(beta[j]);
-				}
-
-				System.out.println("lik:"+sqloss);
-
-				return sqloss;
-			}
-		};
-		Params p = new Params();
-		ProgressCallback cb = new ProgressCallback() {
-			@Override
-			public int apply(double[] x, double[] g, double fx, double xnorm,
-					double gnorm, double step, int n, int k, Status ls) {
-				return 0;
-			}
-		};
-		double[] coef = new double[Nfeat];
-		LBFGS.lbfgs(coef, f, cb, p);
-
-		for (int i=0;i<coef.length;i++) {
-			System.out.println(coef[i]);
-		}
-	}
-
-	static void mean_test() {
-		final int target = 3;
-		Function f = new Function() {
-			@Override
-			public double evaluate(double[] x, double[] g, int n, double step) {
-				g[0] = x[0] - target; 
-				return Math.pow(x[0] - target, 2);
-			}
-		};
-		Params p = new Params();
-		ProgressCallback cb = new ProgressCallback() {
-			@Override
-			public int apply(double[] x, double[] g, double fx, double xnorm,
-					double gnorm, double step, int n, int k, Status ls) {
-				return 0;
-			}
-		};
-		double[] sol = new double[1];
-		Result r = LBFGS.lbfgs(sol, f, cb, p);
-		for (int i=0;i<sol.length;i++) {
-			System.out.println(sol[i]);
-		}
-	}
+//	static void mean_test() {
+//		final int target = 3;
+//		Function f = new Function() {
+//			@Override
+//			public double evaluate(double[] x, double[] g, int n, double step) {
+//				g[0] = x[0] - target; 
+//				return Math.pow(x[0] - target, 2);
+//			}
+//		};
+//		Params p = new Params();
+//		ProgressCallback cb = new ProgressCallback() {
+//			@Override
+//			public int apply(double[] x, double[] g, double fx, double xnorm,
+//					double gnorm, double step, int n, int k, Status ls) {
+//				return 0;
+//			}
+//		};
+//		double[] sol = new double[1];
+//		Result r = LBFGS.lbfgs(sol, f, cb, p);
+//		for (int i=0;i<sol.length;i++) {
+//			System.out.println(sol[i]);
+//		}
+//	}
 
 
 
