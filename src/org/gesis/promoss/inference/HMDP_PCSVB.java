@@ -941,7 +941,6 @@ public class HMDP_PCSVB {
 			//Update alpha_0 using the table counts per cluster
 			//Cf is the number of clusters per feature
 			
-			for (int j=0;j<20;j++) {
 						int zeros = 0;
 						double alpha_0_denominator = 0;
 						for (int f = 0; f < c.F; f++) {
@@ -960,11 +959,11 @@ public class HMDP_PCSVB {
 			
 						//sumqfck_ge0 => number of tables
 						alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
-			}
+			
 			
 						//set upper limit
-						if (alpha_0 > 1000) {
-							alpha_0 = 1000;
+						if (alpha_0 > T) {
+							alpha_0 = T;
 						}
 						
 

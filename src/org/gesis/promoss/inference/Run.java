@@ -11,7 +11,7 @@ public class Run {
 	public static void main (String[] args)  {
 
 		if (new File("/home/c/work/").exists() && (args == null || args.length == 0)) {
-			args = "-directory /home/c/work/topicmodels/maryam8/ -method HMDP -INIT_RAND 1 -T 100 -meta_params G(40) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+			args = "-directory /home/c/work/topicmodels/maryam8/ -method HMDP -INIT_RAND 1 -T 100 -meta_params G(4000) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 		}
 		
 		if (args == null || args.length == 0) {
