@@ -93,6 +93,8 @@ public class HMDP_Corpus extends Corpus {
 		
 		N = new int[M];
 		
+		dictText.close();
+		
 	}
 	
 	public void readDict() {
@@ -167,7 +169,9 @@ public class HMDP_Corpus extends Corpus {
 				}
 			}
 
-		}
+			text.close();
+		}		
+				
 		Text dictText = new Text();
 
 		while((line = dictText.readLine(dictfile)) != null) {
@@ -175,6 +179,8 @@ public class HMDP_Corpus extends Corpus {
 			dict.addWord(line);
 
 		}
+		
+		dictText.close();
 
 	}
 
