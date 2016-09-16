@@ -503,6 +503,10 @@ public class HMD_PCSVB {
 			double qsum = 0.0;
 
 			for (int k=0;k<T;k++) {
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
 
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_1*topic_prior[k])
@@ -570,9 +574,6 @@ public class HMD_PCSVB {
 				//update probability of _not_ seeing k in the current document
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
-				//in case the document contains only this word, we do not use nmk
-				if (c.getN(m) != termfreq) {
-
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
 						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
@@ -582,7 +583,7 @@ public class HMD_PCSVB {
 						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
 
-				}
+				
 
 			}
 

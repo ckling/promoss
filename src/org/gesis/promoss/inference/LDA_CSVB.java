@@ -44,7 +44,7 @@ public class LDA_CSVB {
 	//This class holds the corpus and its properties
 	//including metadata
 	public Corpus c;
-	
+
 	//We have a debugging mode for checking the parameters
 	public boolean debug = false;
 	//number of top words returned for the topic file
@@ -117,26 +117,26 @@ public class LDA_CSVB {
 	 * Every feature has clusters
 	 * Clusters belong to groups of connected clusters (e.g. adjacent clusters).
 	 */
-	
+
 	public double rhostkt_document;
 	public double oneminusrhostkt_document;
 
 	//counts, how many documents we observed in the batch to estimate alpha
 	public int alpha_batch_counter = 0;
-	
+
 	LDA_CSVB() {
 		c = new Corpus();
 	}
-	
+
 	public void initialise () {
-		
+
 		// Folder names, files etc. 
 		c.dictfile = c.directory+"words.txt";
 		//textfile contains the words of the document, all seperated by space (example line: word1 word2 word3 ... wordNm)
 		c.documentfile = c.directory+"corpus.txt";
 		//groupfile contains clus
 
-		
+
 		System.out.println("Creating dictionary...");
 		c.readDict();	
 		System.out.println("Initialising parameters...");
@@ -144,8 +144,8 @@ public class LDA_CSVB {
 		System.out.println("Processing documents...");
 		c.readDocs();
 		System.out.println("Estimating topics...");
-		
-		
+
+
 	}
 
 	public void run () {
@@ -184,20 +184,20 @@ public class LDA_CSVB {
 
 	//set Parameters
 	public void initParameters() {
-		
+
 		beta_V = beta * c.V;
-		
+
 
 		if (rhos_document < 0) 
 			rhos_document = rhos;
-		
+
 		if (rhotau_document < 0) 
 			rhotau_document = rhotau;
-		
+
 
 		if (rhokappa_document < 0) 
 			rhokappa_document = rhokappa;
-				
+
 
 		c.V = c.dict.length();
 
@@ -205,7 +205,7 @@ public class LDA_CSVB {
 		for (int k=0;k<T;k++) {
 			alpha[k] = 5.0 / T;
 		}
-		
+
 		beta_V = beta * c.V;
 
 		batch_words = new int[c.V];
@@ -214,8 +214,8 @@ public class LDA_CSVB {
 		nkt = new float[T][c.V];	
 		tempnkt = new float[T][c.V];	
 
-		
-		
+
+
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
@@ -229,13 +229,13 @@ public class LDA_CSVB {
 
 			}
 		}
-		
+
 		System.out.println("Initialising count variables...");
 
 	}
 
 
-	
+
 
 	public void inferenceDoc(int m) {
 
@@ -246,7 +246,7 @@ public class LDA_CSVB {
 
 		int[] termIDs = c.getTermIDs(m);
 		short[] termFreqs = c.getTermFreqs(m);
-		
+
 		//Process words of the document
 		for (int i=0;i<termIDs.length;i++) {
 
@@ -267,6 +267,9 @@ public class LDA_CSVB {
 			double qsum = 0.0;
 
 			for (int k=0;k<T;k++) {
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
 
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha[k])
@@ -277,6 +280,8 @@ public class LDA_CSVB {
 				qsum+=q[k];
 
 			}
+
+
 
 
 			//Normalise gamma (sum=1), update counts and probabilities
@@ -308,17 +313,13 @@ public class LDA_CSVB {
 				}
 
 				//in case the document contains only this word, we do not use nmk
-				if (c.getN(m) != termfreq) {
-
-					//update document-topic counts
-					if (termfreq==1) {
-						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
-					}
-					else {
-						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
-					}
-
+				//update document-topic counts
+				if (termfreq==1) {
+					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+				}
+				else {
+					double temp = Math.pow(oneminusrhostkt_document,termfreq);
+					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 				}
 
 			}
@@ -345,7 +346,7 @@ public class LDA_CSVB {
 		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
 		double rhostktnormC = rhostkt * (c.C / Double.valueOf(BasicMath.sum(batch_words)));
 
-		
+
 
 		nk = new float[T];
 		for (int k=0;k<T;k++) {
@@ -374,16 +375,22 @@ public class LDA_CSVB {
 		}
 
 	}
-	
+
 	public void updateHyperParameters() {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
-			
-			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 
-			beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
+			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 			
-			beta_V = beta * c.V;
+			if (BasicMath.sum(alpha) > 5.0) {
+				for (int k=0;k<T;k++) {
+					alpha[k]=5.0/T;
+					}					
+			}
+
+			beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta*c.V,1);
+			beta_V = beta;
+			beta /= c.V;
 
 		}
 
@@ -399,15 +406,15 @@ public class LDA_CSVB {
 	public void save () {
 
 		String output_base_folder = c.directory + "output_LDA/";
-		
-        File output_base_folder_file = new File(output_base_folder);
-        if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
-        
-        String output_folder = output_base_folder + rhot_step + "/";
-		
-        File file = new File(output_folder);
-        if (!file.exists()) file.mkdir();
-		
+
+		File output_base_folder_file = new File(output_base_folder);
+		if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
+
+		String output_folder = output_base_folder + rhot_step + "/";
+
+		File file = new File(output_folder);
+		if (!file.exists()) file.mkdir();
+
 		Save save = new Save();
 		save.saveVar(nkt, output_folder+save_prefix+"nkt");
 		save.close();
@@ -488,7 +495,7 @@ public class LDA_CSVB {
 
 		}
 		save.saveVar(topktopics, output_folder+save_prefix+"topktopics");
-		
+
 		save.saveVar(
 				"\nalpha "+ alpha+
 				"\nbeta " + beta +
@@ -519,13 +526,13 @@ public class LDA_CSVB {
 		int runmax = 20;
 
 		for (int m = testsize; m < c.M; m++) {
-			
+
 			int[] termIDs = c.getTermIDs(m);
 			short[] termFreqs = c.getTermFreqs(m);
-			
+
 			int termlength = termIDs.length;
 			double[][] z = new double[termlength][T];
-			
+
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
 
@@ -538,7 +545,7 @@ public class LDA_CSVB {
 					int t = termIDs[i];
 					//How often doas t appear in the document?
 					int termfreq = termFreqs[i];
-							
+
 					//remove old counts 
 					for (int k=0;k<T;k++) {
 						nmk[m][k] -= termfreq * z[n][k];
@@ -573,7 +580,7 @@ public class LDA_CSVB {
 					n++;
 				}
 			}
-			
+
 
 			int n=0;
 			for (int i=0;i<termFreqs.length;i++) {
@@ -594,14 +601,14 @@ public class LDA_CSVB {
 			}
 
 			for (int k=0;k<T;k++) nmk[m][k] = 0;
-			
-		}
-		
-		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
-		
 
-			
-		
+		}
+
+		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
+
+
+
+
 
 		//get perplexity
 		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
