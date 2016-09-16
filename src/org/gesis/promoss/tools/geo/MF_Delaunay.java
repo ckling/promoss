@@ -443,7 +443,7 @@ public class MF_Delaunay {
 				File cluster = new File(clusterFile);
 				if (!cluster.exists()) {
 					//values converged!
-					System.out.println("success, writing file");
+					//System.out.println("success, writing file");
 					//save clusters:
 					File file = new File(clusterFile);
 					FileWriter writer;
@@ -536,10 +536,7 @@ public class MF_Delaunay {
 					double beta = Math.acos(cosBeta);
 					double gamma = Math.acos(cosGamma);
 					double minAngle = Math.min(alpha, Math.min(beta,gamma));
-
-					System.out.println(minAngle);
-
-					
+				
 					//atan(1/4) is minimum angle, as in  "NON-OBTUSE TRIANGULATION OF A POLYGON"BS BAKER, E GROSSE, 1985
 					if (minAngle >= Math.atan(1./6.)) {
 
