@@ -94,6 +94,90 @@ public class HMDP_Corpus extends Corpus {
 		N = new int[M];
 		
 	}
+	
+	public void readDict() {
+		// Read dictionary from file
+		// The file contains words, one in each row
+
+		dict = new Dictionary();
+		String line;
+		if (!new File(dictfile).exists()) {
+
+			if (!processed && documentText == null) {
+				documentText = new Text();
+				documentText.setLang(language);
+				documentText.setStopwords(stopwords);
+				documentText.setStem(stemming);
+			}
+
+			//create the dict from all the words in the document
+			Text text = new Text();
+
+			HashMap<String,Integer> hs = new HashMap<String,Integer>();
+
+			while((line = text.readLine(documentfile))!=null){
+
+				String[] lineSplit = line.split(" ",2);
+				if (lineSplit.length >= 1) {
+					lineSplit = lineSplit[1].split(" ");
+					
+					if (processed) {
+						for(int i = 0; i < lineSplit.length; i++) {
+							String word = lineSplit[i];
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
+					}
+					else {
+
+						documentText.setText(line);
+
+						Iterator<String> words = documentText.getTerms();
+
+						while(words.hasNext()) {
+							String word = words.next();
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
+					}
+
+				}
+
+			}
+
+
+			text.write(dictfile, "", false);
+
+			Set<Entry<String, Integer>> hses = hs.entrySet();
+			Iterator<Entry<String, Integer>> hsit = hses.iterator();
+			while(hsit.hasNext()) {
+				Entry<String,Integer> e = hsit.next();
+				if (e.getValue() >= MIN_DICT_WORDS && e.getKey().length() > 1) {
+					text.writeLine(dictfile, e.getKey(), true);
+				}
+			}
+
+		}
+		Text dictText = new Text();
+
+		while((line = dictText.readLine(dictfile)) != null) {
+
+			dict.addWord(line);
+
+		}
+
+	}
+
 
 	public void readGroups() {
 		//initialise if not yet done
