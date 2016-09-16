@@ -93,6 +93,8 @@ public class HMDP_Corpus extends Corpus {
 		
 		N = new int[M];
 		
+		dictText.close();
+		
 	}
 	
 	public void readDict() {
@@ -167,7 +169,9 @@ public class HMDP_Corpus extends Corpus {
 				}
 			}
 
-		}
+			text.close();
+		}		
+				
 		Text dictText = new Text();
 
 		while((line = dictText.readLine(dictfile)) != null) {
@@ -175,6 +179,8 @@ public class HMDP_Corpus extends Corpus {
 			dict.addWord(line);
 
 		}
+		
+		dictText.close();
 
 	}
 
@@ -370,25 +376,6 @@ public class HMDP_Corpus extends Corpus {
 						System.out.print(".");
 					
 					saveSVMlight.saveVar(wordset, directory+"wordsets");
-
-					int[] docTermIDs = new int[wordset.size()];
-					short[] docTermFreqs = new short[wordset.size()];
-					
-					int i=0;
-					for (Entry<Integer,Short> e : wordset) {
-						int key = e.getValue();
-						short value = e.getValue();
-						docTermIDs[i] = key;
-						docTermFreqs[i] = value;
-						N[m]+=value;
-						i++;
-					}
-					
-					termIDs[m]=docTermIDs;
-					termFreqs[m]=docTermFreqs;
-
-					groups[m]=group;
-					m++;
 				}
 				else {
 					groups[M+empty_counter]=group;
@@ -402,9 +389,15 @@ public class HMDP_Corpus extends Corpus {
 
 		System.out.println("");
 
-
+		saveSVMlight.close();
+		
 		Save save = new Save();
 		save.saveVar(groups, directory+"groups");
+		save.close();
+		
+		documentText.close();
+		
+		readDocs();
 
 		return;
 

@@ -336,6 +336,8 @@ public class Corpus {
 		}
 
 		System.out.println("");
+		
+		documentText.close();
 
 		return;
 
