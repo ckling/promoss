@@ -648,17 +648,19 @@ public class HMDP_PCSVB {
 				//increase count for that group
 				rhot_group[f][g]++;
 
-
 				//update feature-counter
 				for (int i=0;i<grouplength[f];i++) {
-
-					//how often did we see this cluster already?
-					//rhot_cluster[f][i]++;
 					for (int k=0;k<T;k++) {
 
+						//gives the probability that a table of a topic was drawn from the given cluster
+						double topicProbInCluster = pk_fck[f][i][k]/topic_prior[k];
+						
 						//p(not_seeing_fik)
-						sumqtemp[f][g][i][k] += Math.log(topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k]);
-						tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * pk_fck[f][i][k]/topic_prior[k];
+						sumqtemp[f][g][i][k] += Math.log(1.0 - (topic_ge_0[k] * topicProbInCluster));
+						tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * topicProbInCluster;
+						
+						//if ((1.0 - Math.exp(sumqtemp[f][g][i][k])) >= tempsumqfgc[f][g][i][k])
+						//	System.out.println((1.0 - Math.exp(sumqtemp[f][g][i][k])) + " " + tempsumqfgc[f][g][i][k] );
 					}
 				}
 
@@ -876,7 +878,7 @@ public class HMDP_PCSVB {
 					}
 					else {
 						//Sampled number of tables -> better perplexity
-						tables = sumqfck_ge0[f][i][k]; // * rs.randNumTable(pi_0[k], sumqfck[f][i][k]);
+						tables = sumqfck_ge0[f][i][k] * rs.randNumTable(pi_0[k], sumqfck[f][i][k]);
 					}
 					sumfck[k] += tables;
 					//sum_cluster_tables += sumfck[k];
@@ -941,7 +943,7 @@ public class HMDP_PCSVB {
 			//Update alpha_0 using the table counts per cluster
 			//Cf is the number of clusters per feature
 			
-						int zeros = 0;
+						int observations = 0;
 						double alpha_0_denominator = 0;
 						for (int f = 0; f < c.F; f++) {
 							for (int i = 0; i < c.Cf[f]; i++) {
@@ -949,16 +951,40 @@ public class HMDP_PCSVB {
 								double sum = BasicMath.sum(sumqfck[f][i]);
 								if (sum > 0) {
 									alpha_0_denominator += Gamma.digamma0(sum + alpha_0);
-								}
-								else {
-									zeros++;
+									observations++;
 								}
 							}
 						}
-						alpha_0_denominator -= (BasicMath.sum(c.Cf) - zeros) * Gamma.digamma0(alpha_0);
+						alpha_0_denominator -= observations * Gamma.digamma0(alpha_0);
 			
 						//sumqfck_ge0 => number of tables
 						alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
+			
+			
+						//set upper limit
+						if (alpha_0 > T) {
+							alpha_0 = T;
+						}
+						
+			
+							
+//						double alpha_0_denominator = 0;
+//						for (int f = 0; f < c.F; f++) {
+//							for (int i = 0; i < c.Cf[f]; i++) {
+//								
+//								//sumqfck => potential number of tables
+//								double sum = BasicMath.sum(sumqfck[f][i]);
+//								double eta = (alpha_0) / (alpha_0 + sum);
+//
+//								if (sum > 0) {
+//									alpha_0_denominator += Gamma.digamma0(eta) - Gamma.digamma0(sum + eta);
+//								}
+//							}
+//						}
+			
+						System.out.println(BasicMath.sum(sumqfck_ge0) + " " + BasicMath.sum(sumqfck));
+						//sumqfck_ge0 => number of tables
+						alpha_0 = BasicMath.sum(sumqfck_ge0) - alpha_0_denominator;
 			
 			
 						//set upper limit
