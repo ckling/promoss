@@ -204,21 +204,17 @@ public class HMDP_Corpus extends Corpus {
 
 		//Try to read parsed documents
 		Load load = new Load();
-		wordsets = load.readVarSet(directory+"wordsets");
 		groups = load.readFileInt2(directory+"groups");
-		if (wordsets!=null && groups != null) {
-
-			for (int m=0;m<M;m++) {
-				Set<Entry<Integer, Short>> wordset = wordsets[m];
-				for (Entry<Integer,Short> e : wordset) {
-					N[m]+=e.getValue();
-				}		
-			}	
-
-			return ;
+		
+		if (load.readSVMlight(directory+"wordsets", this) && groups != null) {			
+			return;
 		}
-
-		wordsets = new Set[M];
+		
+		termIDs = new int[M][];
+		termFreqs = new short[M][];
+		
+		Save saveSVMlight = new Save();
+		
 		groups = new int[M+empty_documents.size()][F];
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
@@ -288,8 +284,25 @@ public class HMDP_Corpus extends Corpus {
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
+					
+					saveSVMlight.saveVar(wordset, directory+"wordsets");
 
-					wordsets[m]=wordset;
+					int[] docTermIDs = new int[wordset.size()];
+					short[] docTermFreqs = new short[wordset.size()];
+					
+					int i=0;
+					for (Entry<Integer,Short> e : wordset) {
+						int key = e.getValue();
+						short value = e.getValue();
+						docTermIDs[i] = key;
+						docTermFreqs[i] = value;
+						N[m]+=value;
+						i++;
+					}
+					
+					termIDs[m]=docTermIDs;
+					termFreqs[m]=docTermFreqs;
+
 					groups[m]=group;
 					m++;
 				}
@@ -305,15 +318,8 @@ public class HMDP_Corpus extends Corpus {
 
 		System.out.println("");
 
-		for (m=0;m<M;m++) {
-			Set<Entry<Integer, Short>> wordset = wordsets[m];
-			for (Entry<Integer,Short> e : wordset) {
-				N[m]+=e.getValue();
-			}
-		}
 
 		Save save = new Save();
-		save.saveVar(wordsets, directory+"wordsets");
 		save.saveVar(groups, directory+"groups");
 
 		return;

@@ -106,24 +106,21 @@ public class HMDP_PCSVB {
 	public Boolean store_empty = true;
 
 	//sum of counts over all documents for cluster c in feature f for topic k
-	public double[][][] nkfc;
+	public float[][][] nkfc;
 	//Estimated number of times term t appeared in topic k
-	public double[][] nkt;
+	public float[][] nkt;
 	//Estimated number of times term t appeared in topic k in the batch
-	private double[][] tempnkt;
+	private float[][] tempnkt;
 	//Estimated number of words in topic k
-	public double[] nk;
+	public float[] nk;
 
 	//Estimated number of tables for word v in topic k, used to update the topic-prior beta
-	public double[][] mkt;
+	public float[][] mkt;
 	//Estimated number of tables for word v in topic k, used to update the topic prior beta
 	//temporal variable for estimation
-	private double[][] tempmkt;
-
-
+	private float[][] tempmkt;
 	//Topic "counts" per document
-	public double[][] nmk;
-
+	public float[][] nmk;
 	//variational parameters for the stick breaking process - parameters for Beta distributions \hat{a} and \hat{b}
 	private double[] ahat;
 	private double[] bhat;
@@ -327,12 +324,12 @@ public class HMDP_PCSVB {
 
 		batch_words = new int[c.V];
 
-		mkt = new double[T][c.V];	
-		tempmkt = new double[T][c.V];
+		mkt = new float[T][c.V];	
+		tempmkt = new float[T][c.V];
 
-		nk = new double[T];
-		nkt = new double[T][c.V];	
-		tempnkt = new double[T][c.V];	
+		nk = new float[T];
+		nkt = new float[T][c.V];	
+		tempnkt = new float[T][c.V];	
 
 		//count the number of documents in each group
 		c.Cfg = new int[c.F][];
@@ -357,15 +354,15 @@ public class HMDP_PCSVB {
 			rhot_group[f]=new int[c.A[f].length];
 		}
 
-		nmk = new double[c.M][T];
+		nmk = new float[c.M][T];
 
 		for (int t=0; t < c.V; t++) {
 			for (int k=0;k<T;k++) {
 
-				nkt[k][t]= Math.random()*INIT_RAND;
+				nkt[k][t]= (float) (Math.random()*INIT_RAND);
 				nk[k]+=nkt[k][t];
 
-				tempmkt[k][t] = 0.0;
+				tempmkt[k][t] = (float) 0.0;
 
 			}
 		}
@@ -604,11 +601,11 @@ public class HMDP_PCSVB {
 
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
-						nmk[m][k] = oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k];
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k];
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
 
 				}
@@ -722,7 +719,7 @@ public class HMDP_PCSVB {
 
 
 
-		nk = new double[T];
+		nk = new float[T];
 		for (int k=0;k<T;k++) {
 			for (int v=0;v<c.V;v++) {
 				double oneminusrhostkt = (1.0 - rhostkt);
@@ -765,7 +762,7 @@ public class HMDP_PCSVB {
 		//reset
 		for (int k=0;k<T;k++) {
 			for (int t=0;t<c.V;t++) {
-				tempmkt[k][t] = 0.0;
+				tempmkt[k][t] = (float) 0.0;
 			}
 		}
 
@@ -1094,14 +1091,14 @@ public class HMDP_PCSVB {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic;
+			float[][] doc_topic;
 			if (store_empty) {
 
 				//index counter for empty documents
 				int empty_counter = 0;
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
-				doc_topic = new double[Me][T];
+				doc_topic = new float[Me][T];
 				for (int m=0;m<Me;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -1110,7 +1107,7 @@ public class HMDP_PCSVB {
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
-						doc_topic[me]  = new double[T];
+						doc_topic[me]  = new float[T];
 						int[] group = c.groups[c.M + empty_counter];
 						int[] grouplength = new int[c.F]; 
 						for (int f =0; f<c.F;f++) {
@@ -1151,7 +1148,7 @@ public class HMDP_PCSVB {
 
 			}
 			else {
-				doc_topic = new double[c.M][T];
+				doc_topic = new float[c.M][T];
 				for (int m=0;m < c.M;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -1294,9 +1291,6 @@ public class HMDP_PCSVB {
 			
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
-
-				//document index in test set, for z
-				int mt = m-testsize;
 
 				int[] grouplength = new int[c.F];
 				int[] group = c.groups[m];

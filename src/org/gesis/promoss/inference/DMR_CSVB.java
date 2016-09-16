@@ -94,14 +94,13 @@ public class DMR_CSVB {
 	public Boolean store_empty = true;
 
 	//Estimated number of times term t appeared in topic k
-	public double[][] nkt;
+	public float[][] nkt;
 	//Estimated number of times term t appeared in topic k in the batch
-	private double[][] tempnkt;
+	private float[][] tempnkt;
 	//Estimated number of words in topic k
-	public double[] nk;
-
+	public float[] nk;
 	//Topic "counts" per document
-	public double[][] nmk;
+	public float[][] nmk;
 
 
 	//rho: Learning rate; rho = s / ((tau + t)^kappa);
@@ -291,21 +290,21 @@ public class DMR_CSVB {
 
 		batch_words = new int[c.V];
 
-		nk = new double[T];
-		nkt = new double[T][c.V];	
-		tempnkt = new double[T][c.V];	
+		nk = new float[T];
+		nkt = new float[T][c.V];	
+		tempnkt = new float[T][c.V];	
 
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
 		rhot_words_doc=new int[c.M];
 	
-		nmk = new double[c.M][T];
+		nmk = new float[c.M][T];
 
 		for (int t=0; t < c.V; t++) {
 			for (int k=0;k<T;k++) {
 
-				nkt[k][t]= Math.random()*INIT_RAND;
+				nkt[k][t]= (float) (Math.random()*INIT_RAND);
 				nk[k]+=nkt[k][t];
 
 			}
@@ -408,11 +407,11 @@ public class DMR_CSVB {
 
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
-						nmk[m][k] = oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k];
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k];
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
 					
 					//if (m==0) System.out.println(nmk[m][k] );
@@ -456,7 +455,7 @@ public class DMR_CSVB {
 
 		
 
-		nk = new double[T];
+		nk = new float[T];
 		for (int k=0;k<T;k++) {
 			for (int v=0;v<c.V;v++) {
 				double oneminusrhostkt = (1.0 - rhostkt);
@@ -538,12 +537,12 @@ public class DMR_CSVB {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic;
+			float[][] doc_topic;
 			if (store_empty) {
 
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
-				doc_topic = new double[Me][T];
+				doc_topic = new float[Me][T];
 				for (int m=0;m<Me;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -552,9 +551,9 @@ public class DMR_CSVB {
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
-						doc_topic[me]  = new double[T];
+						doc_topic[me]  = new float[T];
 						for (int k=0;k<T;k++) {
-							doc_topic[me][k] = 1.0 / T;
+							doc_topic[me][k] = (float) (1.0 / T);
 						}
 					}
 					else {				
@@ -566,7 +565,7 @@ public class DMR_CSVB {
 
 			}
 			else {
-				doc_topic = new double[c.M][T];
+				doc_topic = new float[c.M][T];
 				for (int m=0;m < c.M;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
