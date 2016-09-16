@@ -446,11 +446,6 @@ public class HMDP_PCSVB {
 
 	public void inferenceDoc(int m) {
 
-		//if (c.N[m]==0) return;
-
-		Set<Entry<Integer, Short>> wordset = c.wordsets[m];
-		//if (wordset == null || wordset.isEmpty()) return;
-
 		//increase counter of documents seen
 		rhot++;
 
@@ -511,15 +506,18 @@ public class HMDP_PCSVB {
 		}
 
 
-		double rhostkt_documentNm = rhostkt_document * c.N[m];
+		double rhostkt_documentNm = rhostkt_document * c.getN(m);
 
+		int[] termIDs = c.getTermIDs(m);
+		short[] termFreqs = c.getTermFreqs(m);
+		
 		//Process words of the document
-		for (Entry<Integer, Short> e : wordset) {
+		for (int i=0;i<termIDs.length;i++) {
 
 			//term index
-			int t = e.getKey();
+			int t = termIDs[i];
 			//How often doas t appear in the document?
-			int termfreq = e.getValue();
+			int termfreq = termFreqs[i];
 
 			//update number of words seen
 			rhot_words_doc[m]+=termfreq;
@@ -555,7 +553,7 @@ public class HMDP_PCSVB {
 					System.out.println("Error calculating gamma " +
 							"first part: " + (nmk[m][k] + alpha_1*topic_prior[k]) + 
 							" second part: " + (nkt[k][t] + beta_0) / (nk[k] + beta_0V) + 
-							" m " + m+ " " + c.N[m]+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
+							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
 							" sumqmk " + sumqmk[k] + 
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
@@ -573,13 +571,13 @@ public class HMDP_PCSVB {
 						System.out.println(" f " + f + " sumqfgc_denominator " + sumqfgc_denominator);
 						System.out.println("sumqf[m][f] " + m + " " + f + " " + sumqfgc_denominator + " epsilon " + epsilon[f]);
 
-						for (int i=0;i<grouplength[f];i++) {
-							int a= c.A[f][g][i];
+						for (int h=0;h<grouplength[f];h++) {
+							int a= c.A[f][g][h];
 							double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ alpha_0;
 							System.out.println(" f " + f + " sumqfck2_denominator " + sumqfck2_denominator);
 
 							//cluster probability in group
-							System.out.println(" f " + f + " i " + i + " sumqfgc[m][f][i] " + sumqfgc[f][i] + " delta[f] " + delta[f]);
+							System.out.println(" f " + f + " i " + i + " sumqfgc[m][f][i] " + sumqfgc[f][h] + " delta[f] " + delta[f]);
 
 							for (int k2=0;k2<T;k2++) {
 								System.out.println(" f " + f + " a "+ a + " k " + k2 + " sumqfck[f][a][k]" + sumqfck[f][a][k] + " pi0[k] " + pi_0[k]);  
@@ -602,7 +600,7 @@ public class HMDP_PCSVB {
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
 				//in case the document contains only this word, we do not use nmk
-				if (c.N[m] != termfreq) {
+				if (c.getN(m) != termfreq) {
 
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
@@ -610,7 +608,7 @@ public class HMDP_PCSVB {
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.N[m] * q[k];
+						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k];
 					}
 
 				}
@@ -676,9 +674,9 @@ public class HMDP_PCSVB {
 		if (rhot_step>BURNIN_DOCUMENTS) {
 
 			//ignore documents containing only one word.
-			if (rhot%SAMPLE_ALPHA == 0 && c.N[m]>1) {
+			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
 				sumnmk_ge0+=BasicMath.sum(topic_ge_0);
-				alpha_1_estimate_denominator += Gamma.digamma0(c.N[m]+alpha_1);
+				alpha_1_estimate_denominator += Gamma.digamma0(c.getN(m)+alpha_1);
 				alpha_batch_counter++;
 
 
@@ -1277,27 +1275,28 @@ public class HMDP_PCSVB {
 		int testsize = (int) Math.floor(TRAINING_SHARE * c.M);
 		if (testsize == 0) return 0;
 
-		double[][][] z = new double[testsize][][];
-
 		int totalLength = 0;
 		double likelihood = 0;
 
 		for (int m = testsize; m < c.M; m++) {
-			int doclength = c.wordsets[m].size();
-			totalLength+=c.N[m];
-			z[m-testsize] = new double[doclength][T];
+			totalLength+=c.getN(m);
 		}
 
 		int runmax = 20;
 
 		for (int m = testsize; m < c.M; m++) {
+			
+			int[] termIDs = c.getTermIDs(m);
+			short[] termFreqs = c.getTermFreqs(m);
+			
+			int termlength = termIDs.length;
+			double[][] z = new double[termlength][T];
+			
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
 
 				//document index in test set, for z
 				int mt = m-testsize;
-
-				Set<Entry<Integer, Short>> wordset = c.wordsets[m];
 
 				int[] grouplength = new int[c.F];
 				int[] group = c.groups[m];
@@ -1330,17 +1329,18 @@ public class HMDP_PCSVB {
 
 				//word index
 				int n = 0;
+				
 				//Process words of the document
-				for (Entry<Integer, Short> e : wordset) {
+				for (int i=0;i<termIDs.length;i++) {
 
 					//term index
-					int t = e.getKey();
+					int t = termIDs[i];
 					//How often doas t appear in the document?
-					int termfreq = e.getValue();
+					int termfreq = termFreqs[i];
 
 					//remove old counts 
 					for (int k=0;k<T;k++) {
-						nmk[m][k] -= termfreq * z[mt][n][k];
+						nmk[m][k] -= termfreq * z[n][k];
 					}
 
 					//topic probabilities - q(z)
@@ -1365,7 +1365,7 @@ public class HMDP_PCSVB {
 					for (int k=0;k<T;k++) {
 						//normalise
 						q[k]/=qsum;
-						z[mt][n][k]=q[k];
+						z[n][k]=q[k];
 						nmk[m][k]+=termfreq*q[k];
 					}
 
@@ -1373,27 +1373,18 @@ public class HMDP_PCSVB {
 				}
 			}
 
-		}
-
-		//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
-		for (int m = testsize; m < c.M; m++) {
-
-			//document index in test set, for z
-			int mt = m-testsize;
-
-			Set<Entry<Integer, Short>> wordset = c.wordsets[m];
-
 			int n=0;
-			for (Entry<Integer, Short> e : wordset) {
+			for (int i=0;i<termIDs.length;i++) {
 
-				int termfreq = e.getValue();
 				//term index
-				int t = e.getKey();
+				int t = termIDs[i];
+				//How often doas t appear in the document?
+				int termfreq = termFreqs[i];
 
 				double lik = 0;
 
 				for (int k=0;k<T;k++) {
-					lik +=   z[m][n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);	
+					lik +=   z[n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);	
 				}
 
 				
