@@ -36,6 +36,7 @@ import org.gesis.promoss.tools.probabilistic.ArrayUtils;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Pair;
+import org.gesis.promoss.tools.probabilistic.RandomSamplers;
 import org.gesis.promoss.tools.text.HMDP_Corpus;
 import org.gesis.promoss.tools.text.Save;
 
@@ -211,7 +212,7 @@ public class HMDP_PCSVB {
 	//counts, how many documents we observed in the batch to estimate alpha_1
 	public int alpha_batch_counter = 0;
 
-	//private RandomSamplers rs = new RandomSamplers();
+	private RandomSamplers rs = new RandomSamplers();
 
 	//private double sum_cluster_tables = 0;
 
@@ -939,6 +940,8 @@ public class HMDP_PCSVB {
 
 			//Update alpha_0 using the table counts per cluster
 			//Cf is the number of clusters per feature
+			
+			for (int j=0;j<20;j++) {
 						int zeros = 0;
 						double alpha_0_denominator = 0;
 						for (int f = 0; f < c.F; f++) {
@@ -957,11 +960,13 @@ public class HMDP_PCSVB {
 			
 						//sumqfck_ge0 => number of tables
 						alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
+			}
 			
 						//set upper limit
 						if (alpha_0 > 1000) {
 							alpha_0 = 1000;
 						}
+						
 
 
 			//			double table_sum = 0;
@@ -989,7 +994,8 @@ public class HMDP_PCSVB {
 //			}
 //
 //			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
-//			alpha_0 = rs.randConParam(alpha_0, tables_cluster, BasicMath.sum(sumqfck_ge0), 1);
+			RandomSamplers rs = new RandomSamplers();
+			//alpha_0 = rs.randConParam(alpha_0, tables_cluster, BasicMath.sum(sumqfck_ge0), 1);
 
 			double beta_0_denominator = 0.0;
 			for (int k=0; k < T; k++) {
