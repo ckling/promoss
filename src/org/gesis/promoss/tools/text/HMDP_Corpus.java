@@ -169,7 +169,6 @@ public class HMDP_Corpus extends Corpus {
 				}
 			}
 
-			text.close();
 		}		
 				
 		Text dictText = new Text();
