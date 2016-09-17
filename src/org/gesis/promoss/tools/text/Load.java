@@ -103,6 +103,11 @@ public class Load {
 					termFreqs[m][i-1] = Short.valueOf(val);
 				}
 			}
+			else {
+				termIDs[m] = new int[0];
+				termFreqs[m] = new short[0];
+				N[m]=0;
+			}
 			m++;
 		}
 		c.setN(N);

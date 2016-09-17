@@ -165,7 +165,7 @@ public class ClusterMetadata {
 							//here we find the bin to which the timestamp of a document belongs to
 							int l;
 							for (l=0;l<bins;l++) {
-								int offset = Math.min((l+1)*clustersize,timestamps.length);
+								int offset = Math.min((l+1)*clustersize,timestamps.length-1);
 								if (timestamp <= timestamps[offset]) break;
 							}
 							if (l>=bins) l=bins-1;
@@ -233,7 +233,7 @@ public class ClusterMetadata {
 							int l;
 							for (l=0;l<bins;l++) {
 								//Beginning and end of bin
-								int end = Math.min((l+1)*clustersize - 1,timestamps.length);
+								int end = Math.min((l+1)*clustersize - 1,timestamps.length-1);
 								int start = Math.min(0, l*clustersize);
 								if (timestamps[start] <= timestamp && timestamp <= timestamps[end]) {
 									break;
@@ -305,7 +305,7 @@ public class ClusterMetadata {
 							int l;
 							for (l=0;l<bins;l++) {
 								//Beginning and end of bin
-								int end = Math.min((l+1)*clustersize - 1,timestamps.length);
+								int end = Math.min((l+1)*clustersize - 1,timestamps.length-1);
 								int start = Math.min(0, l*clustersize);
 								if (timestamps[start] <= timestamp && timestamp <= timestamps[end]) {
 									break;
@@ -378,7 +378,7 @@ public class ClusterMetadata {
 							int l;
 							for (l=0;l<bins;l++) {
 								//Beginning and end of bin
-								int end = Math.min((l+1)*clustersize - 1,timestamps.length);
+								int end = Math.min((l+1)*clustersize - 1,timestamps.length-1);
 								int start = Math.min(0, l*clustersize);
 								if (timestamps[start] <= timestamp && timestamp <= timestamps[end]) {
 									break;
@@ -448,7 +448,7 @@ public class ClusterMetadata {
 							//here we find the bin to which the timestamp of a document belongs to
 							int l;
 							for (l=0;l<bins;l++) {
-								int end = Math.min((l+1)*clustersize - 1,timestamps.length);
+								int end = Math.min((l+1)*clustersize - 1,timestamps.length-1);
 								int start = Math.min(0, l*clustersize);
 								if (timestamps[start] <= timestamp && timestamp <= timestamps[end]) {
 									break;
