@@ -971,35 +971,6 @@ public class HMDP_PCSVB {
 						if (alpha_0 > T) {
 							alpha_0 = T;
 						}
-				
-
-
-
-			//						double alpha_0_denominator = 0;
-			//						for (int f = 0; f < c.F; f++) {
-			//							for (int i = 0; i < c.Cf[f]; i++) {
-			//								
-			//								//sumqfck => potential number of tables
-			//								double sum = BasicMath.sum(sumqfck[f][i]);
-			//								double eta = (alpha_0) / (alpha_0 + sum);
-			//
-			//								if (sum > 0) {
-			//									alpha_0_denominator += Gamma.digamma0(eta) - Gamma.digamma0(sum + eta);
-			//								}
-			//							}
-			//						}
-
-			//System.out.println(BasicMath.sum(sumqfck_ge0) + " " + BasicMath.sum(sumqfck));
-			//sumqfck_ge0 => number of tables
-			alpha_0 = BasicMath.sum(sumqfck_ge0) - alpha_0_denominator;
-
-
-			//set upper limit
-			if (alpha_0 > T) {
-				alpha_0 = T;
-			}
-
->>>>>>> a81d580c13043269c535b719b3abb1109656ecc9
 
 
 			//			double table_sum = 0;
@@ -1016,7 +987,6 @@ public class HMDP_PCSVB {
 			//				}
 			//			}
 
-<<<<<<< HEAD
 //			double[] tables_cluster = new double[BasicMath.sum(c.Cf)];
 //			int j=0;
 //			for (int f=0;f<c.F;f++) {
@@ -1029,7 +999,6 @@ public class HMDP_PCSVB {
 //
 //			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
 			//RandomSamplers rs = new RandomSamplers();
-=======
 			//			double[] tables_cluster = new double[BasicMath.sum(c.Cf)];
 			//			int j=0;
 			//			for (int f=0;f<c.F;f++) {
@@ -1041,8 +1010,7 @@ public class HMDP_PCSVB {
 			//			}
 			//
 			//			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
-			RandomSamplers rs = new RandomSamplers();
->>>>>>> a81d580c13043269c535b719b3abb1109656ecc9
+			//RandomSamplers rs = new RandomSamplers();
 			//alpha_0 = rs.randConParam(alpha_0, tables_cluster, BasicMath.sum(sumqfck_ge0), 1);
 
 			double beta_0_denominator = 0.0;
