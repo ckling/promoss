@@ -57,6 +57,7 @@ public class HMDP_Corpus extends Corpus {
 			}
 		}
 
+		//read non-empty document counts of clusters
 		dictText = new Text();
 
 		int doc_number=0;
@@ -67,13 +68,6 @@ public class HMDP_Corpus extends Corpus {
 				doc_number++;
 				String[] lineSplit = line.split(" ");
 
-				for (int i=1;i<lineSplit.length;i++) {
-					if (dict.contains(lineSplit[i])) {
-						C++;
-					}
-				}
-
-
 				String groupString = lineSplit[0];
 				String[] groupSplit = groupString.split(",");
 				for (int f=0;f<F;f++) {
@@ -81,7 +75,6 @@ public class HMDP_Corpus extends Corpus {
 					Cfg[f][g]++;
 					for (int c=0;c<A[f][g].length;c++) {
 						int a = A[f][g][c];
-
 						Cfc[f][a]++;
 						Cfd[f]++;
 					}
@@ -90,9 +83,7 @@ public class HMDP_Corpus extends Corpus {
 
 			}
 		}
-		
-		N = new int[M];
-		
+				
 		dictText.close();
 		
 	}
@@ -212,8 +203,7 @@ public class HMDP_Corpus extends Corpus {
 					cluster[i-2] = Integer.valueOf(lineSplit[i]);
 
 					//Find out about the maximum cluster ID. The number of clusters is this ID +1
-					Cf[f] = 
-							Math.max(Cf[f],cluster[i-2] + 1);
+					Cf[f] = Math.max(Cf[f],cluster[i-2] + 1);
 				}
 
 				if(A[f].length - 1 < groupID) {

@@ -326,7 +326,7 @@ public class DMR_CSVB {
 		double rhostkt_documentNm = rhostkt_document * c.getN(m);
 
 		double[] alpha_m = null;
-		if (rhot_step > BURNIN_DOCUMENTS) {
+		if (rhot_step > BURNIN_DOCUMENTS+1) {
 			alpha_m = dmr.predict(m);
 		}
 		else {

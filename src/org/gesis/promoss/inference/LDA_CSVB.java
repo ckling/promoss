@@ -50,7 +50,7 @@ public class LDA_CSVB {
 	//number of top words returned for the topic file
 	public int topk = 100;
 	//Number of read docs (might repeat with the same docs)
-	public int RUNS = 100;
+	public int RUNS = 500;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
 	public int BATCHSIZE = 128;
@@ -60,9 +60,8 @@ public class LDA_CSVB {
 	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
 	public int BURNIN = 0;
-	//Burn in phase for documents: How long till we update the
-	//topic distributions of context-clusters?
-	public int BURNIN_DOCUMENTS = 0;
+	//Burn in phase for documents: How long till we update hyperparameters
+	public int BURNIN_DOCUMENTS = 1;
 	//should the topics be randomly initialised?
 	public double INIT_RAND = 1;
 
@@ -380,17 +379,17 @@ public class LDA_CSVB {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
 
-			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
+			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 			
-			if (BasicMath.sum(alpha) > 5.0) {
+			if (BasicMath.sum(alpha) > T) {
 				for (int k=0;k<T;k++) {
-					alpha[k]=5.0/T;
+					alpha[k]=1.0;
 					}					
 			}
 
-			beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta*c.V,1);
-			beta_V = beta;
-			beta /= c.V;
+			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta*c.V,1);
+			//beta_V = beta;
+			//beta /= c.V;
 
 		}
 

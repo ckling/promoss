@@ -70,7 +70,7 @@ public class HMDP_PCSVB {
 	//topic distributions of context-clusters?
 	public int BURNIN_DOCUMENTS = 0;
 	//Should the topics be randomly initialised?
-	public double INIT_RAND = 0;
+	public double INIT_RAND = 1;
 
 	//Relative size of the training set
 	public double TRAINING_SHARE = 1.0;
@@ -600,6 +600,7 @@ public class HMDP_PCSVB {
 				//update probability of _not_ seeing k in the current document
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
+				if (c.getN(m) != termfreq) {
 				//update document-feature-cluster-topic counts
 				if (termfreq==1) {
 					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
@@ -607,6 +608,10 @@ public class HMDP_PCSVB {
 				else {
 					double temp = Math.pow(oneminusrhostkt_document,termfreq);
 					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+				}
+				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
 
