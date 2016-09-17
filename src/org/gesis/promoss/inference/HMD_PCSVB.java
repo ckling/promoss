@@ -67,7 +67,7 @@ public class HMD_PCSVB {
 	//topic distributions of context-clusters?
 	public int BURNIN_DOCUMENTS = 0;
 	//Should the topics be randomly initialised?
-	public double INIT_RAND = 0;
+	public double INIT_RAND = 1;
 
 	//Relative size of the training set
 	public double TRAINING_SHARE = 1.0;
@@ -490,6 +490,8 @@ public class HMD_PCSVB {
 			//How often doas t appear in the document?
 			int termfreq = termFreqs[i];
 
+
+			
 			//update number of words seen
 			rhot_words_doc[m]+=termfreq;
 			if (rhot_step>BURNIN) {
@@ -503,7 +505,11 @@ public class HMD_PCSVB {
 			double qsum = 0.0;
 
 			for (int k=0;k<T;k++) {
-
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
+				
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_1*topic_prior[k])
 						//probability of topic given word w
@@ -570,9 +576,7 @@ public class HMD_PCSVB {
 				//update probability of _not_ seeing k in the current document
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
-				//in case the document contains only this word, we do not use nmk
 				if (c.getN(m) != termfreq) {
-
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
 						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
@@ -581,8 +585,12 @@ public class HMD_PCSVB {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
 						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
-
 				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
+				}
+
+
 
 			}
 
@@ -848,7 +856,7 @@ public class HMD_PCSVB {
 		}
 
 		alpha_0 = DirichletEstimation.estimateAlphaLik(sumfck,alpha_0);
-		
+
 		if (BasicMath.sum(alpha_0)> T) {
 			for (int k=0;k<T;k++) {
 				alpha_0[k]=1.0;
@@ -944,11 +952,6 @@ public class HMD_PCSVB {
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
 				doc_topic = new float[Me][T];
-				for (int m=0;m<Me;m++) {
-					for (int k=0;k<T;k++) {
-						doc_topic[m][k]  = 0;
-					}
-				}
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
@@ -996,11 +999,6 @@ public class HMD_PCSVB {
 			}
 			else {
 				doc_topic = new float[c.M][T];
-				for (int m=0;m < c.M;m++) {
-					for (int k=0;k<T;k++) {
-						doc_topic[m][k]  = 0;
-					}
-				}
 				for (int m=0;m < c.M;m++) {
 					doc_topic[m]  = nmk[m];
 					int[] group = c.groups[m];

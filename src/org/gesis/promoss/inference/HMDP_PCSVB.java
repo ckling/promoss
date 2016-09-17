@@ -70,7 +70,7 @@ public class HMDP_PCSVB {
 	//topic distributions of context-clusters?
 	public int BURNIN_DOCUMENTS = 0;
 	//Should the topics be randomly initialised?
-	public double INIT_RAND = 0;
+	public double INIT_RAND = 1;
 
 	//Relative size of the training set
 	public double TRAINING_SHARE = 1.0;
@@ -302,7 +302,7 @@ public class HMDP_PCSVB {
 
 
 		c.readFfromTextfile();
-		
+
 		System.out.println("Reading groups...");
 		c.readGroups(); //if there is an unseen Group mentioned
 
@@ -508,7 +508,7 @@ public class HMDP_PCSVB {
 
 		int[] termIDs = c.getTermIDs(m);
 		short[] termFreqs = c.getTermFreqs(m);
-		
+
 		//Process words of the document
 		for (int i=0;i<termIDs.length;i++) {
 
@@ -530,7 +530,10 @@ public class HMDP_PCSVB {
 			double qsum = 0.0;
 
 			for (int k=0;k<T;k++) {
-
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_1*topic_prior[k])
 						//probability of topic given word w
@@ -597,19 +600,20 @@ public class HMDP_PCSVB {
 				//update probability of _not_ seeing k in the current document
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
-				//in case the document contains only this word, we do not use nmk
 				if (c.getN(m) != termfreq) {
-
-					//update document-feature-cluster-topic counts
-					if (termfreq==1) {
-						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
-					}
-					else {
-						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
-					}
-
+				//update document-feature-cluster-topic counts
+				if (termfreq==1) {
+					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
 				}
+				else {
+					double temp = Math.pow(oneminusrhostkt_document,termfreq);
+					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+				}
+				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
+				}
+
 
 			}
 
@@ -654,11 +658,11 @@ public class HMDP_PCSVB {
 
 						//gives the probability that a table of a topic was drawn from the given cluster
 						double topicProbInCluster = pk_fck[f][i][k]/topic_prior[k];
-						
+
 						//p(not_seeing_fik)
 						sumqtemp[f][g][i][k] += Math.log(1.0 - (topic_ge_0[k] * topicProbInCluster));
 						tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * topicProbInCluster;
-						
+
 						//if ((1.0 - Math.exp(sumqtemp[f][g][i][k])) >= tempsumqfgc[f][g][i][k])
 						//	System.out.println((1.0 - Math.exp(sumqtemp[f][g][i][k])) + " " + tempsumqfgc[f][g][i][k] );
 					}
@@ -961,37 +965,41 @@ public class HMDP_PCSVB {
 						alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
 			
 			
-						//set upper limit
-						if (alpha_0 > T) {
-							alpha_0 = T;
-						}
-						
-			
-							
-//						double alpha_0_denominator = 0;
-//						for (int f = 0; f < c.F; f++) {
-//							for (int i = 0; i < c.Cf[f]; i++) {
-//								
-//								//sumqfck => potential number of tables
-//								double sum = BasicMath.sum(sumqfck[f][i]);
-//								double eta = (alpha_0) / (alpha_0 + sum);
-//
-//								if (sum > 0) {
-//									alpha_0_denominator += Gamma.digamma0(eta) - Gamma.digamma0(sum + eta);
-//								}
-//							}
-//						}
-			
-						//System.out.println(BasicMath.sum(sumqfck_ge0) + " " + BasicMath.sum(sumqfck));
-						//sumqfck_ge0 => number of tables
-						alpha_0 = BasicMath.sum(sumqfck_ge0) - alpha_0_denominator;
 			
 			
 						//set upper limit
 						if (alpha_0 > T) {
 							alpha_0 = T;
 						}
-						
+				
+
+
+
+			//						double alpha_0_denominator = 0;
+			//						for (int f = 0; f < c.F; f++) {
+			//							for (int i = 0; i < c.Cf[f]; i++) {
+			//								
+			//								//sumqfck => potential number of tables
+			//								double sum = BasicMath.sum(sumqfck[f][i]);
+			//								double eta = (alpha_0) / (alpha_0 + sum);
+			//
+			//								if (sum > 0) {
+			//									alpha_0_denominator += Gamma.digamma0(eta) - Gamma.digamma0(sum + eta);
+			//								}
+			//							}
+			//						}
+
+			//System.out.println(BasicMath.sum(sumqfck_ge0) + " " + BasicMath.sum(sumqfck));
+			//sumqfck_ge0 => number of tables
+			alpha_0 = BasicMath.sum(sumqfck_ge0) - alpha_0_denominator;
+
+
+			//set upper limit
+			if (alpha_0 > T) {
+				alpha_0 = T;
+			}
+
+>>>>>>> a81d580c13043269c535b719b3abb1109656ecc9
 
 
 			//			double table_sum = 0;
@@ -1008,6 +1016,7 @@ public class HMDP_PCSVB {
 			//				}
 			//			}
 
+<<<<<<< HEAD
 //			double[] tables_cluster = new double[BasicMath.sum(c.Cf)];
 //			int j=0;
 //			for (int f=0;f<c.F;f++) {
@@ -1020,6 +1029,20 @@ public class HMDP_PCSVB {
 //
 //			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
 			//RandomSamplers rs = new RandomSamplers();
+=======
+			//			double[] tables_cluster = new double[BasicMath.sum(c.Cf)];
+			//			int j=0;
+			//			for (int f=0;f<c.F;f++) {
+			//				//A[f] holds the cluster indices for each cluster of each feature and thus gives us the 
+			//				//number of clusters per feature by A[f].length
+			//				for (int i=0;i< c.Cf[f];i++) {
+			//					tables_cluster[j++]= (int) Math.ceil(BasicMath.sum(sumqfck[f][i]));
+			//				}
+			//			}
+			//
+			//			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
+			RandomSamplers rs = new RandomSamplers();
+>>>>>>> a81d580c13043269c535b719b3abb1109656ecc9
 			//alpha_0 = rs.randConParam(alpha_0, tables_cluster, BasicMath.sum(sumqfck_ge0), 1);
 
 			double beta_0_denominator = 0.0;
@@ -1316,13 +1339,13 @@ public class HMDP_PCSVB {
 		int runmax = 20;
 
 		for (int m = testsize; m < c.M; m++) {
-			
+
 			int[] termIDs = c.getTermIDs(m);
 			short[] termFreqs = c.getTermFreqs(m);
-			
+
 			int termlength = termIDs.length;
 			double[][] z = new double[termlength][T];
-			
+
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
 
@@ -1357,7 +1380,7 @@ public class HMDP_PCSVB {
 
 				//word index
 				int n = 0;
-				
+
 				//Process words of the document
 				for (int i=0;i<termIDs.length;i++) {
 
@@ -1415,7 +1438,7 @@ public class HMDP_PCSVB {
 					lik +=   z[n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);	
 				}
 
-				
+
 				//				for (int k=0;k<T;k++) {
 				//					lik +=  z[mt][n][k] * (nkt[k][t] + beta_0) / (nk[k] + beta_0V);
 				//				}
