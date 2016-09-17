@@ -363,7 +363,7 @@ public class HMDP_Corpus extends Corpus {
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
-					
+					m++;
 					saveSVMlight.saveVar(wordset, directory+"wordsets");
 				}
 				else {
