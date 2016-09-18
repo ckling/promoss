@@ -117,23 +117,6 @@ public class DMR_Corpus extends Corpus {
 
 					saveSVMlight.saveVar(wordset, directory+"wordsets");
 					
-					int[] docTermIDs = new int[wordset.size()];
-					short[] docTermFreqs = new short[wordset.size()];
-					
-					int i=0;
-					for (Entry<Integer,Short> e : wordset) {
-						int key = e.getValue();
-						short value = e.getValue();
-						docTermIDs[i] = key;
-						docTermFreqs[i] = value;
-						N[m]+=value;
-						i++;
-					}
-					
-					termIDs[m]=docTermIDs;
-					termFreqs[m]=docTermFreqs;
-
-					
 					meta[m]=meta_value;
 					m++;
 				}
@@ -149,9 +132,14 @@ public class DMR_Corpus extends Corpus {
 
 		System.out.println("");
 
+		documentText.close();
 
 		Save save = new Save();
 		save.saveVar(meta, directory+"meta");
+		save.close();
+		
+		//now read the saved files
+		readDocs();
 
 		return;
 

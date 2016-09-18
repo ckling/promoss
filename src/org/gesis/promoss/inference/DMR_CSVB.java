@@ -186,7 +186,7 @@ public class DMR_CSVB {
 	public void run () {
 		for (int i=0;i<RUNS;i++) {
 
-			System.out.println(c.directory + " run " + i + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
+			System.out.println(c.directory + " run " + rhot_step + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
 
 			rhot_step++;
 			//get step size
@@ -206,7 +206,7 @@ public class DMR_CSVB {
 
 			updateHyperParameters();
 
-			if ((rhot_step > BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval == 0)) {
+			if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval) == 0) {
 				//Here we train the Dirichlet-Multinomial Regression using original Mallet code
 				if (dmr == null) {
 					dmr = new DMR(c.meta, nmk);
@@ -359,7 +359,10 @@ public class DMR_CSVB {
 
 
 			for (int k=0;k<T;k++) {
-
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_m[k])
 						//probability of topic given word w
@@ -416,6 +419,9 @@ public class DMR_CSVB {
 
 					//if (m==0) System.out.println(nmk[m][k] );
 
+				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
 			}
