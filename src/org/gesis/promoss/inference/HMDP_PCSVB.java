@@ -617,14 +617,14 @@ public class HMDP_PCSVB {
 				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
 
 				if (c.getN(m) != termfreq) {
-				//update document-feature-cluster-topic counts
-				if (termfreq==1) {
-					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
-				}
-				else {
-					double temp = Math.pow(oneminusrhostkt_document,termfreq);
-					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
-				}
+					//update document-feature-cluster-topic counts
+					if (termfreq==1) {
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+					}
+					else {
+						double temp = Math.pow(oneminusrhostkt_document,termfreq);
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					}
 				}
 				else {
 					nmk[m][k]=(float) (q[k]*termfreq);
@@ -981,37 +981,12 @@ public class HMDP_PCSVB {
 			alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
 
 
-			//set upper limit
-			if (alpha_0 > T) {
-				alpha_0 = T;
-			}
-
-
-
-			//						double alpha_0_denominator = 0;
-			//						for (int f = 0; f < c.F; f++) {
-			//							for (int i = 0; i < c.Cf[f]; i++) {
-			//								
-			//								//sumqfck => potential number of tables
-			//								double sum = BasicMath.sum(sumqfck[f][i]);
-			//								double eta = (alpha_0) / (alpha_0 + sum);
-			//
-			//								if (sum > 0) {
-			//									alpha_0_denominator += Gamma.digamma0(eta) - Gamma.digamma0(sum + eta);
-			//								}
-			//							}
-			//						}
-
-			//System.out.println(BasicMath.sum(sumqfck_ge0) + " " + BasicMath.sum(sumqfck));
-			//sumqfck_ge0 => number of tables
-			alpha_0 = BasicMath.sum(sumqfck_ge0) - alpha_0_denominator;
 
 
 			//set upper limit
 			if (alpha_0 > T) {
 				alpha_0 = T;
 			}
-
 
 
 			//			double table_sum = 0;
@@ -1039,7 +1014,19 @@ public class HMDP_PCSVB {
 			//			}
 			//
 			//			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
-			RandomSamplers rs = new RandomSamplers();
+			//RandomSamplers rs = new RandomSamplers();
+			//			double[] tables_cluster = new double[BasicMath.sum(c.Cf)];
+			//			int j=0;
+			//			for (int f=0;f<c.F;f++) {
+			//				//A[f] holds the cluster indices for each cluster of each feature and thus gives us the 
+			//				//number of clusters per feature by A[f].length
+			//				for (int i=0;i< c.Cf[f];i++) {
+			//					tables_cluster[j++]= (int) Math.ceil(BasicMath.sum(sumqfck[f][i]));
+			//				}
+			//			}
+			//
+			//			//System.out.println(sum_cluster_tables + " " + BasicMath.sum(tables_cluster));
+			//RandomSamplers rs = new RandomSamplers();
 			//alpha_0 = rs.randConParam(alpha_0, tables_cluster, BasicMath.sum(sumqfck_ge0), 1);
 
 			double beta_0_denominator = 0.0;
@@ -1176,8 +1163,11 @@ public class HMDP_PCSVB {
 						}
 						empty_counter++;
 					}
-					else {				
-						doc_topic[me]  = nmk[m];
+					else {			
+						//if doc is in the training set
+						if (m<c.M) {
+							doc_topic[me] = nmk[m];
+						}
 						int[] group = c.groups[m];
 						int[] grouplength = new int[c.F]; 
 						for (int f =0; f<c.F;f++) {

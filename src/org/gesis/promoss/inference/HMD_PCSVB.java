@@ -974,7 +974,9 @@ public class HMD_PCSVB {
 						empty_counter++;
 					}
 					else {				
-						doc_topic[me]  = nmk[m];
+						if (m<c.M) {
+							doc_topic[me] = nmk[m];
+						}
 						int[] group = c.groups[m];
 						int[] grouplength = new int[c.F]; 
 						for (int f =0; f<c.F;f++) {
