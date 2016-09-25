@@ -538,7 +538,7 @@ public class MF_Delaunay {
 					double minAngle = Math.min(alpha, Math.min(beta,gamma));
 				
 					//atan(1/4) is minimum angle, as in  "NON-OBTUSE TRIANGULATION OF A POLYGON"BS BAKER, E GROSSE, 1985
-					if (minAngle >= Math.atan(1./6.)) {
+					//if (minAngle >= Math.atan(1./6.)) {
 
 						//double maxdist = Math.sqrt(1.0/Math.pow(2, 5));
 						
@@ -578,7 +578,7 @@ public class MF_Delaunay {
 				System.out.println();
 							 */
 						//}
-					}
+					//}
 
 				}
 

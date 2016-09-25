@@ -310,7 +310,7 @@ public class HMD_PCSVB {
 
 		alpha_0 = new double[T];
 		for (int k=0;k<T;k++) {
-			alpha_0[k] = 1.0/T;
+			alpha_0[k] = 5.0/T;
 		}
 
 		mkt = new float[T][c.V];	
@@ -1205,7 +1205,11 @@ public class HMD_PCSVB {
 		}
 
 		//get perplexity
-		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
+		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
+
+		System.out.println("Perplexity: " + perplexity);
+		
+		return (perplexity);
 
 
 	}

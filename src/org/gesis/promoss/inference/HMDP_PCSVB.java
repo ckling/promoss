@@ -245,7 +245,23 @@ public class HMDP_PCSVB {
 	public void run () {
 		for (int i=0;i<RUNS;i++) {
 
-			System.out.println(c.directory + " run " + i + " (alpha_0 "+alpha_0+" alpha_1 "+ alpha_1+ " beta_0 " + beta_0 + " gamma "+gamma + " delta " + delta[0]+ " epsilon " + epsilon[0]);
+			int topicsUsed = 0;
+			double[] topic_ge0 = new double[T];
+			for (int k=0;k<T;k++) {
+				topic_ge0[k] = 1.0;
+			}
+			for (int f=0;f<c.F;f++) {
+				for (int d=0;d< c.Cf[f];d++) {
+					for (int k=0;k<T;k++) {
+						topic_ge0[k] *= 1.0-sumqfck_ge0[f][d][k];
+					}
+				}
+			}
+			for (int k=0;k<T;k++) {
+				topicsUsed += (1.0-topic_ge0[k]) > 0.5? 1 : 0;
+			}
+			
+			System.out.println(c.directory + " run " + i + " (Topics "+ topicsUsed + " alpha_0 "+alpha_0+" alpha_1 "+ alpha_1+ " beta_0 " + beta_0 + " gamma "+gamma + " delta " + delta[0]+ " epsilon " + epsilon[0]);
 
 			rhot_step++;
 			//get step size
@@ -1431,7 +1447,11 @@ public class HMDP_PCSVB {
 		}
 
 		//get perplexity
-		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
+		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
+
+		System.out.println("Perplexity: " + perplexity);
+		
+		return (perplexity);
 
 
 	}

@@ -313,12 +313,18 @@ public class LDA_CSVB {
 
 				//in case the document contains only this word, we do not use nmk
 				//update document-topic counts
-				if (termfreq==1) {
-					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+				if (c.getN(m) != termfreq) {
+					//update document-feature-cluster-topic counts
+					if (termfreq==1) {
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+					}
+					else {
+						double temp = Math.pow(oneminusrhostkt_document,termfreq);
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					}
 				}
 				else {
-					double temp = Math.pow(oneminusrhostkt_document,termfreq);
-					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
 			}
@@ -379,7 +385,7 @@ public class LDA_CSVB {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
 
-			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
+			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha) ;
 			
 			if (BasicMath.sum(alpha) > T) {
 				for (int k=0;k<T;k++) {
@@ -391,6 +397,8 @@ public class LDA_CSVB {
 			//beta_V = beta;
 			//beta /= c.V;
 
+			
+			
 		}
 
 
@@ -607,10 +615,12 @@ public class LDA_CSVB {
 
 
 
+		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
 
-
+		System.out.println("Perplexity: " + perplexity);
+		
 		//get perplexity
-		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
+		return (perplexity);
 
 
 	}
