@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
+import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Pair;
 import org.gesis.promoss.tools.text.Corpus;
 import org.gesis.promoss.tools.text.Save;
@@ -152,23 +153,7 @@ public class LDA_CSVB {
 
 			System.out.println(c.directory + " run " + i + " (avg. alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta + ")");
 
-			rhot_step++;
-			//get step size
-			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-			oneminusrhostkt_document = (1.0 - rhostkt_document);
-
-			int progress = c.M / 50;
-			if (progress==0) progress = 1;
-			for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
-				if(m%progress == 0) {
-					System.out.print(".");
-				}
-
-				inferenceDoc(m);
-			}
-			System.out.println();
-
-			updateHyperParameters();
+			onePass();
 
 			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
 				//store inferred variables
@@ -179,7 +164,25 @@ public class LDA_CSVB {
 		}
 	}
 
+	public void onePass() {
+		rhot_step++;
+		//get step size
+		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+		oneminusrhostkt_document = (1.0 - rhostkt_document);
 
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			inferenceDoc(m);
+		}
+		System.out.println();
+
+		updateHyperParameters();
+	}
 
 	//set Parameters
 	public void initParameters() {
@@ -312,13 +315,19 @@ public class LDA_CSVB {
 				}
 
 				//in case the document contains only this word, we do not use nmk
-				//update document-topic counts
-				if (termfreq==1) {
-					nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+				if (c.getN(m) != termfreq) {
+
+					//update document-topic counts
+					if (termfreq==1) {
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+					}
+					else {
+						double temp = Math.pow(oneminusrhostkt_document,termfreq);
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					}
 				}
 				else {
-					double temp = Math.pow(oneminusrhostkt_document,termfreq);
-					nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
 			}
@@ -379,17 +388,18 @@ public class LDA_CSVB {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
 
-			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 			
-			if (BasicMath.sum(alpha) > T) {
-				for (int k=0;k<T;k++) {
-					alpha[k]=1.0;
-					}					
-			}
 
-			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta*c.V,1);
-			//beta_V = beta;
-			//beta /= c.V;
+			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
+
+			//if (BasicMath.sum(alpha) > T) {
+			//	for (int k=0;k<T;k++) {
+			//		alpha[k]=1.0;
+			//	}					
+			//}
+
+			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
+			//beta_V = beta * c.V;
 
 		}
 

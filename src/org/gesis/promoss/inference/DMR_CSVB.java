@@ -25,6 +25,7 @@
 package org.gesis.promoss.inference;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
 import org.gesis.promoss.tools.probabilistic.Pair;
 import org.gesis.promoss.tools.text.DMR_Corpus;
 import org.gesis.promoss.tools.text.Save;
+import org.gesis.promoss.tools.text.Text;
 
 import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.OptimizationException;
@@ -152,6 +154,7 @@ public class DMR_CSVB {
 	double[][] alphaCache;
 	double[] alphaSumCache;
 
+
 	protected double alphaSum;
 	//The regression class
 	DMR dmr = null;
@@ -184,66 +187,11 @@ public class DMR_CSVB {
 	}
 
 	public void run () {
+
 		for (int i=0;i<RUNS;i++) {
 
 			System.out.println(c.directory + " run " + rhot_step + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
-
-			rhot_step++;
-			//get step size
-			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-			oneminusrhostkt_document = (1.0 - rhostkt_document);
-
-			int progress = c.M / 50;
-			if (progress==0) progress = 1;
-			for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
-				if(m%progress == 0) {
-					System.out.print(".");
-				}
-
-				inferenceDoc(m);
-			}
-			System.out.println();
-
-			updateHyperParameters();
-
-			if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval) == 0) {
-				//Here we train the Dirichlet-Multinomial Regression using original Mallet code
-				if (dmr == null) {
-					dmr = new DMR(c.meta, nmk);
-					optimizer = new LimitedMemoryBFGS(dmr);				
-				}
-				else {
-					//update observations
-					dmr.observations = nmk;
-				}
-
-
-				// Optimize once
-				try {
-					optimizer.optimize();
-				} catch (OptimizationException e) {
-					// step size too small
-				}
-
-				// Optimize once
-				try {
-					optimizer.optimize();
-				} catch (OptimizationException e) {
-					// step size too small
-				}
-
-				double[] params = new double[dmr.getNumParameters()];
-				dmr.getParameters(params);
-
-				int K = dmr.K;
-				int F = dmr.F;
-				for (int k=0;k<K;k++) {
-					for (int f=0;f<F;f++) {
-						System.out.println ("K: " + k + " F: "+f + "  " + params[k*F+f]);
-					}
-				}
-			}
-
+			onePass();
 
 			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
 				//store inferred variables
@@ -251,15 +199,57 @@ public class DMR_CSVB {
 				save();
 			}
 
-			if (rhot_step > BURNIN_DOCUMENTS){
-				Save save = new Save();
-				save.saveVar(perplexity()+"\n", "/home/c/dmr"+save_prefix+"perplexity");
-			}
-
 		}
 	}
 
 
+	public void onePass() {
+		rhot_step++;
+		//get step size
+		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+		oneminusrhostkt_document = (1.0 - rhostkt_document);
+
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			inferenceDoc(m);
+		}
+		System.out.println();
+
+		updateHyperParameters();
+
+		if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval) == 0) {
+			//Here we train the Dirichlet-Multinomial Regression using original Mallet code
+			if (dmr == null) {
+				dmr = new DMR(c.meta, nmk);
+				optimizer = new LimitedMemoryBFGS(dmr);				
+			}
+			else {
+				//update observations
+				dmr.observations = nmk;
+			}
+
+
+			// Optimize once
+			try {
+				optimizer.optimize();
+			} catch (OptimizationException e) {
+				// step size too small
+			}
+
+			// Optimize once
+			try {
+				optimizer.optimize();
+			} catch (OptimizationException e) {
+				// step size too small
+			}
+
+		}
+	}
 
 	//set Parameters
 	public void initParameters() {
@@ -320,8 +310,6 @@ public class DMR_CSVB {
 		//increase counter of documents seen
 		rhot++;
 
-		//Expectation(number of tables)
-		double[] sumqmk = new double[T];
 
 		double rhostkt_documentNm = rhostkt_document * c.getN(m);
 
@@ -383,7 +371,6 @@ public class DMR_CSVB {
 					System.out.println("Error calculating gamma " +
 							" second part: " + (nkt[k][t] + beta) / (nk[k] + beta_V) + 
 							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
-							" sumqmk " + sumqmk[k] + 
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
 							" nkt " + nkt[k][t]+ 	
@@ -401,10 +388,7 @@ public class DMR_CSVB {
 				if (rhot_step>BURNIN) {
 					tempnkt[k][t]+=q[k]*termfreq;
 				}
-
-				//update probability of _not_ seeing k in the current document
-				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
-
+				
 				//in case the document contains only this word, we do not use nmk
 				if (c.getN(m) != termfreq) {
 
@@ -433,13 +417,6 @@ public class DMR_CSVB {
 		//get probability for NOT seeing topic f to update delta
 		//double[] tables_per_feature = new double[c.F];
 
-
-
-		double[] topic_ge_0 = new double[T];
-		for (int k=0;k<T;k++) {
-			//Probability that we saw the given topic
-			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
-		}
 
 		//We update global topic-word counts in batches (mini-batches lead to local optima)
 		//after a burn-in phase
@@ -494,9 +471,9 @@ public class DMR_CSVB {
 		if(rhot_step>BURNIN_DOCUMENTS) {
 			//alpha = DirichletEstimation.estimateAlpha(nmk);
 
-			beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
+			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
 
-			beta_V = beta * c.V;
+			//beta_V = beta * c.V;
 
 		}
 
@@ -622,6 +599,13 @@ public class DMR_CSVB {
 				"\nMIN_DICT_WORDS "+c.MIN_DICT_WORDS
 				,output_folder+save_prefix+"others");
 
+		if (dmr != null) {
+			double[] params = new double[dmr.getNumParameters()];
+			dmr.getParameters(params);
+
+			save.saveVar(params, output_folder+save_prefix+"dmr_parameters");
+			save.close();
+		}
 
 	}
 
@@ -640,7 +624,7 @@ public class DMR_CSVB {
 		int runmax = 20;
 
 
-
+		double[] alpha_m = alpha;
 
 		for (int m = testsize; m < c.M; m++) {
 
@@ -651,7 +635,10 @@ public class DMR_CSVB {
 			int doclength = termIDs.length;
 			double[][] z = new double[doclength][T];
 
-			double[] alpha_m = dmr.predict(m);
+			if (rhot_step > BURNIN_DOCUMENTS) {
+				alpha_m = dmr.predict(m);
+			}
+
 
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
@@ -675,8 +662,6 @@ public class DMR_CSVB {
 					double[] q = new double[T];
 					//sum for normalisation
 					double qsum = 0.0;
-
-
 
 					for (int k=0;k<T;k++) {
 
@@ -732,8 +717,10 @@ public class DMR_CSVB {
 
 		}
 
-		//get perplexity
-		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
+		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
+		
+		System.out.println("Perplexity: " + perplexity);
+		return (perplexity);
 
 
 	}
