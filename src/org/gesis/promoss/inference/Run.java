@@ -12,9 +12,12 @@ public class Run {
 
 		if (new File("/home/c/work/").exists() && (args == null || args.length == 0)) {
 
+			args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 
 			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000,Y1000,W1000,D1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
-			args = "-directory /home/c/work/topicmodels/maryam8/ -method HMD -T 70 -meta_params G(10) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+			//args = "-directory /home/c/work/topicmodels/maryam8/ -method HMD -T 70 -meta_params G(10) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+
+			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000,Y1000,W1000,D1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 
 		}
 		

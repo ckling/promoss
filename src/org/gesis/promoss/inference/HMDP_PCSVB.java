@@ -263,23 +263,7 @@ public class HMDP_PCSVB {
 			
 			System.out.println(c.directory + " run " + i + " (Topics "+ topicsUsed + " alpha_0 "+alpha_0+" alpha_1 "+ alpha_1+ " beta_0 " + beta_0 + " gamma "+gamma + " delta " + delta[0]+ " epsilon " + epsilon[0]);
 
-			rhot_step++;
-			//get step size
-			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-			oneminusrhostkt_document = (1.0 - rhostkt_document);
-
-			int progress = c.M / 50;
-			if (progress==0) progress = 1;
-			for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
-				if(m%progress == 0) {
-					System.out.print(".");
-				}
-
-				inferenceDoc(m);
-			}
-			System.out.println();
-
-			updateHyperParameters();
+			onePass();
 
 			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
 				//store inferred variables
@@ -288,6 +272,26 @@ public class HMDP_PCSVB {
 			}
 
 		}
+	}
+	
+	public void onePass() {
+		rhot_step++;
+		//get step size
+		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+		oneminusrhostkt_document = (1.0 - rhostkt_document);
+
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			inferenceDoc(m);
+		}
+		System.out.println();
+
+		updateHyperParameters();
 	}
 
 
@@ -1435,6 +1439,7 @@ public class HMDP_PCSVB {
 
 			for (int k=0;k<T;k++) nmk[m][k] = 0;
 		}
+
 
 		//get perplexity
 		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));

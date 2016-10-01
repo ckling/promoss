@@ -199,6 +199,9 @@ public class HMD_PCSVB {
 	//counts, how many documents we observed in the batch to estimate alpha_1
 	public int alpha_batch_counter = 0;
 
+	double[] burninPrior;
+
+
 	HMD_PCSVB() {
 		c = new HMDP_Corpus();
 	}
@@ -230,23 +233,7 @@ public class HMD_PCSVB {
 
 			System.out.println(c.directory + " run " + i + " (alpha_0 "+BasicMath.sum(alpha_0)+" alpha_1 "+ alpha_1+ " beta_0 " + beta_0  + " delta " + delta[0]+ " epsilon " + epsilon[0]);
 
-			rhot_step++;
-			//get step size
-			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-			oneminusrhostkt_document = (1.0 - rhostkt_document);
-
-			int progress = c.M / 50;
-			if (progress==0) progress = 1;
-			for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
-				if(m%progress == 0) {
-					System.out.print(".");
-				}
-
-				inferenceDoc(m);
-			}
-			System.out.println();
-
-			updateHyperParameters();
+			onePass();
 
 			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
 				//store inferred variables
@@ -257,6 +244,25 @@ public class HMD_PCSVB {
 		}
 	}
 
+	public void onePass () {
+		rhot_step++;
+		//get step size
+		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+		oneminusrhostkt_document = (1.0 - rhostkt_document);
+
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			inferenceDoc(m);
+		}
+		System.out.println();
+
+		updateHyperParameters();
+	}
 
 
 	//set Parameters
@@ -282,7 +288,10 @@ public class HMD_PCSVB {
 
 		if (BATCHSIZE_GROUPS < 0)
 			BATCHSIZE_GROUPS = BATCHSIZE;
-
+		
+		if (BURNIN_DOCUMENTS < BURNIN) {
+			BURNIN_DOCUMENTS = BURNIN;
+		}
 
 		c.readFfromTextfile();
 
@@ -307,6 +316,11 @@ public class HMD_PCSVB {
 		beta_0V = beta_0 * c.V;
 
 		batch_words = new int[c.V];
+
+		burninPrior = new double[T];
+		for (int k=0;k<T;k++) {
+			burninPrior[k]=1.0/T;
+		}
 
 		alpha_0 = new double[T];
 		for (int k=0;k<T;k++) {
@@ -439,41 +453,50 @@ public class HMD_PCSVB {
 
 		}
 
-		//probability of feature f given k
-		double[][] pk_f = new double[T][c.F];
-		//probability of feature x cluster x topic
-		double[][][] pk_fck = new double[c.F][][];
-		for (int f=0;f<c.F;f++) {
-			pk_fck[f] = new double[grouplength[f]][];
-			for (int i=0;i<grouplength[f];i++) {
-				pk_fck[f][i] = new double[T];
-			}
-		}
 
 		//Prior of the document-topic distribution
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
 		double[] topic_prior = new double[T];
-		for (int f=0;f<c.F;f++) {
-			int g = group[f];
-			double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
-			for (int i=0;i<grouplength[f];i++) {
-				int a= c.A[f][g][i];
-				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
-				//cluster probability in group
-				double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
-				for (int k=0;k<T;k++) {
-					double temp = 	(sumqfck[f][a][k] + alpha_0[k]) * temp3;
-					double temp4 = temp*featureprior[f];
-					topic_prior[k]+=temp4;
-					pk_f[k][f]+=temp4;
-					pk_fck[f][i][k] = temp4;
+
+		if (rhot_step > BURNIN_DOCUMENTS) {
+			
+			//probability of feature f given k
+			double[][] pk_f = new double[T][c.F];
+			//probability of feature x cluster x topic
+			double[][][] pk_fck = new double[c.F][][];
+			for (int f=0;f<c.F;f++) {
+				pk_fck[f] = new double[grouplength[f]][];
+				for (int i=0;i<grouplength[f];i++) {
+					pk_fck[f][i] = new double[T];
 				}
 			}
+
+			
+			for (int f=0;f<c.F;f++) {
+				int g = group[f];
+				double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
+				for (int i=0;i<grouplength[f];i++) {
+					int a= c.A[f][g][i];
+					double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
+					//cluster probability in group
+					double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
+					for (int k=0;k<T;k++) {
+						double temp = 	(sumqfck[f][a][k] + alpha_0[k]) * temp3;
+						double temp4 = temp*featureprior[f];
+						topic_prior[k]+=temp4;
+						pk_f[k][f]+=temp4;
+						pk_fck[f][i][k] = temp4;
+					}
+				}
+			}
+
+
+			for (int k=0;k<T;k++) {
+				pk_f[k]=BasicMath.normalise(pk_f[k]);
+			}
 		}
-
-
-		for (int k=0;k<T;k++) {
-			pk_f[k]=BasicMath.normalise(pk_f[k]);
+		else {
+			topic_prior = burninPrior;
 		}
 
 
@@ -491,7 +514,7 @@ public class HMD_PCSVB {
 			int termfreq = termFreqs[i];
 
 
-			
+
 			//update number of words seen
 			rhot_words_doc[m]+=termfreq;
 			if (rhot_step>BURNIN) {
@@ -509,7 +532,7 @@ public class HMD_PCSVB {
 				if (c.getN(m) == termfreq) {
 					nmk[m][k] = 0;
 				}
-				
+
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_1*topic_prior[k])
 						//probability of topic given word w
@@ -573,8 +596,10 @@ public class HMD_PCSVB {
 					tempmkt[k][t]+=Math.log(1.0-q[k])*termfreq;
 				}
 
-				//update probability of _not_ seeing k in the current document
-				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
+
+					//update probability of _not_ seeing k in the current document
+					sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
+				
 
 				if (c.getN(m) != termfreq) {
 					//update document-feature-cluster-topic counts
@@ -590,21 +615,11 @@ public class HMD_PCSVB {
 					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
-
-
 			}
 
 		}
 		//End of loop over document words
 
-
-		//get probability for NOT seeing topic f to update delta
-		//double[] tables_per_feature = new double[c.F];
-		double[] topic_ge_0 = new double[T];
-		for (int k=0;k<T;k++) {
-			//Probability that we saw the given topic
-			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
-		}
 
 		//We update global topic-word counts in batches (mini-batches lead to local optima)
 		//after a burn-in phase
@@ -612,15 +627,33 @@ public class HMD_PCSVB {
 			updateTopicWordCounts();
 		}
 
-		for (int f=0;f<c.F;f++) {
-			for (int k=0;k<T;k++) {
-				//TODO add feature probability here?
-				tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+		if (rhot_step > BURNIN_DOCUMENTS) {
+			
+			//probability of feature f given k
+			double[][] pk_f = new double[T][c.F];
+			//probability of feature x cluster x topic
+			double[][][] pk_fck = new double[c.F][][];
+			for (int f=0;f<c.F;f++) {
+				pk_fck[f] = new double[grouplength[f]][];
+				for (int i=0;i<grouplength[f];i++) {
+					pk_fck[f][i] = new double[T];
+				}
 			}
-		}
-		//TODO 2x?
-		if (rhot_step>BURNIN_DOCUMENTS) {
 
+			//get probability for NOT seeing topic f to update delta
+			//double[] tables_per_feature = new double[c.F];
+			double[] topic_ge_0 = new double[T];
+			for (int k=0;k<T;k++) {
+				//Probability that we saw the given topic
+				topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
+			}
+
+			for (int f=0;f<c.F;f++) {
+				for (int k=0;k<T;k++) {
+					//TODO add feature probability here?
+					tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+				}
+			}
 
 
 			for (int f=0;f<c.F;f++) {
@@ -648,11 +681,6 @@ public class HMD_PCSVB {
 				updateClusterTopicDistribution(f,g);	
 
 			}
-
-		}
-
-		//take 10000 samples to estimate alpha_1
-		if (rhot_step>BURNIN_DOCUMENTS) {
 
 			//ignore documents containing only one word.
 			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
@@ -691,14 +719,18 @@ public class HMD_PCSVB {
 		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
 		double rhostktnormC = rhostkt * (c.C / Double.valueOf(BasicMath.sum(batch_words)));
 
-		for (int f=0;f<c.F;f++) {
-			//TODO: multiply with avg doc length
-			sumqf[f]=(1.0-rhostkt) * sumqf[f] +  rhostkt * tempsumqf[f] * (c.M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
-			tempsumqf[f] = 0;
-			featureprior[f] = sumqf[f]+epsilon[f];
-		}
+		if (rhot_step > BURNIN_DOCUMENTS) {
 
-		featureprior = BasicMath.normalise(featureprior);
+			for (int f=0;f<c.F;f++) {
+				//TODO: multiply with avg doc length
+				sumqf[f]=(1.0-rhostkt) * sumqf[f] +  rhostkt * tempsumqf[f] * (c.M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
+				tempsumqf[f] = 0;
+				featureprior[f] = sumqf[f]+epsilon[f];
+			}
+
+
+			featureprior = BasicMath.normalise(featureprior);
+		}
 
 
 
@@ -1115,21 +1147,27 @@ public class HMD_PCSVB {
 				//Prior of the document-topic distribution
 				//(This is a mixture of the cluster-topic distributions of the clusters of the document
 				double[] topic_prior = new double[T];
-				for (int f=0;f<c.F;f++) {
-					int g = group[f];
-					double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + c.A[f][g].length*delta[f];
-					double temp2 = (sumqf[f] + epsilon[f]);
-					for (int i=0;i<grouplength[f];i++) {
-						int a= c.A[f][g][i];
-						double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
-						//cluster probability in group
-						double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
-						for (int k=0;k<T;k++) {
-							double temp = 	(sumqfck[f][a][k] + alpha_0[k])	* temp3;
-							topic_prior[k]+=temp*temp2;
 
+				if (rhot_step > BURNIN_DOCUMENTS) {
+					for (int f=0;f<c.F;f++) {
+						int g = group[f];
+						double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + c.A[f][g].length*delta[f];
+						double temp2 = (sumqf[f] + epsilon[f]);
+						for (int i=0;i<grouplength[f];i++) {
+							int a= c.A[f][g][i];
+							double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
+							//cluster probability in group
+							double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
+							for (int k=0;k<T;k++) {
+								double temp = 	(sumqfck[f][a][k] + alpha_0[k])	* temp3;
+								topic_prior[k]+=temp*temp2;
+
+							}
 						}
 					}
+				}
+				else {
+					topic_prior = burninPrior;
 				}
 
 				//word index
@@ -1206,11 +1244,12 @@ public class HMD_PCSVB {
 			for (int k=0;k<T;k++) nmk[m][k] = 0;
 		}
 
+
 		//get perplexity
 		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
 
 		System.out.println("Perplexity: " + perplexity);
-		
+	
 		return (perplexity);
 
 
