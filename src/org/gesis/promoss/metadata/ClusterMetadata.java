@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.gesis.promoss.tools.geo.MF_Delaunay;
 import org.gesis.promoss.tools.text.Dictionary;
+import org.gesis.promoss.tools.text.Save;
 import org.gesis.promoss.tools.text.Text;
 
 
@@ -117,12 +118,17 @@ public class ClusterMetadata {
 				//write file with geographical cluster description
 				double[][] coords = mfd.getqm();
 				double[] ks = mfd.getqk();
-				String cluster_file_path = dir + cluster_folder + "cluster"+ i;
+				String cluster_file_path = dir + cluster_folder + "cluster_"+ i;
 				Text cluster_file = new Text();
 				cluster_file.write(cluster_file_path, "", false);
+				double[][] clusterDesc = new double[ks.length][3];
 				for (int l=0;l<ks.length;l++) {
-					cluster_file.writeLine(cluster_file_path, coords[l][0]+" "+coords[l][1]+ " " + ks[l], true);
+					clusterDesc[l][0] = coords[l][0];
+					clusterDesc[l][1] = coords[l][1];
+					clusterDesc[l][2] = ks[l];
 				}
+				Save save = new Save();
+				save.saveVar(clusterDesc, cluster_file_path);
 
 
 			}
