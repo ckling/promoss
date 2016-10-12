@@ -202,7 +202,7 @@ java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DIC
 ***************************
 Input files
 ***************************
-The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file. If the wordsets file contains floating point values for term frequencies, they will be rounded to the next integer.
+The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
 
 --------------------------- 
 corpus.txt
