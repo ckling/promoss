@@ -32,12 +32,12 @@ Building the jar file
 You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
 ant || ant build-jar
 
-(The ant build might yield errors for packages under development which can be ignored.)
+(The ant build might yield errors for classes under development which can be ignored.)
 
 ***************************
 Demo files
 ***************************
-If you would like to have demo files to play around with, just 
+If you would like to have demo files to play around with, just write a mail to promoss@c-kling.de
 
 ###########################
 Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
@@ -202,7 +202,7 @@ java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DIC
 ***************************
 Input files
 ***************************
-The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
+The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file. If the wordsets file contains floating point values for term frequencies, they will be rounded to the next integer.
 
 --------------------------- 
 corpus.txt

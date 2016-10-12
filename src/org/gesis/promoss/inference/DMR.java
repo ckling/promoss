@@ -43,7 +43,7 @@ public class DMR implements Optimizable.ByGradientValue {
 	public double gaussianPriorVariance = 100;
 
 	public double[][] metadata;
-	public double[][] observations;
+	public float[][] observations;
 	
 	public double[] parameters;
 	
@@ -66,7 +66,7 @@ public class DMR implements Optimizable.ByGradientValue {
 		//double[][] Y = {{32,123,31},{132,115,31},{32,117,32},{131,31,222},{32,31,223},{131,31,222+Math.random()}};
 //		double[][] X = {{0},{0},{1},{1}};
 		double[][] X = {{0},{0},{1},{1}};
-		double[][] Y = {{32,923,100,100},{32,1203,100,100},{112,34,100,100},{123,35,100,100}};
+		float[][] Y = {{32,923,100,100},{32,1203,100,100},{112,34,100,100},{123,35,100,100}};
 		//double[][] X = {{1},{1},{1},{1}};
 		//double[][] Y = {{1000,1000},{1000,1000},{1000,1000},{1000,1000}};
 //		double[] parameters = dmr_test(X,Y);
@@ -113,7 +113,7 @@ public class DMR implements Optimizable.ByGradientValue {
 	 * @param metadata: Input for the regression, MxF 
 	 * @param probabilities: Observed probabilities, MxK
 	 */
-	DMR (double[][] metadata_in, double[][] observations) {
+	DMR (double[][] metadata_in, float[][] observations) {
 
 		this.M = observations.length;
 		//+ intercept!

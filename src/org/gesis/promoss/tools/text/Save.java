@@ -66,7 +66,11 @@ public class Save {
 
 	}
 
-	public void saveVar (Object[][] var, String filename) {
+
+
+
+		
+	public void saveVar (int[][] var, String filename) {
 
 		checkFile(filename);
 
@@ -79,7 +83,7 @@ public class Save {
 
 	}
 
-	public void saveVar (Object[] var, String filename) {
+	public void saveVar (int[] var, String filename) {
 
 		checkFile(filename);
 
@@ -93,8 +97,45 @@ public class Save {
 		}
 
 	}
+	
+	
+	public void saveVar (float[][] var, String filename) {
 
-	public void saveVar (Object var, String filename) {
+		checkFile(filename);
+
+		for (int i=0;i<var.length;i++)  {
+
+			saveVar(var[i],filename);
+			text.write(filename, "\n", true);
+
+		}
+
+	}
+
+	public void saveVar (float[] var, String filename) {
+
+		checkFile(filename);
+
+		for (int i=0;i<var.length;i++)  {
+
+			saveVar(var[i],filename);
+			if (i<var.length-1) {
+				text.write(filename, ",", true);
+			}
+
+		}
+
+	}
+	
+	
+	public void saveVar (int var, String filename) {
+
+		checkFile(filename);
+		text.write(filename, String.valueOf(var), true);
+
+	}
+	
+	public void saveVar (float var, String filename) {
 
 		checkFile(filename);
 

@@ -57,6 +57,7 @@ public class HMDP_Corpus extends Corpus {
 			}
 		}
 
+		//read non-empty document counts of clusters
 		dictText = new Text();
 
 		int doc_number=0;
@@ -67,13 +68,6 @@ public class HMDP_Corpus extends Corpus {
 				doc_number++;
 				String[] lineSplit = line.split(" ");
 
-				for (int i=1;i<lineSplit.length;i++) {
-					if (dict.contains(lineSplit[i])) {
-						C++;
-					}
-				}
-
-
 				String groupString = lineSplit[0];
 				String[] groupSplit = groupString.split(",");
 				for (int f=0;f<F;f++) {
@@ -81,7 +75,6 @@ public class HMDP_Corpus extends Corpus {
 					Cfg[f][g]++;
 					for (int c=0;c<A[f][g].length;c++) {
 						int a = A[f][g][c];
-
 						Cfc[f][a]++;
 						Cfd[f]++;
 					}
@@ -90,10 +83,97 @@ public class HMDP_Corpus extends Corpus {
 
 			}
 		}
-		
-		N = new int[M];
+				
+		dictText.close();
 		
 	}
+	
+	public void readDict() {
+		// Read dictionary from file
+		// The file contains words, one in each row
+
+		dict = new Dictionary();
+		String line;
+		if (!new File(dictfile).exists()) {
+
+			if (!processed && documentText == null) {
+				documentText = new Text();
+				documentText.setLang(language);
+				documentText.setStopwords(stopwords);
+				documentText.setStem(stemming);
+			}
+
+			//create the dict from all the words in the document
+			Text text = new Text();
+
+			HashMap<String,Integer> hs = new HashMap<String,Integer>();
+
+			while((line = text.readLine(documentfile))!=null){
+
+				String[] lineSplit = line.split(" ",2);
+				if (lineSplit.length >= 1) {
+					lineSplit = lineSplit[1].split(" ");
+					
+					if (processed) {
+						for(int i = 0; i < lineSplit.length; i++) {
+							String word = lineSplit[i];
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
+					}
+					else {
+
+						documentText.setText(line);
+
+						Iterator<String> words = documentText.getTerms();
+
+						while(words.hasNext()) {
+							String word = words.next();
+							int freq = 1;
+							if (hs.containsKey(word)) {
+								freq += hs.get(word);
+							}
+
+							hs.put(word,freq);
+
+						}
+					}
+
+				}
+
+			}
+
+
+			text.write(dictfile, "", false);
+
+			Set<Entry<String, Integer>> hses = hs.entrySet();
+			Iterator<Entry<String, Integer>> hsit = hses.iterator();
+			while(hsit.hasNext()) {
+				Entry<String,Integer> e = hsit.next();
+				if (e.getValue() >= MIN_DICT_WORDS && e.getKey().length() > 1) {
+					text.writeLine(dictfile, e.getKey(), true);
+				}
+			}
+
+		}		
+				
+		Text dictText = new Text();
+
+		while((line = dictText.readLine(dictfile)) != null) {
+
+			dict.addWord(line);
+
+		}
+		
+		dictText.close();
+
+	}
+
 
 	public void readGroups() {
 		//initialise if not yet done
@@ -123,8 +203,7 @@ public class HMDP_Corpus extends Corpus {
 					cluster[i-2] = Integer.valueOf(lineSplit[i]);
 
 					//Find out about the maximum cluster ID. The number of clusters is this ID +1
-					Cf[f] = 
-							Math.max(Cf[f],cluster[i-2] + 1);
+					Cf[f] = Math.max(Cf[f],cluster[i-2] + 1);
 				}
 
 				if(A[f].length - 1 < groupID) {
@@ -204,21 +283,17 @@ public class HMDP_Corpus extends Corpus {
 
 		//Try to read parsed documents
 		Load load = new Load();
-		wordsets = load.readVarSet(directory+"wordsets");
 		groups = load.readFileInt2(directory+"groups");
-		if (wordsets!=null && groups != null) {
-
-			for (int m=0;m<M;m++) {
-				Set<Entry<Integer, Short>> wordset = wordsets[m];
-				for (Entry<Integer,Short> e : wordset) {
-					N[m]+=e.getValue();
-				}		
-			}	
-
-			return ;
+		
+		if (load.readSVMlight(directory+"wordsets", this) && groups != null) {			
+			return;
 		}
-
-		wordsets = new Set[M];
+		
+		termIDs = new int[M][];
+		termFreqs = new short[M][];
+		
+		Save saveSVMlight = new Save();
+		
 		groups = new int[M+empty_documents.size()][F];
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
@@ -288,10 +363,8 @@ public class HMDP_Corpus extends Corpus {
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
-
-					wordsets[m]=wordset;
-					groups[m]=group;
 					m++;
+					saveSVMlight.saveVar(wordset, directory+"wordsets");
 				}
 				else {
 					groups[M+empty_counter]=group;
@@ -305,16 +378,15 @@ public class HMDP_Corpus extends Corpus {
 
 		System.out.println("");
 
-		for (m=0;m<M;m++) {
-			Set<Entry<Integer, Short>> wordset = wordsets[m];
-			for (Entry<Integer,Short> e : wordset) {
-				N[m]+=e.getValue();
-			}
-		}
-
+		saveSVMlight.close();
+		
 		Save save = new Save();
-		save.saveVar(wordsets, directory+"wordsets");
 		save.saveVar(groups, directory+"groups");
+		save.close();
+		
+		documentText.close();
+		
+		readDocs();
 
 		return;
 

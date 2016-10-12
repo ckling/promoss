@@ -25,6 +25,7 @@
 package org.gesis.promoss.inference;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
 import org.gesis.promoss.tools.probabilistic.Pair;
 import org.gesis.promoss.tools.text.DMR_Corpus;
 import org.gesis.promoss.tools.text.Save;
+import org.gesis.promoss.tools.text.Text;
 
 import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.OptimizationException;
@@ -50,7 +52,7 @@ public class DMR_CSVB {
 	//This class holds the corpus and its properties
 	//including metadata
 	public DMR_Corpus c;
-	
+
 	//We have a debugging mode for checking the parameters
 	public boolean debug = false;
 	//number of top words returned for the topic file
@@ -94,14 +96,13 @@ public class DMR_CSVB {
 	public Boolean store_empty = true;
 
 	//Estimated number of times term t appeared in topic k
-	public double[][] nkt;
+	public float[][] nkt;
 	//Estimated number of times term t appeared in topic k in the batch
-	private double[][] tempnkt;
+	private float[][] tempnkt;
 	//Estimated number of words in topic k
-	public double[] nk;
-
+	public float[] nk;
 	//Topic "counts" per document
-	public double[][] nmk;
+	public float[][] nmk;
 
 
 	//rho: Learning rate; rho = s / ((tau + t)^kappa);
@@ -137,7 +138,7 @@ public class DMR_CSVB {
 	 * Clusters belong to groups of connected clusters (e.g. adjacent clusters).
 	 */
 
-	
+
 	public double rhostkt_document;
 	public double oneminusrhostkt_document;
 
@@ -145,26 +146,27 @@ public class DMR_CSVB {
 	public int alpha_batch_counter = 0;
 
 
-	
-    int numFeatures;
-    int defaultFeatureIndex;
 
-	
+	int numFeatures;
+	int defaultFeatureIndex;
+
+
 	double[][] alphaCache;
-    double[] alphaSumCache;
-    
+	double[] alphaSumCache;
+
+
 	protected double alphaSum;
 	//The regression class
 	DMR dmr = null;
 	LimitedMemoryBFGS optimizer = null;
 
-	
+
 	DMR_CSVB() {
 		c = new DMR_Corpus();
 	}
-	
+
 	public void initialise () {
-		
+
 		// Folder names, files etc. 
 		c.dictfile = c.directory+"words.txt";
 		//textfile contains the group-IDs for each feature dimension of the document
@@ -172,7 +174,7 @@ public class DMR_CSVB {
 		c.documentfile = c.directory+"corpus.txt";
 		//metadata file, contains metadata separated by commas
 		c.metafile = c.directory+"meta.txt";
-		
+
 		System.out.println("Creating dictionary...");
 		c.readDict();	
 		System.out.println("Initialising parameters...");
@@ -180,34 +182,47 @@ public class DMR_CSVB {
 		System.out.println("Processing documents...");
 		c.readDocs();
 		System.out.println("Estimating topics...");
-		
-		
+
+
 	}
 
 	public void run () {
+
 		for (int i=0;i<RUNS;i++) {
 
-			System.out.println(c.directory + " run " + i + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
+			System.out.println(c.directory + " run " + rhot_step + " (alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta);
+			onePass();
 
-			rhot_step++;
-			//get step size
-			rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-			oneminusrhostkt_document = (1.0 - rhostkt_document);
-
-			int progress = c.M / 50;
-			if (progress==0) progress = 1;
-			for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
-				if(m%progress == 0) {
-					System.out.print(".");
-				}
-
-				inferenceDoc(m);
+			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
+				//store inferred variables
+				System.out.println("Storing variables...");
+				save();
 			}
-			System.out.println();
 
-			updateHyperParameters();
-			
-			if (rhot > BURNIN_DOCUMENTS &&  rhot % optimizeInterval == 0) {
+		}
+	}
+
+
+	public void onePass() {
+		rhot_step++;
+		//get step size
+		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
+		oneminusrhostkt_document = (1.0 - rhostkt_document);
+
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			inferenceDoc(m);
+		}
+		System.out.println();
+
+		updateHyperParameters();
+
+		if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval) == 0) {
 			//Here we train the Dirichlet-Multinomial Regression using original Mallet code
 			if (dmr == null) {
 				dmr = new DMR(c.meta, nmk);
@@ -225,59 +240,33 @@ public class DMR_CSVB {
 			} catch (OptimizationException e) {
 				// step size too small
 			}
-			
+
 			// Optimize once
 			try {
 				optimizer.optimize();
 			} catch (OptimizationException e) {
 				// step size too small
 			}
-			
-			double[] params = new double[dmr.getNumParameters()];
-			dmr.getParameters(params);
-			
-			int K = dmr.K;
-			int F = dmr.F;
-			for (int k=0;k<K;k++) {
-				for (int f=0;f<F;f++) {
-					System.out.println ("K: " + k + " F: "+f + "  " + params[k*F+f]);
-				}
-			}
-			}
-		
-
-			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
-				//store inferred variables
-				System.out.println("Storing variables...");
-				save();
-			}
-			
-			if (rhot > BURNIN_DOCUMENTS){
-			Save save = new Save();
-			save.saveVar(perplexity()+"\n", "/home/c/dmr"+save_prefix+"perplexity");
-			}
 
 		}
 	}
 
-
-
 	//set Parameters
 	public void initParameters() {
-		
+
 		beta_V = beta * c.V;
-		
+
 
 		if (rhos_document < 0) 
 			rhos_document = rhos;
-		
+
 		if (rhotau_document < 0) 
 			rhotau_document = rhotau;
-		
+
 
 		if (rhokappa_document < 0) 
 			rhokappa_document = rhokappa;
-				
+
 		c.readFfromTextfile();
 
 		c.V = c.dict.length();
@@ -286,48 +275,46 @@ public class DMR_CSVB {
 		for (int k=0;k<T;k++) {
 			alpha[k] = 5.0 / T;
 		}
-		
+
 		beta_V = beta * c.V;
 
 		batch_words = new int[c.V];
 
-		nk = new double[T];
-		nkt = new double[T][c.V];	
-		tempnkt = new double[T][c.V];	
+		nk = new float[T];
+		nkt = new float[T][c.V];	
+		tempnkt = new float[T][c.V];	
 
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
 		rhot_words_doc=new int[c.M];
-	
-		nmk = new double[c.M][T];
+
+		nmk = new float[c.M][T];
 
 		for (int t=0; t < c.V; t++) {
 			for (int k=0;k<T;k++) {
 
-				nkt[k][t]= Math.random()*INIT_RAND;
+				nkt[k][t]= (float) (Math.random()*INIT_RAND);
 				nk[k]+=nkt[k][t];
 
 			}
 		}
-		
+
 	}
 
 
-	
+
 
 	public void inferenceDoc(int m) {
 
 		//increase counter of documents seen
 		rhot++;
 
-		//Expectation(number of tables)
-		double[] sumqmk = new double[T];
 
 		double rhostkt_documentNm = rhostkt_document * c.getN(m);
-		
+
 		double[] alpha_m = null;
-		if (rhot_step > BURNIN_DOCUMENTS) {
+		if (rhot_step > BURNIN_DOCUMENTS+1) {
 			alpha_m = dmr.predict(m);
 		}
 		else {
@@ -336,7 +323,7 @@ public class DMR_CSVB {
 
 		int[] termIDs = c.getTermIDs(m);
 		short[] termFreqs = c.getTermFreqs(m);
-		
+
 		//Process words of the document
 		for (int i=0;i<termIDs.length;i++) {
 
@@ -356,11 +343,14 @@ public class DMR_CSVB {
 			double[] q = new double[T];
 			//sum for normalisation
 			double qsum = 0.0;
-			
+
 
 
 			for (int k=0;k<T;k++) {
-
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
 				q[k] = 	//probability of topic given feature & group
 						(nmk[m][k] + alpha_m[k])
 						//probability of topic given word w
@@ -368,7 +358,7 @@ public class DMR_CSVB {
 						/ (nk[k] + beta_V);
 
 				qsum+=q[k];
-				
+
 			}
 
 
@@ -381,7 +371,6 @@ public class DMR_CSVB {
 					System.out.println("Error calculating gamma " +
 							" second part: " + (nkt[k][t] + beta) / (nk[k] + beta_V) + 
 							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
-							" sumqmk " + sumqmk[k] + 
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
 							" nkt " + nkt[k][t]+ 	
@@ -399,24 +388,24 @@ public class DMR_CSVB {
 				if (rhot_step>BURNIN) {
 					tempnkt[k][t]+=q[k]*termfreq;
 				}
-
-				//update probability of _not_ seeing k in the current document
-				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
-
+				
 				//in case the document contains only this word, we do not use nmk
 				if (c.getN(m) != termfreq) {
 
 					//update document-feature-cluster-topic counts
 					if (termfreq==1) {
-						nmk[m][k] = oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k];
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
 					}
 					else {
 						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k];
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
 					}
-					
+
 					//if (m==0) System.out.println(nmk[m][k] );
 
+				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
 				}
 
 			}
@@ -428,13 +417,6 @@ public class DMR_CSVB {
 		//get probability for NOT seeing topic f to update delta
 		//double[] tables_per_feature = new double[c.F];
 
-
-
-		double[] topic_ge_0 = new double[T];
-		for (int k=0;k<T;k++) {
-			//Probability that we saw the given topic
-			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
-		}
 
 		//We update global topic-word counts in batches (mini-batches lead to local optima)
 		//after a burn-in phase
@@ -454,9 +436,9 @@ public class DMR_CSVB {
 		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
 		double rhostktnormC = rhostkt * (c.C / Double.valueOf(BasicMath.sum(batch_words)));
 
-		
 
-		nk = new double[T];
+
+		nk = new float[T];
 		for (int k=0;k<T;k++) {
 			for (int v=0;v<c.V;v++) {
 				double oneminusrhostkt = (1.0 - rhostkt);
@@ -483,15 +465,15 @@ public class DMR_CSVB {
 		}
 
 	}
-	
+
 	public void updateHyperParameters() {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
 			//alpha = DirichletEstimation.estimateAlpha(nmk);
 
-			beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
-			
-			beta_V = beta * c.V;
+			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
+
+			//beta_V = beta * c.V;
 
 		}
 
@@ -503,27 +485,27 @@ public class DMR_CSVB {
 		return Double.valueOf(s)/Math.pow((tau + t),kappa);
 	}
 
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
+
+
 
 	public void save () {
 
 		String output_base_folder = c.directory + "output_DMRTM/";
-		
-        File output_base_folder_file = new File(output_base_folder);
-        if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
-        
-        String output_folder = output_base_folder + rhot_step + "/";
-		
-        File file = new File(output_folder);
-        if (!file.exists()) file.mkdir();
-		
+
+		File output_base_folder_file = new File(output_base_folder);
+		if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
+
+		String output_folder = output_base_folder + rhot_step + "/";
+
+		File file = new File(output_folder);
+		if (!file.exists()) file.mkdir();
+
 		Save save = new Save();
 		save.saveVar(nkt, output_folder+save_prefix+"nkt");
 		save.close();
@@ -538,12 +520,12 @@ public class DMR_CSVB {
 		}
 		if (rhot_step == RUNS) {
 
-			double[][] doc_topic;
+			float[][] doc_topic;
 			if (store_empty) {
 
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
-				doc_topic = new double[Me][T];
+				doc_topic = new float[Me][T];
 				for (int m=0;m<Me;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -552,9 +534,9 @@ public class DMR_CSVB {
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
-						doc_topic[me]  = new double[T];
+						doc_topic[me]  = new float[T];
 						for (int k=0;k<T;k++) {
-							doc_topic[me][k] = 1.0 / T;
+							doc_topic[me][k] = (float) (1.0 / T);
 						}
 					}
 					else {				
@@ -566,7 +548,7 @@ public class DMR_CSVB {
 
 			}
 			else {
-				doc_topic = new double[c.M][T];
+				doc_topic = new float[c.M][T];
 				for (int m=0;m < c.M;m++) {
 					for (int k=0;k<T;k++) {
 						doc_topic[m][k]  = 0;
@@ -604,7 +586,7 @@ public class DMR_CSVB {
 
 		}
 		save.saveVar(topktopics, output_folder+save_prefix+"topktopics");
-		
+
 		save.saveVar(
 				"\nalpha "+ alpha+
 				"\nbeta " + beta +
@@ -617,6 +599,13 @@ public class DMR_CSVB {
 				"\nMIN_DICT_WORDS "+c.MIN_DICT_WORDS
 				,output_folder+save_prefix+"others");
 
+		if (dmr != null) {
+			double[] params = new double[dmr.getNumParameters()];
+			dmr.getParameters(params);
+
+			save.saveVar(params, output_folder+save_prefix+"dmr_parameters");
+			save.close();
+		}
 
 	}
 
@@ -635,27 +624,30 @@ public class DMR_CSVB {
 		int runmax = 20;
 
 
+		double[] alpha_m = alpha;
 
-		
 		for (int m = testsize; m < c.M; m++) {
-			
+
 
 			int[] termIDs = c.getTermIDs(m);
 			short[] termFreqs = c.getTermFreqs(m);
-						
+
 			int doclength = termIDs.length;
 			double[][] z = new double[doclength][T];
-			
-			double[] alpha_m = dmr.predict(m);
+
+			if (rhot_step > BURNIN_DOCUMENTS) {
+				alpha_m = dmr.predict(m);
+			}
+
 
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
-								
+
 				//word index
 				int n = 0;
 				//Process words of the document
 				for (int i=0;i<termIDs.length;i++) {
-					
+
 					//term index
 					int t = termIDs[i];
 					//How often doas t appear in the document?
@@ -670,8 +662,6 @@ public class DMR_CSVB {
 					double[] q = new double[T];
 					//sum for normalisation
 					double qsum = 0.0;
-					
-					
 
 					for (int k=0;k<T;k++) {
 
@@ -700,16 +690,16 @@ public class DMR_CSVB {
 
 			int n=0;
 			//sampling of topic-word distribution finished - now calculate the likelihood and normalise by totalLength
-			
+
 			for (int i=0;i<termIDs.length;i++) {
-				
+
 				//term index
 				int t = termIDs[i];
 				//How often does t appear in the document?
 				int termfreq = termFreqs[i];
 
 				double lik = 0;
-				
+
 				for (int k=0;k<T;k++) {
 					lik +=   z[n][k] * (nkt[k][t] + beta) / (nk[k] + beta_V);				
 				}
@@ -727,8 +717,10 @@ public class DMR_CSVB {
 
 		}
 
-		//get perplexity
-		return (Math.exp(- likelihood / Double.valueOf(totalLength)));
+		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
+		
+		System.out.println("Perplexity: " + perplexity);
+		return (perplexity);
 
 
 	}

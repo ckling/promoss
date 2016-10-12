@@ -11,7 +11,14 @@ public class Run {
 	public static void main (String[] args)  {
 
 		if (new File("/home/c/work/").exists() && (args == null || args.length == 0)) {
-			args = "-directory /home/c/work/topicmodels/ml8/ -method LDA -INIT_RAND 1 -T 100 -meta_params G(400) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+
+			args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+
+			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000,Y1000,W1000,D1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+			//args = "-directory /home/c/work/topicmodels/maryam8/ -method HMD -T 70 -meta_params G(10) -MIN_DICT_WORDS 1 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+
+			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000,Y1000,W1000,D1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+
 		}
 		
 		if (args == null || args.length == 0) {
@@ -186,6 +193,163 @@ public class Run {
 
 			hmdp.initialise();
 			hmdp.run();
+
+		}
+		else if (method.equals("HMD")) {
+
+			//TODO: insert in importer
+			String params ="G(1000)";
+
+			HMD_PCSVB hmd = new HMD_PCSVB();
+
+
+			for (int i=0; i < args.length; i++) {
+
+				if (args[i].equals("-directory")) 
+					hmd.c.directory = args[++i];
+
+				else if (args[i].equals("-save_prefix")) 
+					hmd.save_prefix = args[++i];
+				
+				else if (args[i].equals("-topk")) 
+					hmd.topk = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-T")) 
+					hmd.T = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-TRAINING_SHARE")) 
+					hmd.TRAINING_SHARE = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-delta_fix")) 
+					hmd.delta_fix = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-BATCHSIZE")) 
+					hmd.BATCHSIZE = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-BATCHSIZE_GROUPS")) 
+					hmd.BATCHSIZE_GROUPS = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-RUNS")) 
+					hmd.RUNS = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-BURNIN")) 
+					hmd.BURNIN = Integer.valueOf(args[++i]);
+				
+				else if (args[i].equals("-alpha_1")) 
+					hmd.alpha_1 = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-MIN_DICT_WORDS")) 
+					hmd.c.MIN_DICT_WORDS = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-language")) 
+					hmd.c.language = args[++i];
+
+				else if (args[i].equals("-stemming")) 
+					hmd.c.stemming = Boolean.valueOf(args[++i]);
+
+				else if (args[i].equals("-stopwords")) 
+					hmd.c.stopwords = Boolean.valueOf(args[++i]);
+
+				else if (args[i].equals("-INIT_RAND")) 
+					hmd.INIT_RAND = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-INIT_RAND")) 
+					hmd.INIT_RAND = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-BURNIN_DOCUMENTS")) 
+					hmd.BURNIN_DOCUMENTS = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-SAMPLE_ALPHA")) 
+					hmd.SAMPLE_ALPHA = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhokappa")) 
+					hmd.rhokappa = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhos")) 
+					hmd.rhos = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhotau")) 
+					hmd.rhotau = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhokappa_document")) 
+					hmd.rhokappa_document = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhos_document")) 
+					hmd.rhos_document = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhotau_document")) 
+					hmd.rhotau_document = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhokappa_group")) 
+					hmd.rhokappa_group = Double.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhos_group")) 
+					hmd.rhos_group = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-rhotau_group")) 
+					hmd.rhotau_group = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-BATCHSIZE_ALPHA")) 
+					hmd.BATCHSIZE_ALPHA = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-SAVE_STEP")) 
+					hmd.SAVE_STEP = Integer.valueOf(args[++i]);
+
+				else if (args[i].equals("-processed")) 
+					hmd.c.processed = Boolean.valueOf(args[++i]);
+
+				else if (args[i].equals("-epsilon")) {
+					String[] argssplit = args[++i].split(",");
+					double[] epsilon = new double[argssplit.length]; 
+					for (int j=0;j<epsilon.length;j++) {
+						epsilon[j] = Double.valueOf(argssplit[j]);
+					}
+					hmd.epsilon = epsilon;
+				}
+
+				else if (args[i].equals("-store_empty")) 
+					hmd.store_empty = Boolean.valueOf(args[++i]);
+
+				//G;T(L1000,Y100,M10,W10,D10);N
+				else if (args[i].equals("-meta_params")) 
+					params = args[++i];
+				//Skip method parameter
+				else if (args[i].equals("-method")) 
+					i++;
+
+				else {
+					System.out.println("Can not parse "+args[i]);
+					System.out.println("Please specify correct model parameters. See readme.txt for details.");
+
+					return;
+				}
+
+			}
+
+			String corpusname = "corpus.txt";
+			String metaname = "meta.txt";
+
+			//File corpusfile = new File(hmdp.c.directory + corpusname);
+			//File metafile = new File(hmdp.c.directory + metaname);
+
+			File textsFile = new File(hmd.c.directory + "texts.txt");
+			File groupClusterFile = new File(hmd.c.directory + "groups.txt");
+
+			if (!textsFile.exists() || !groupClusterFile.exists()) {
+				
+				System.out.println("Clustering metadata...");
+				ClusterMetadata.transformData(params, hmd.c.directory, metaname, corpusname, "cluster/");
+
+				File wordsetfile = new File(hmd.c.directory + "wordsets");
+				if (wordsetfile.exists())
+					wordsetfile.delete();
+				File groupfile = new File(hmd.c.directory + "groups");
+				if (groupfile.exists())
+					groupfile.delete();
+			}
+
+			hmd.initialise();
+			hmd.run();
 
 		}
 		else if (method.equals("LDA")) {

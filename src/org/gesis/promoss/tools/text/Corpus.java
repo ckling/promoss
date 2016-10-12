@@ -257,7 +257,7 @@ public class Corpus {
 		}
 
 		String line = ""; 
-		int m=0;
+		int m =0;
 		int line_number = 0;
 		Save saveSVMlight = new Save();
 		
@@ -308,23 +308,11 @@ public class Corpus {
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
-
-					saveSVMlight.saveVar(wordset, directory+"wordsets");
-					
-					int[] docTermIDs = new int[wordset.size()];
-					short[] docTermFreqs = new short[wordset.size()];
-					
-					int i=0;
-					for (Entry<Integer,Short> e : wordset) {
-						int key = e.getValue();
-						short value = e.getValue();
-						docTermIDs[i] = key;
-						docTermFreqs[i] = value;
-						N[m]+=value;
-						i++;
-					}
 					
 					m++;
+
+					saveSVMlight.saveVar(wordset, directory+"wordsets");
+
 				}
 				else {
 					empty_counter++;
@@ -336,6 +324,11 @@ public class Corpus {
 		}
 
 		System.out.println("");
+		
+		documentText.close();
+		
+		Load load = new Load();
+		load.readSVMlight(directory+"wordsets", this);
 
 		return;
 

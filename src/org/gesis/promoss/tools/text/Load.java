@@ -82,7 +82,6 @@ public class Load {
 		int m = 0;
 		
 		while((line = text.readLine(filename))!=null) {
-			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 			if(!line.equals("")) {
 				String[] lineSplit = line.split(" ");
 				
@@ -100,8 +99,12 @@ public class Load {
 					String val = key_val[1];
 					N[m]+=Integer.valueOf(val);
 					termIDs[m][i-1] = Integer.valueOf(key);
-					termFreqs[m][i-1] = Short.valueOf(val);
+					termFreqs[m][i-1] = (short) Math.round(Float.valueOf(val));
 				}
+			}
+			else {
+				termIDs[m] = new int[0];
+				termFreqs[m] = new short[0];
 			}
 			m++;
 		}
