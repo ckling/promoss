@@ -99,7 +99,7 @@ public class Load {
 					String val = key_val[1];
 					N[m]+=Integer.valueOf(val);
 					termIDs[m][i-1] = Integer.valueOf(key);
-					termFreqs[m][i-1] = (short) Math.round(Float.valueOf(val));
+					termFreqs[m][i-1] = Short.valueOf(val);
 				}
 			}
 			else {

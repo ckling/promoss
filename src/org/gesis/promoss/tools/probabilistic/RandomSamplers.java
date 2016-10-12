@@ -1151,6 +1151,7 @@ public class RandomSamplers {
 		return numtable;
 	}
 
+
 	public int randNumTable(double weight, int maxtable) {
 
 		if (maxtable <= 1) return maxtable;
@@ -1318,6 +1319,11 @@ public class RandomSamplers {
 	 * @return
 	 */
 	public double[] stirling(int nn) {	
+		
+		if (nn >= MAXSTIRLING) {
+			nn = MAXSTIRLING-1;
+		}
+		
 		if (allss[0] == null) {
 			allss[0] = new double[1];
 			allss[0][0] = 1;

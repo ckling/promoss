@@ -20,7 +20,7 @@ public class Map {
 	//		map.addPolygon(lat,lon,0.2,1);
 	//	}
 
-	public Map (int areas) {
+	public Map (double latCenter, double lonCenter, int level,int areas) {
 
 		addText("<!DOCTYPE html>"+
 				"<html>"+

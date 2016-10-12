@@ -151,8 +151,7 @@ public class HMDP_PCSVB {
 	public int rhot = 0;
 	//tells the number of the current run)
 	public int rhot_step = 0;
-	//tells the number of words seen in this document
-	private int[] rhot_words_doc;
+
 
 	//count number of words seen in the batch
 	//remember that rhot counts the number of documents, not words
@@ -369,7 +368,6 @@ public class HMDP_PCSVB {
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
-		rhot_words_doc=new int[c.M];
 		rhot_group = new int[c.F][];
 		for (int f=0;f<c.F;f++) {
 			rhot_group[f]=new int[c.A[f].length];
@@ -537,8 +535,7 @@ public class HMDP_PCSVB {
 			//How often doas t appear in the document?
 			int termfreq = termFreqs[i];
 
-			//update number of words seen
-			rhot_words_doc[m]+=termfreq;
+
 			if (rhot_step>BURNIN) {
 				//increase number of words seen in that batch
 				batch_words[t]+=termfreq;

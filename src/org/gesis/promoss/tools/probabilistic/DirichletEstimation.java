@@ -256,6 +256,23 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
+	public static double[] guessAlpha(float[][] pp, double[] pmean) {
+		// first and second moments of the columns of p
+
+		int K = pp[0].length;
+		double[] pmeansq = colMoments(pp, 2);
+
+		// init alpha_k using moments method (19-21)
+		double[] alpha = Vectors.copy(pmean);
+		double precision = guessPrecision(pmean, pmeansq);
+		precision /= K;
+		// System.out.println("precision = " + precision);
+		// alpha_k = mean_k * precision
+		for (int k = 0; k < K; k++) {
+			alpha[k] = pmean[k] * precision;
+		}
+		return alpha;
+	}
 
 	/**
 	 * Estimate the Dirichlet mean of the data along columns
@@ -430,6 +447,25 @@ public class DirichletEstimation {
 	 * @return
 	 */
 	private static double[] colMoments(double[][] xx, int order) {
+		int K = xx[0].length;
+		int N = xx.length;
+
+		double[] pmean2 = new double[K];
+		for (int i = 0; i < N; i++) {
+			for (int k = 0; k < K; k++) {
+				double element = xx[i][k];
+				for (int d = 1; d < order; d++) {
+					element *= element;
+				}
+				pmean2[k] += element;
+			}
+		}
+		for (int k = 0; k < K; k++) {
+			pmean2[k] /= N;
+		}
+		return pmean2;
+	}
+	private static double[] colMoments(float[][] xx, int order) {
 		int K = xx[0].length;
 		int N = xx.length;
 

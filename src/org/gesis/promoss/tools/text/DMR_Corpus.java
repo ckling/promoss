@@ -21,9 +21,69 @@ public class DMR_Corpus extends Corpus {
 	 * number of groups in the first line of the textfile
 	 */
 	public void readFfromTextfile() {
-		String firstLine = Text.readLineStatic(documentfile);
+		String firstLine = Text.readLineStatic(metafile);
 		//File e.g. looks like groupID1,groupID2,groupID3,groupID4 word1 word2 word3
 		F = firstLine.split(" ")[0].split(",").length;
+	}
+	
+	public void readCorpusSize() {
+		
+		Load load = new Load();
+
+		//Try to read parsed documents
+		//TODO: add empty documents to svmlight!
+		//if (load.readSVMlight(directory+"wordsets", this)) {			
+		//	return;
+		//}
+		
+		// Else read dictionary from file
+		// The file contains words, one in each row
+
+		int line_number=0;
+		Text dictText = new Text();
+
+		String line;
+		while((line = dictText.readLine(documentfile)) != null) {
+			line_number++;
+
+			String[] lineSplit = line.split(" ");
+			boolean empty = true;
+			for (int i=1;i<lineSplit.length;i++) {
+				if (dict.contains(lineSplit[i])) {
+					empty = false;
+					break;
+				}
+			}
+
+			if (empty) {
+				empty_documents.add(line_number);
+			}
+			else {
+				M++;
+			}
+		}
+
+		dictText = new Text();
+
+		int doc_number=0;
+		line_number = 0;
+		while((line = dictText.readLine(documentfile)) != null && doc_number < Double.valueOf(M)*TRAINING_SHARE) {
+			line_number++;
+			if (!empty_documents.contains(line_number)) {
+				doc_number++;
+				String[] lineSplit = line.split(" ");
+
+				for (int i=1;i<lineSplit.length;i++) {
+					if (dict.contains(lineSplit[i])) {
+						C++;
+					}
+				}
+
+			}
+		}
+		
+		N = new int[M];
+		
 	}
 
 	@SuppressWarnings("unchecked")

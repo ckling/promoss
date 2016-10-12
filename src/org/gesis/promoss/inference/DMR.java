@@ -12,10 +12,8 @@ import org.gesis.promoss.tools.probabilistic.Gamma;
 import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.OptimizationException;
-import cc.mallet.topics.DMROptimizable;
 import cc.mallet.types.Dirichlet;
-import cc.mallet.types.FeatureVector;
-import cc.mallet.types.Instance;
+
 
 
 

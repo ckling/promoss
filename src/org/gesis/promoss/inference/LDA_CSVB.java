@@ -389,11 +389,9 @@ public class LDA_CSVB {
 
 		if(rhot_step>BURNIN_DOCUMENTS) {
 
-
-			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha) ;
 			
 
-			//alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
+			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 
 			//if (BasicMath.sum(alpha) > T) {
 			//	for (int k=0;k<T;k++) {
