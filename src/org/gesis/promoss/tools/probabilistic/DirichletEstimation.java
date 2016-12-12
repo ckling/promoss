@@ -785,7 +785,7 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
-	
+
 
 
 	public static double[] estimateAlphaLik(float[][] nmk, double[] alpha) {
@@ -940,7 +940,7 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
-	
+
 
 	/**
 	 * fixpoint iteration for calculating alpha for several Dirichlet-multinomial distributions 
@@ -1023,7 +1023,7 @@ public class DirichletEstimation {
 
 		return estimateAlphaLikChanging(nmknew, alpha, iter);
 	}
-	
+
 	public static double estimateAlphaLikChanging(float[][][] nmk,
 			double alpha, int iter) {
 
@@ -1204,12 +1204,263 @@ public class DirichletEstimation {
 
 	}
 
+	public static double estimateAlphaNewton(int[] nm, double[][] nmk, double[][] pimk, double alpha_1, int a, int b) {
+
+
+		
+		int M = nmk.length;
+		int K = nmk[0].length;
+		double[][] pimk2 = new double[M][K];
+		for (int m=0;m<M;m++) {
+			for (int k=0;k<K;k++) {
+				pimk2[m][k]=pimk[m][k]*pimk[m][k];
+			}
+		}
+
+		int iterations = 20;
+		for (int i=0;i<iterations;i++) {
+
+			double nominator = M * Gamma.digamma(alpha_1);
+			for (int m=0;m<M;m++) {
+				nominator -= Gamma.digamma(alpha_1+nm[m]);
+				for (int k=0;k<K;k++) {
+					nominator+= Gamma.digamma(alpha_1 * pimk[m][k] + nmk[m][k]) * pimk[m][k];
+					nominator-=Gamma.digamma(alpha_1 * pimk[m][k])* pimk[m][k];
+				}
+			}
+			nominator+=(a-1)/alpha_1 - b;
+
+			double denominator = M *  Gamma.trigamma(alpha_1);
+			for (int m=0;m<M;m++) {
+				denominator -= Gamma.trigamma(alpha_1+nm[m]);
+				for (int k=0;k<K;k++) {
+					denominator+= Gamma.trigamma(alpha_1 * pimk[m][k] +nmk[m][k])* pimk2[m][k];
+					denominator-=Gamma.trigamma(alpha_1 * pimk[m][k])* pimk2[m][k];
+				}
+			}
+			denominator+=(1-a) / (alpha_1*alpha_1);
+
+			//System.out.println("alpha: "+ alpha_1 + " "  + nominator + " "  + denominator);
+
+			alpha_1 -= nominator/denominator;
+			
+			if (alpha_1 <= 0) {
+				System.out.println("Alpha 1 estimation error: " + alpha_1);
+				alpha_1 += nominator/denominator;
+				break;
+			}
+
+			//System.out.println("alpha new: "+ alpha_1);
+		}
+
+		return alpha_1;
+
+	}
+	
+	public static double estimateAlphaNewton(double[] nm, double[][] nmk, double[] pi, double alpha_1, int a, int b) {
+
+		int M = nmk.length;
+		int K = nmk[0].length;
+		double[][] pi2 = new double[M][K];
+		for (int m=0;m<M;m++) {
+			for (int k=0;k<K;k++) {
+				pi2[m][k]=pi[k]*pi[k];
+			}
+		}
+
+		int iterations = 20;
+		for (int i=0;i<iterations;i++) {
+
+			double nominator = M * Gamma.digamma(alpha_1);
+			for (int m=0;m<M;m++) {
+				nominator -= Gamma.digamma(alpha_1+nm[m]);
+				for (int k=0;k<K;k++) {
+					nominator+= Gamma.digamma(alpha_1 * pi[k] + nmk[m][k]) * pi[k];
+					nominator-=Gamma.digamma(alpha_1 * pi[k])* pi[k];
+				}
+			}
+			nominator+=(a-1)/alpha_1 - b;
+
+			
+			double denominator = M *  Gamma.trigamma(alpha_1);
+			for (int m=0;m<M;m++) {
+				denominator -= Gamma.trigamma(alpha_1+nm[m]);
+				for (int k=0;k<K;k++) {
+					denominator+= Gamma.trigamma(alpha_1 * pi[k] +nmk[m][k])* pi2[m][k];
+					denominator-=Gamma.trigamma(alpha_1 * pi[k])* pi2[m][k];
+				}
+			}
+			denominator+=(1-a) / (alpha_1*alpha_1);
+
+			//System.out.println("alpha: "+ alpha_1 + " "  + nominator + " "  + denominator);
+
+			alpha_1 -= nominator/denominator;
+			
+			if (alpha_1 <= 0) {
+				System.out.println("Alpha 1 estimation error: " + alpha_1);
+				alpha_1 += nominator/denominator;
+				break;
+			}
+		}
+
+		return alpha_1;
+
+	}
+	
+
+	public static double[] estimateAlphaNewton(double[] nm, double[][] nmk, double[] alpha, int M, int a, int b) {
+
+		if (M==0) {
+			M = nmk.length;
+		}
+		int K = nmk[0].length;
+		
+	
+		double[] nominators = new double[K];
+
+		int iterations = 20;
+		for (int i=0;i<iterations;i++) {
+
+			double sum_alpha = BasicMath.sum(alpha);
+			
+			//first parts of the equations are independent of k
+			double fp_1 = M * Gamma.digamma(sum_alpha);
+			double fp_2 = M * Gamma.trigamma(sum_alpha);
+
+			for (int m=0;m<M;m++) {
+				fp_1 -= Gamma.digamma(nm[m]+sum_alpha);
+				fp_2 -= Gamma.trigamma(nm[m]+sum_alpha);
+			}
+
+
+			
+			for (int k=0;k<K;k++) {
+				nominators[k] = fp_1;
+			}
+			
+			for (int m=0;m<M;m++) {
+				for (int k=0;k<K;k++) {
+					nominators[k]+= Gamma.digamma(alpha[k] + nmk[m][k]) - Gamma.digamma(alpha[k]);
+				}
+			}
+			
+			for (int k=0;k<K;k++) {
+				nominators[k] += (a-1)/sum_alpha - b;
+			}
+			
+			double[] denominators = new double[K];
+			for (int k=0;k<K;k++) {
+				denominators[k]=0;
+			}
+			for (int m=0;m<M;m++) {
+				for (int k=0;k<K;k++) {
+					denominators[k]+= Gamma.trigamma(alpha[k] +nmk[m][k]) - Gamma.trigamma(alpha[k]);
+				}
+			}
+			
+			for (int k=0;k<K;k++) {
+				denominators[k] += (1-a)/(sum_alpha*sum_alpha);
+			}
+
+			//System.out.println("alpha: "+ alpha_1 + " "  + nominator + " "  + denominator);
+			
+			double invsum = 0;
+			for (int k=0;k<K;k++) {
+				invsum += 1/denominators[k];
+			}
+			
+			double b2 = 0;
+			for (int k=0;k<K;k++) {
+				b2 += (nominators[k] / denominators[k]);
+			}
+			b2 /= ((1/fp_2) + invsum);
+			
+			for (int k=0;k<K;k++) {
+				alpha[k] -= (nominators[k] - b2) / denominators[k];
+				//System.out.println("alpha new: "+ alpha[k]);
+
+			}
+
+		}
+
+		return alpha;
+
+	}
+	
+	
+//	public static double[] estimateAlphaNewton(int[] nm, double[][] nmk, double[] alpha, int M) {
+//
+//		if (M==0) {
+//			M = nmk.length;
+//		}
+//		int K = nmk[0].length;
+//		
+//	
+//		double[] nominators = new double[K];
+//
+//		int iterations = 50;
+//		for (int i=0;i<iterations;i++) {
+//
+//			double sum_alpha = BasicMath.sum(alpha);
+//			
+//			//first parts of the equations are independent of k
+//			double fp_1 = M * Gamma.digamma(sum_alpha);
+//			double fp_2 = M * Gamma.trigamma(sum_alpha);
+//
+//			for (int m=0;m<M;m++) {
+//				fp_1 -= Gamma.digamma(nm[m]+sum_alpha);
+//				fp_2 -= Gamma.trigamma(nm[m]+sum_alpha);
+//			}
+//			
+//			for (int k=0;k<K;k++) {
+//				nominators[k] = fp_1;
+//			}
+//			
+//			for (int m=0;m<M;m++) {
+//				for (int k=0;k<K;k++) {
+//					nominators[k]+= Gamma.digamma(alpha[k] + nmk[m][k]) - Gamma.digamma(alpha[k]);
+//				}
+//			}
+//			double[] denominators = new double[K];
+//			for (int k=0;k<K;k++) {
+//				denominators[k]=fp_2;
+//			}
+//			for (int m=0;m<M;m++) {
+//				for (int k=0;k<K;k++) {
+//					denominators[k]+= Gamma.trigamma(alpha[k] +nmk[m][k]) - Gamma.trigamma(alpha[k]);
+//				}
+//			}
+//
+//			
+//			
+//			for (int k=0;k<K;k++) {
+//				alpha[k] -= (nominators[k]) / denominators[k];
+//				alpha[k] -= (K-1) * ((nominators[k]) / fp_2);
+//				System.out.println("alpha new: "+ alpha[k]);
+//
+//			}
+//
+//		}
+//
+//		return alpha;
+//
+//	}
+	
+
 	// ////////////////////////////
 
 	public static void main(String[] args) throws Exception {
 
+		double[] nm = {1,2,3,4,5};
+		double[][] nmk = {{0.3,0.7},{0.4,1.6},{0.4,2.6},{0.4,3.6},{4.4,.6}};
+		double[][] pimk = {{0.3,0.7},{0.1,.9},{.4,.6},{0.9,.1},{.4,.6}};
+		//double alpha = 1;
+		double[] alpha = {1,1};
+
+		alpha = estimateAlphaNewton(nm,nmk,alpha,0,1,1);
+		System.out.println(alpha[0] +" " + alpha[1]);
 		// testing estimation of alpha from p
-		
+
 		//testDirichlet();
 	}
 

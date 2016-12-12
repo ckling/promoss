@@ -48,11 +48,28 @@ public class RandomSamplers {
 
 		RandomSamplers rs = new RandomSamplers();
 
-		int[] array = {3000,1000,20,40,50};
-		double test = rs.randConParam(1.0,array,2000,1,1,200000);
-		System.out.println(test);
 		
-		System.out.println(rs.randNumTable(0.01, 0.06469682883194869));
+		
+		int n = 1000;
+		double[] stir = rs.stirling(n);
+		for (int i=0;i<stir.length-1;i++) {
+			System.out.println((stir[i]/stir[i+1]));
+		}
+		
+		System.out.println("----");
+		
+		//s(n+1,m+1) / s(n,m)
+		int n2 = n+1;
+		double[] stir2 = rs.stirling(n2);
+		for (int i=0;i<stir.length-1;i++) {
+			System.out.println(Math.exp((Math.log(stir2[i])+ rs.logmaxss[n2-1]) - (Math.log(stir[i]) + rs.logmaxss[n-1]))/n2);
+		}
+		
+		//int[] array = {3000,1000,20,40,50};
+		//double test = rs.randConParam(1.0,array,2000,1,1,200000);
+		//System.out.println(test);
+		
+		//System.out.println(rs.randNumTable(0.01, 0.06469682883194869));
 
 
 		//		double[] test = rs.stirling(10);

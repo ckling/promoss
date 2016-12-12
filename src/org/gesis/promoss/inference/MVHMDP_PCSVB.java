@@ -28,15 +28,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.ArrayUtils;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Pair;
-import org.gesis.promoss.tools.probabilistic.RandomSamplers;
 import org.gesis.promoss.tools.text.HMDP_Corpus;
 import org.gesis.promoss.tools.text.Save;
 
@@ -44,7 +41,7 @@ import org.gesis.promoss.tools.text.Save;
  * This is the practical collapsed stochastic variational inference
  * for the Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
  */
-public class HMDP_PCSVB {
+public class MVHMDP_PCSVB {
 
 	//This class holds the corpus and its properties
 	//including metadata
@@ -212,11 +209,18 @@ public class HMDP_PCSVB {
 	private int[] alpha_1_nm;
 	private double[][] alpha_1_nmk;
 
-	private RandomSamplers rs = new RandomSamplers();
+	//private RandomSamplers rs = new RandomSamplers();
+	
+	public double mu;
+	public double kappa;
+	public float[][] nfit;
+	public float[][][] nct;
+	
+	
 
 	//private double sum_cluster_tables = 0;
 
-	HMDP_PCSVB() {
+	MVHMDP_PCSVB() {
 		c = new HMDP_Corpus();
 	}
 
@@ -611,7 +615,7 @@ public class HMDP_PCSVB {
 					}
 
 					debug = true;
-					//Skip this file...
+					//Skip this document...
 					break;
 				}
 
@@ -661,11 +665,10 @@ public class HMDP_PCSVB {
 
 		for (int f=0;f<c.F;f++) {
 			for (int k=0;k<T;k++) {
-				//TODO add feature probability here?
 				tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
 			}
 		}
-		//TODO 2x?
+
 		if (rhot_step>BURNIN_DOCUMENTS) {
 
 
@@ -733,7 +736,6 @@ public class HMDP_PCSVB {
 		double rhostktnormC = rhostkt * (c.C / Double.valueOf(BasicMath.sum(batch_words)));
 
 		for (int f=0;f<c.F;f++) {
-			//TODO: multiply with avg doc length
 			sumqf[f]=(1.0-rhostkt) * sumqf[f] +  rhostkt * tempsumqf[f] * (c.M * TRAINING_SHARE / Double.valueOf(BATCHSIZE));
 			tempsumqf[f] = 0;
 			featureprior[f] = sumqf[f]+epsilon[f];
@@ -890,18 +892,18 @@ public class HMDP_PCSVB {
 				for (int k=0;k<T;k++) {
 					//We estimate pi_0 by looking at the documents of each cluster of each feature.
 
-					boolean expected_tables = true;
+					//boolean expected_tables = true;
 					double tables;
-					if (expected_tables) {
+					//if (expected_tables) {
 						//NEW:
 						//Expected table counts like in Teh, Collapsed Variational Inference for HDP (but with 0-order Taylor approximation)
 						double a0pik=alpha_0 * pi_0[k];
 						tables = (sumqfck_ge0[f][i][k] > 0) ? a0pik * sumqfck_ge0[f][i][k] * (Gamma.digamma0(a0pik + sumqfck[f][i][k] / sumqfck_ge0[f][i][k]) - Gamma.digamma0(a0pik)) : 0;
-					}
-					else {
+					//}
+					//else {
 						//Sampled number of tables -> better perplexity
-						tables = sumqfck_ge0[f][i][k] * rs.randNumTable(pi_0[k], sumqfck[f][i][k]);
-					}
+					//	tables = sumqfck_ge0[f][i][k] * rs.randNumTable(pi_0[k], sumqfck[f][i][k]);
+					//}
 					sumfck[k] += tables;
 					//sum_cluster_tables += sumfck[k];
 				}
@@ -931,7 +933,7 @@ public class HMDP_PCSVB {
 		}
 
 		double[] pi_ = new double[T];
-		//TODO: 1-pi
+
 		for (int k=0;k<T-1;k++) {
 			pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 		}

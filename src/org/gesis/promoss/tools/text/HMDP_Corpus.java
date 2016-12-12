@@ -361,6 +361,9 @@ public class HMDP_Corpus extends Corpus {
 					}
 					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
+					groups[m]=group;
+
+
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");
 					m++;

@@ -11,12 +11,12 @@ import org.gesis.promoss.inference.DMR_CSVB;
 
 public class Experiments {
 	
-	private static int RUNS = 100;
+	private static int RUNS = 1000;
 	private static int MIN_DICT_WORDS = 1000;
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/ml8/";
+	private static String directory = "/home/c/work/topicmodels/ml8_smaller/";
 
 	
 	public static void main(String[] args) {
@@ -24,7 +24,7 @@ public class Experiments {
 		String corpusname = "corpus.txt";
 		String metaname = "meta.txt";
 		
-		String params ="T(L10000)";
+		String params ="T(L100)";
 
 		//File corpusfile = new File(hmdp.c.directory + corpusname);
 		//File metafile = new File(hmdp.c.directory + metaname);
@@ -45,26 +45,34 @@ public class Experiments {
 				groupfile.delete();
 		}
 		
+		//delall();
+
 		//lda();
 		//delall();
 		//dmr();
 		//delall();
 		//hmd();
 		//delall();
+		//dmr2();
+		delall();
 		//hmd2();
 		//delall();
-		dmr2();
+		hmdp();
 		if (1==1)return;
 		
 		directory = "/home/c/work/topicmodels/porn_hmd/";
-		MIN_DICT_WORDS = 2;
-		BATCHSIZE = 8;
+		MIN_DICT_WORDS = 100;
+		BATCHSIZE = 64;
 		T=100;
-		hmd_p();		
-		directory = "/home/c/work/topicmodels/porn_dmr/";
-		lda();
+		delall();
+		hmd_p();
+		//delall();
+		//lda();
 
-		dmr2();
+		directory = "/home/c/work/topicmodels/porn_dmr/";
+		//delall();
+
+		//dmr2();
 		
 	}
 	
@@ -92,10 +100,12 @@ public class Experiments {
 		dmr.T = T;
 		
 		dmr.TRAINING_SHARE = 0.9;
+		
+		dmr.BURNIN_DOCUMENTS =1;	
 				
 		dmr.initialise();
 		
-
+		
 		Text text = new Text();
 		text.write(directory+"dmrperplexity","",false);
 		
@@ -112,7 +122,7 @@ public class Experiments {
 		text.close();
 
 		dmr.save();
-				
+		dmr = null;
 		
 		
 	}
@@ -155,7 +165,7 @@ public class Experiments {
 
 		dmr.save();
 				
-		
+		dmr = null;
 		
 	}
 	
@@ -199,6 +209,50 @@ public class Experiments {
 		}
 		text.close();
 
+		hmd = null;
+		
+	}
+	
+	public static void hmdp () {
+
+		HMDP_PCSVB hmd = new HMDP_PCSVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		hmd.BATCHSIZE = BATCHSIZE;
+		
+		hmd.T = T;
+		
+		//hmd.BURNIN_DOCUMENTS = 20;
+		
+		
+		hmd.TRAINING_SHARE = 0.9;
+		
+		hmd.delta_fix = 10;
+				
+		hmd.initialise();
+		
+		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
+
+		Text text = new Text();
+		text.write(ppxFileName,"",false);
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			
+			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
+			
+			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
+		}
+		text.close();
+
+		hmd = null;
 		
 	}
 	
@@ -214,11 +268,11 @@ public class Experiments {
 		
 		hmd.T = T;
 		
-		hmd.alpha_1_fix = 1;
+		//hmd.alpha_1_fix = 0;
 		
-		hmd.BURNIN_DOCUMENTS = 0;
+		hmd.BURNIN_DOCUMENTS = 1;
 		
-		hmd.DELTA_CYCLE = 20;
+		//hmd.DELTA_CYCLE = 20;
 		
 		hmd.TRAINING_SHARE = 0.9;
 		
@@ -244,7 +298,7 @@ public class Experiments {
 		}
 		text.close();
 
-		
+		hmd = null;
 	}
 	
 	public static void hmd_p () {
@@ -257,11 +311,13 @@ public class Experiments {
 		
 		hmd.BATCHSIZE = BATCHSIZE;
 		
+		hmd.BATCHSIZE_GROUPS = BATCHSIZE;
+		
 		hmd.T = T;
 		
-		hmd.alpha_1_fix = 1;
+		hmd.alpha_1_fix = 0;
 		
-		hmd.BURNIN_DOCUMENTS = 0;
+		hmd.BURNIN_DOCUMENTS = 1;
 		
 		hmd.DELTA_CYCLE = 20;
 		
@@ -270,6 +326,11 @@ public class Experiments {
 		hmd.delta_fix = 10;
 		
 		hmd.initialise();
+		
+		for (int k=0;k<hmd.T;k++)  {
+			hmd.burninPrior[k] = 1;
+		}
+		
 		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
 
 
@@ -289,7 +350,8 @@ public class Experiments {
 		}
 		text.close();
 
-		
+		hmd = null;
+
 	}
 	
 
@@ -309,12 +371,17 @@ public class Experiments {
 		lda.BURNIN_DOCUMENTS = 1;
 		
 		lda.TRAINING_SHARE = 0.9;
-		
+			
 		lda.initialise();
 		
+		for (int k=0;k<lda.T;k++)  {
+			lda.alpha[k] = 1;
+		}
+		lda.BURNIN_DOCUMENTS = 1000;
 
+		
 		Text text = new Text();
-		text.write(directory+"ldaperplexity","",false);
+		text.write(directory+"ldaperplexity"+(System.currentTimeMillis()/1000),"",false);
 		
 		long timeSpent = 0;
 		for (int i=0;i<RUNS;i++) {
@@ -324,10 +391,11 @@ public class Experiments {
 			timeSpent +=  timeNow - timeStart;
 			
 
-			text.writeLine(directory+"ldaperplexity",lda.perplexity()+" " + timeSpent,true);
+			text.writeLine(directory+"ldaperplexity"+(System.currentTimeMillis()/1000),lda.perplexity()+" " + timeSpent,true);
 		}
 		text.close();
 
+		lda = null;
 		
 	}
 	

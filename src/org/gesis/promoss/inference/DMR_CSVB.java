@@ -171,6 +171,11 @@ public class DMR_CSVB {
 		initParameters();
 		System.out.println("Processing documents...");
 		c.readDocs();
+		System.out.println("Initialising DMR...");
+		dmr = new DMR(c.meta, nmk);
+		optimizer = new LimitedMemoryBFGS(dmr);				
+
+		
 		System.out.println("Estimating topics...");
 
 
@@ -214,14 +219,9 @@ public class DMR_CSVB {
 
 		if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % OPTIMIZE_INTERVAL) == 0) {
 			//Here we train the Dirichlet-Multinomial Regression using original Mallet code
-			if (dmr == null) {
-				dmr = new DMR(c.meta, nmk);
-				optimizer = new LimitedMemoryBFGS(dmr);				
-			}
-			else {
-				//update observations
-				dmr.observations = nmk;
-			}
+			//update observations
+			dmr.observations = nmk;
+			
 
 
 			// Optimize once
@@ -289,7 +289,7 @@ public class DMR_CSVB {
 
 			}
 		}
-
+		
 	}
 
 
