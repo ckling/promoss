@@ -180,9 +180,9 @@ public class ClusterMetadata {
 							if (c>0) {
 								groupclusters += " " + (c-1);
 							}
-							//if (k<bins-1) {
-							//	groupclusters += " " + (c+1);
-							//}
+							if (c<bins-1) {
+								groupclusters += " " + (c+1);
+							}
 
 							groupclusters += "\n";
 						}

@@ -27,6 +27,7 @@ package org.gesis.promoss.inference;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import org.gesis.promoss.tools.math.BasicMath;
@@ -60,7 +61,7 @@ public class HMD_PCSVB {
 	//How many observations do we take before updating alpha_1
 	public int BATCHSIZE_ALPHA = 1000;
 	//After how many steps a sample is taken to estimate alpha
-	public int SAMPLE_ALPHA = 1;
+	public int SAMPLE_ALPHA = 100;
 	//Burn in phase: how long to wait till updating nkt?
 	public int BURNIN = 0;
 	//Burn in phase for documents: How long till we update the
@@ -78,12 +79,15 @@ public class HMD_PCSVB {
 
 	public double[] alpha_0;
 
-	public double alpha_1 = 1;
+	public double alpha_1 = 0.0;
+
+	//decides if alpha_1 is fixed or not
+	public double alpha_1_fix = 0;
 
 	//Dirichlet parameter for multinomials over clusters
 	public double[] delta;
 
-	//decides if delta is fixed or not.
+	//decides if delta is fixed or not
 	public double delta_fix = 0;
 
 	//Dirichlet parameter for multinomial over features
@@ -137,17 +141,21 @@ public class HMD_PCSVB {
 	public int rhotau_group = 64;
 
 	//tells the number of processed words
-	public int rhot = 0;
+	private int rhot = 0;
 	//tells the number of the current run)
-	public int rhot_step = 0;
-	//tells the number of words seen in this document
-	private int[] rhot_words_doc;
+	private int rhot_step = 0;
+
+	private int rhot_alpha = 1;
+	public int rhos_alpha = 1;
+	public double rhokappa_alpha = 0.5;
+	public int rhotau_alpha = 64;
+
 
 	//count number of words seen in the batch
 	//remember that rhot counts the number of documents, not words
 	private int[] batch_words;
 	//count number of times the group was seen in the batch - FxG
-	public int[][] rhot_group;
+	private int[][] rhot_group;
 
 	/*
 	 * Here we define helper variables
@@ -156,12 +164,12 @@ public class HMD_PCSVB {
 	 */
 
 	//Sum table counts for a given cluster; F x Cf x T
-	public double[][][] sumqfck;
+	private double[][][] sumqfck;
 	//Sum over log(1-q(k,f,c)) for all documents in the given group g and cluster number c. We need this sum for calculating 
 	//Sum of E[n>0] and E[n=0] for all documents of the group and cluster. 
-	public double[][][] sumqfgc;
+	private double[][][] sumqfgc;
 	//Sum over 1-q(_,f,_) for document M and feature f (approximated seat counts)
-	public double[] sumqf;
+	private double[] sumqf;
 	//Batch estimate of sumqf2 for stochastic updates
 	//private static double[] sumqf2temp;
 
@@ -182,8 +190,12 @@ public class HMD_PCSVB {
 	//sum over document-topic table estimates \sum_{m=0}^{M} p(n_{mk} > 0)) for batch
 	public double sumnmk_ge0=0.0;
 
-	//denominator for alpha_0 estimate
-	private double alpha_1_estimate_denominator;
+
+	//document lengths in sample
+	private double[][] alpha_1_pimk;
+	private int[] alpha_1_nm;
+	private double[][] alpha_1_nmk;
+
 
 	//counts over the feature use
 	private double[] tempsumqf;
@@ -200,6 +212,14 @@ public class HMD_PCSVB {
 	public int alpha_batch_counter = 0;
 
 	double[] burninPrior;
+
+	public boolean ESTIMATE_HYPER = true;
+
+	public int DELTA_CYCLE = 1;
+
+	private RandomSamplers rs = new RandomSamplers();
+
+
 
 
 	HMD_PCSVB() {
@@ -261,7 +281,11 @@ public class HMD_PCSVB {
 		}
 		System.out.println();
 
-		updateHyperParameters();
+		if (rhot_step > BURNIN_DOCUMENTS) {
+			updateHyperParameters();
+			updateGlobalTopicDistribution();
+
+		}
 	}
 
 
@@ -288,7 +312,7 @@ public class HMD_PCSVB {
 
 		if (BATCHSIZE_GROUPS < 0)
 			BATCHSIZE_GROUPS = BATCHSIZE;
-		
+
 		if (BURNIN_DOCUMENTS < BURNIN) {
 			BURNIN_DOCUMENTS = BURNIN;
 		}
@@ -319,12 +343,16 @@ public class HMD_PCSVB {
 
 		burninPrior = new double[T];
 		for (int k=0;k<T;k++) {
-			burninPrior[k]=1.0/T;
+			burninPrior[k]=5.0/T;
 		}
 
 		alpha_0 = new double[T];
 		for (int k=0;k<T;k++) {
-			alpha_0[k] = 5.0/T;
+			alpha_0[k] = 1.0;///T;
+		}
+		alpha_1 = 1.0 * T;
+		if (alpha_1_fix > 0) {
+			alpha_1 = alpha_1_fix *T;
 		}
 
 		mkt = new float[T][c.V];	
@@ -351,7 +379,6 @@ public class HMD_PCSVB {
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
-		rhot_words_doc=new int[c.M];
 		rhot_group = new int[c.F][];
 		for (int f=0;f<c.F;f++) {
 			rhot_group[f]=new int[c.A[f].length];
@@ -424,12 +451,23 @@ public class HMD_PCSVB {
 			}
 		}
 
+		alpha_1_nm = new int[BATCHSIZE_ALPHA];
+		alpha_1_nmk = new double[BATCHSIZE_ALPHA][T];
+		alpha_1_pimk = new double[BATCHSIZE_ALPHA][T];
+
+		SAMPLE_ALPHA = (int) Math.ceil(c.M / BATCHSIZE_ALPHA);
+
 	}
 
 
 
 
 	public void inferenceDoc(int m) {
+
+		if (rhot_step<=BURNIN_DOCUMENTS) {
+			inferenceDocBurnin(m);
+			return;
+		}
 
 		//increase counter of documents seen
 		rhot++;
@@ -458,46 +496,42 @@ public class HMD_PCSVB {
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
 		double[] topic_prior = new double[T];
 
-		if (rhot_step > BURNIN_DOCUMENTS) {
-			
-			//probability of feature f given k
-			double[][] pk_f = new double[T][c.F];
-			//probability of feature x cluster x topic
-			double[][][] pk_fck = new double[c.F][][];
-			for (int f=0;f<c.F;f++) {
-				pk_fck[f] = new double[grouplength[f]][];
-				for (int i=0;i<grouplength[f];i++) {
-					pk_fck[f][i] = new double[T];
-				}
-			}
 
-			
-			for (int f=0;f<c.F;f++) {
-				int g = group[f];
-				double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
-				for (int i=0;i<grouplength[f];i++) {
-					int a= c.A[f][g][i];
-					double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
-					//cluster probability in group
-					double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
-					for (int k=0;k<T;k++) {
-						double temp = 	(sumqfck[f][a][k] + alpha_0[k]) * temp3;
-						double temp4 = temp*featureprior[f];
-						topic_prior[k]+=temp4;
-						pk_f[k][f]+=temp4;
-						pk_fck[f][i][k] = temp4;
-					}
-				}
-			}
-
-
-			for (int k=0;k<T;k++) {
-				pk_f[k]=BasicMath.normalise(pk_f[k]);
+		//probability of feature f given k
+		double[][] pk_f = new double[T][c.F];
+		//probability of feature x cluster x topic
+		double[][][] pk_fck = new double[c.F][][];
+		for (int f=0;f<c.F;f++) {
+			pk_fck[f] = new double[grouplength[f]][];
+			for (int i=0;i<grouplength[f];i++) {
+				pk_fck[f][i] = new double[T];
 			}
 		}
-		else {
-			topic_prior = burninPrior;
+
+
+		for (int f=0;f<c.F;f++) {
+			int g = group[f];
+			double sumqfgc_denominator = BasicMath.sum(sumqfgc[f][g]) + grouplength[f]*delta[f];
+			for (int i=0;i<grouplength[f];i++) {
+				int a= c.A[f][g][i];
+				double sumqfck2_denominator = BasicMath.sum(sumqfck[f][a])+ BasicMath.sum(alpha_0);
+				//cluster probability in group
+				double temp3 = (sumqfgc[f][g][i] + delta[f]) / (sumqfgc_denominator * sumqfck2_denominator);
+				for (int k=0;k<T;k++) {
+					double temp = 	(sumqfck[f][a][k] + alpha_0[k]) * temp3;
+					double temp4 = temp*featureprior[f];
+					topic_prior[k]+=temp4;
+					pk_f[k][f]+=temp4;
+					pk_fck[f][i][k] = temp4;
+				}
+			}
 		}
+
+
+		for (int k=0;k<T;k++) {
+			pk_f[k]=BasicMath.normalise(pk_f[k]);
+		}
+
 
 
 		double rhostkt_documentNm = rhostkt_document * c.getN(m);
@@ -515,8 +549,7 @@ public class HMD_PCSVB {
 
 
 
-			//update number of words seen
-			rhot_words_doc[m]+=termfreq;
+
 			if (rhot_step>BURNIN) {
 				//increase number of words seen in that batch
 				batch_words[t]+=termfreq;
@@ -597,9 +630,9 @@ public class HMD_PCSVB {
 				}
 
 
-					//update probability of _not_ seeing k in the current document
-					sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
-				
+				//update probability of _not_ seeing k in the current document
+				sumqmk[k]+=Math.log(1.0-q[k])*termfreq;
+
 
 				if (c.getN(m) != termfreq) {
 					//update document-feature-cluster-topic counts
@@ -627,87 +660,224 @@ public class HMD_PCSVB {
 			updateTopicWordCounts();
 		}
 
-		if (rhot_step > BURNIN_DOCUMENTS) {
-			
-			//probability of feature f given k
-			double[][] pk_f = new double[T][c.F];
-			//probability of feature x cluster x topic
-			double[][][] pk_fck = new double[c.F][][];
-			for (int f=0;f<c.F;f++) {
-				pk_fck[f] = new double[grouplength[f]][];
-				for (int i=0;i<grouplength[f];i++) {
-					pk_fck[f][i] = new double[T];
-				}
-			}
 
-			//get probability for NOT seeing topic f to update delta
-			//double[] tables_per_feature = new double[c.F];
-			double[] topic_ge_0 = new double[T];
+
+		//get probability for NOT seeing topic f to update delta
+		//double[] tables_per_feature = new double[c.F];
+		double[] topic_ge_0 = new double[T];
+		for (int k=0;k<T;k++) {
+			//Probability that we saw the given topic
+			topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
+		}
+
+		for (int f=0;f<c.F;f++) {
 			for (int k=0;k<T;k++) {
-				//Probability that we saw the given topic
-				topic_ge_0[k] = (1.0 - Math.exp(sumqmk[k]));
+				//TODO add feature probability here?
+				tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
 			}
+		}
 
-			for (int f=0;f<c.F;f++) {
+
+		for (int f=0;f<c.F;f++) {
+
+			int g = group[f];
+			//increase count for that group
+			rhot_group[f][g]++;
+
+			//update feature-counter
+			for (int i=0;i<grouplength[f];i++) {
 				for (int k=0;k<T;k++) {
-					//TODO add feature probability here?
-					tempsumqf[f] += topic_ge_0[k] * pk_f[k][f];
+
+					//gives the probability that a table of a topic was drawn from the given cluster
+					double topicProbInCluster = pk_fck[f][i][k]/topic_prior[k];
+
+					//p(not_seeing_fik)
+					sumqtemp[f][g][i][k] += Math.log(1.0 - (topic_ge_0[k] * topicProbInCluster));
+					tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * topicProbInCluster;
+					//System.out.println(topic_ge_0[k] + " "+ topicProbInCluster + " "+ tempsumqfgc[f][g][i][k]);
+
+
+					//if ((1.0 - Math.exp(sumqtemp[f][g][i][k])) >= tempsumqfgc[f][g][i][k])
+					//	System.out.println((1.0 - Math.exp(sumqtemp[f][g][i][k])) + " " + tempsumqfgc[f][g][i][k] );
 				}
 			}
 
+			updateClusterTopicDistribution(f,g);	
 
-			for (int f=0;f<c.F;f++) {
+		}
 
-				int g = group[f];
-				//increase count for that group
-				rhot_group[f][g]++;
 
-				//update feature-counter
-				for (int i=0;i<grouplength[f];i++) {
-					for (int k=0;k<T;k++) {
+		//ignore documents containing only one word.
+		//Only sample alpha if alpha_1_fix is 0
+		if (alpha_1_fix == 0 && rhot%SAMPLE_ALPHA == 0 && c.getN(m)>0) {
 
-						//gives the probability that a table of a topic was drawn from the given cluster
-						double topicProbInCluster = pk_fck[f][i][k]/topic_prior[k];
+			alpha_1_nm[alpha_batch_counter] = c.getN(m);
+			for (int k=0;k<T;k++) {
+				alpha_1_nmk[alpha_batch_counter][k] = nmk[m][k];
+				alpha_1_pimk[alpha_batch_counter][k] = topic_prior[k];
+			}
 
-						//p(not_seeing_fik)
-						sumqtemp[f][g][i][k] += Math.log(1.0 - (topic_ge_0[k] * topicProbInCluster));
-						tempsumqfgc[f][g][i][k]+= topic_ge_0[k] * topicProbInCluster;
+			alpha_batch_counter++;
 
-						//if ((1.0 - Math.exp(sumqtemp[f][g][i][k])) >= tempsumqfgc[f][g][i][k])
-						//	System.out.println((1.0 - Math.exp(sumqtemp[f][g][i][k])) + " " + tempsumqfgc[f][g][i][k] );
-					}
-				}
-
-				updateClusterTopicDistribution(f,g);	
+			if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
+				
+				alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
+				alpha_batch_counter=0;
 
 			}
 
-			//ignore documents containing only one word.
-			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
-				sumnmk_ge0+=BasicMath.sum(topic_ge_0);
-				alpha_1_estimate_denominator += Gamma.digamma0(c.getN(m)+alpha_1);
+			//old inference - based on CRP auxiliary variables
+			if (1==0) {
+				alpha_1_nm[alpha_batch_counter] = c.getN(m);
+				//double[] topic_prior_alpha = new double[T];
+				//for (int k=0;k<T;k++) {
+				//	topic_prior_alpha[k]=alpha_1 * topic_prior[k];
+				//}
+				//int[] tables = rs.randNumTable(nmk[m],topic_prior_alpha);
+				//sumnmk_ge0+=BasicMath.sum(topic_ge_0);
+				for (int k=0;k<T;k++) {
+					sumnmk_ge0+=topic_ge_0[k];
+				}
+
+				//System.out.println(c.getN(m) + " " + BasicMath.sum(topic_ge_0));
 				alpha_batch_counter++;
 
 
 				//We use the estimate from Sato and guess the table sum based on the batch
 				if (alpha_batch_counter%BATCHSIZE_ALPHA == 0) {
 
-					alpha_1_estimate_denominator-= BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1);
-					//this is for preventing updates after we saw only empty documents
-					if (sumnmk_ge0>0) {
-						alpha_1 = (sumnmk_ge0 / alpha_1_estimate_denominator);
+					double alpha_1_new = alpha_1;
+
+					for (int i=0;i<20;i++) {
+						double alpha_1_estimate_denominator = 0;
+
+						HashMap<Integer,Double> counts = new HashMap<Integer,Double>();
+						for (int j=0;j<BATCHSIZE_ALPHA;j++) {
+
+							int Nm = alpha_1_nm[j];
+							double digamma = 0;
+							if (!counts.containsKey(Nm)) {
+								digamma = Gamma.digamma0(Nm+alpha_1_new);
+								counts.put(Nm, digamma);
+							}
+							else {
+								digamma = 
+										counts.get(Nm);
+							}
+
+							alpha_1_estimate_denominator += digamma;
+						}
+						double alpha_1_estimate_denominator_new = alpha_1_estimate_denominator - BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1_new);
+						alpha_1_new =  (sumnmk_ge0 / alpha_1_estimate_denominator_new);
+
 					}
+					double rhostAlpha = rho(rhos_alpha,rhotau_alpha,rhokappa_alpha,rhot_alpha);
+					double oneMinusRho = 1.0-rhostAlpha;
+					alpha_1 = rhostAlpha * alpha_1_new + oneMinusRho * alpha_1;
+					rhot_alpha++;
+
 
 					//reset sumnmk_ge0
 					sumnmk_ge0 = 0;
 					//get new denominator
-					alpha_1_estimate_denominator = 0;
 					alpha_batch_counter = 0;
 				}
 			}
+
+		}
+	}
+
+
+	public void inferenceDocBurnin(int m) {
+
+		//increase counter of documents seen
+		rhot++;
+
+
+
+		double rhostkt_documentNm = rhostkt_document * c.getN(m);
+
+		int[] termIDs = c.getTermIDs(m);
+		short[] termFreqs = c.getTermFreqs(m);
+
+		//Process words of the document
+		for (int i=0;i<termIDs.length;i++) {
+
+			//term index
+			int t = termIDs[i];
+			//How often doas t appear in the document?
+			int termfreq = termFreqs[i];
+
+			if (rhot_step>BURNIN) {
+				//increase number of words seen in that batch
+				batch_words[t]+=termfreq;
+			}
+
+			//topic probabilities - q(z)
+			double[] q = new double[T];
+			//sum for normalisation
+			double qsum = 0.0;
+
+			for (int k=0;k<T;k++) {
+				//in case the document contains only this word, we do not use nmk
+				if (c.getN(m) == termfreq) {
+					nmk[m][k] = 0;
+				}
+
+				q[k] = 	//probability of topic given feature & group
+						(nmk[m][k] + burninPrior[k])
+						//probability of topic given word w
+						* (nkt[k][t] + beta_0) 
+						/ (nk[k] + beta_0V);
+
+				qsum+=q[k];
+
+			}
+
+
+			//Normalise gamma (sum=1), update counts and probabilities
+			for (int k=0;k<T;k++) {
+				//normalise
+				q[k]/=qsum;
+
+
+				//add to batch counts
+				if (rhot_step>BURNIN) {
+					tempnkt[k][t]+=q[k]*termfreq;
+					if (ESTIMATE_HYPER) {
+						tempmkt[k][t]+=Math.log(1.0-q[k])*termfreq;
+					}
+				}
+
+
+				if (c.getN(m) != termfreq) {
+					//update document-feature-cluster-topic counts
+					if (termfreq==1) {
+						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
+					}
+					else {
+						double temp = Math.pow(oneminusrhostkt_document,termfreq);
+						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
+					}
+				}
+				else {
+					nmk[m][k]=(float) (q[k]*termfreq);
+				}
+
+			}
+
+		}
+		//End of loop over document words
+
+
+		//We update global topic-word counts in batches (mini-batches lead to local optima)
+		//after a burn-in phase
+		if (rhot%BATCHSIZE == 0 && rhot_step>BURNIN) {
+			updateTopicWordCounts();
 		}
 
 	}
+
 
 	/**
 	 * Here we do stochastic updates of the document-topic counts
@@ -756,7 +926,9 @@ public class HMD_PCSVB {
 					nkt[k][v] += rhostktnormC * tempnkt[k][v];
 					//estimate tables in the topic per word, we just assume that the topic-word assignment is 
 					//identical for the other words in the corpus.
-					mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words)))));
+					if (ESTIMATE_HYPER) {
+						mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words)))));
+					}
 					if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
 						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] );
 						debug = true;
@@ -775,10 +947,13 @@ public class HMD_PCSVB {
 			}
 		}
 
-		//reset
-		for (int k=0;k<T;k++) {
-			for (int t=0;t<c.V;t++) {
-				tempmkt[k][t] = (float) 0.0;
+		if (ESTIMATE_HYPER) {
+
+			//reset
+			for (int k=0;k<T;k++) {
+				for (int t=0;t<c.V;t++) {
+					tempmkt[k][t] = (float) 0.0;
+				}
 			}
 		}
 
@@ -802,6 +977,7 @@ public class HMD_PCSVB {
 		//OR if we saw BATCHSIZE_GROUPS documents
 		int BATCHSIZE_GROUP_MIN = Math.min(c.Cfg[f][g],BATCHSIZE_GROUPS);
 		if (rhot_group[f][g] % BATCHSIZE_GROUP_MIN == 0) {
+
 
 			//calculate update rate
 			double rhost_group = rho(rhos_group,rhotau_group,rhokappa_group,rhot_group[f][g]);
@@ -845,11 +1021,6 @@ public class HMD_PCSVB {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS+1)  {
-				//Update global topic distribution
-				updateGlobalTopicDistribution();
-			}
-
 			//			Iterator<Integer> it = affected_groups.get(f).get(g).iterator();
 			//			while (it.hasNext()) {
 			//				int ag = it.next();
@@ -860,39 +1031,57 @@ public class HMD_PCSVB {
 
 	public void updateGlobalTopicDistribution() {
 
-		//sum over tables
-		int clusters = BasicMath.sum(c.Cf);
-		double[][] sumfck = new double[clusters][T];
 
-		//Now add observed estimated counts
 
-		int j=0;
-		//sum_cluster_tables = 0;
-		for (int f=0;f<c.F;f++) {
-			for (int i=0;i< c.Cf[f];i++) {
-				//Check for empty clusters
-				if (BasicMath.sum(sumqfck[f][i])>0) {
-					sumfck[i] = new double[T];
-					for (int k=0;k<T;k++) {
-						sumfck[j][k] = sumqfck[f][i][k];
-						//System.out.println(sumfck[j][k]);
+		if (ESTIMATE_HYPER) {
+
+			//sum over tables
+			int clusters = BasicMath.sum(c.Cf);
+			double[][] sumfck = new double[clusters][T];
+			double[] sumfc = new double[clusters];
+
+
+			//Now add observed estimated counts
+
+			int j=0;
+			//sum_cluster_tables = 0;
+			for (int f=0;f<c.F;f++) {
+				for (int i=0;i< c.Cf[f];i++) {
+					double tablesum = BasicMath.sum(sumqfck[f][i]);
+					//Check for empty clusters
+					if (tablesum>0) {
+						sumfck[i] = new double[T];
+						for (int k=0;k<T;k++) {
+							sumfck[j][k] = sumqfck[f][i][k];
+							//System.out.println(sumfck[j][k]);
+						}
+						sumfc[j]+=tablesum;
+						j++;
 					}
-					j++;
 				}
 			}
-		}
 
-		if (j<clusters) {
-			double[][] sumfck_new = new double[j][T];
-			System.arraycopy(sumfck, 0, sumfck_new, 0, j);
-		}
-
-		alpha_0 = DirichletEstimation.estimateAlphaLik(sumfck,alpha_0);
-
-		if (BasicMath.sum(alpha_0)> T) {
-			for (int k=0;k<T;k++) {
-				alpha_0[k]=1.0;
+			if (j<clusters) {
+				double[][] sumfck_new = new double[j][T];
+				double[] sumfc_new = new double[j];
+				System.arraycopy(sumfck, 0, sumfck_new, 0, j);
+				System.arraycopy(sumfc, 0, sumfc_new, 0, j);
+				sumfck = sumfck_new;
+				sumfc = sumfc_new;
 			}
+
+			//System.out.println(j + " " + clusters + " "+ BasicMath.sum(sumqfck));
+			int c = 0;
+			for (;c<Math.min(2, j);c++) {
+				for (int k=0;k<T;k++) {
+					//System.out.println("test: " + j + " "+k+  " " +sumfc[c] +" "+ sumfck[c][k] +" "+ BasicMath.sum(sumfck[c]));
+				}
+			}
+			if (c>0) {
+				alpha_0 = DirichletEstimation.estimateAlphaNewton(sumfc, sumfck, alpha_0, 0, 1, 1);
+			}
+
+
 		}
 
 
@@ -902,36 +1091,49 @@ public class HMD_PCSVB {
 
 	public void updateHyperParameters() {
 
+		//double[] alpha_1_old = new double[T];
+		//for (int k=0;k<T;k++) {
+		//	alpha_1_old[k] = alpha_1 / T;
+		//}
+
+
+		//alpha_1 = BasicMath.sum(DirichletEstimation.estimateAlphaLik(nmk,alpha_1_old));
+
 		if(rhot_step>BURNIN_DOCUMENTS+1) {
 
+			if (ESTIMATE_HYPER) {
 
-			double beta_0_denominator = 0.0;
-			for (int k=0; k < T; k++) {
-				//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
-				beta_0_denominator += Gamma.digamma0(nk[k]+beta_0*c.V);
-			}
-			beta_0_denominator -= T * Gamma.digamma0(beta_0*c.V);
-			beta_0 = 0;
-			for (int k=0;k<T;k++) {
-				for (int t = 0; t < c.V; t++) {
-					beta_0 += mkt[k][t];
-					if (!debug && (Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
-						System.out.println("mkt " + k + " " + t + ": " + mkt[k][t] + " nkt: " +  nkt[k][t]);
-						debug = true;
+				double beta_0_denominator = 0.0;
+				for (int k=0; k < T; k++) {
+					//log(x-0.5) for approximating the digamma function, x >> 1 (Beal03)
+					beta_0_denominator += Gamma.digamma0(nk[k]+beta_0*c.V);
+				}
+				beta_0_denominator -= T * Gamma.digamma0(beta_0*c.V);
+				beta_0 = 0;
+				for (int k=0;k<T;k++) {
+					for (int t = 0; t < c.V; t++) {
+						beta_0 += mkt[k][t];
+						if (!debug && (Double.isInfinite(mkt[k][t] ) || Double.isNaN(mkt[k][t] ))) {
+							System.out.println("mkt " + k + " " + t + ": " + mkt[k][t] + " nkt: " +  nkt[k][t]);
+							debug = true;
+						}
 					}
 				}
+
+				beta_0 /= beta_0_denominator;
+
+				beta_0V = beta_0;
+
+				//Correct value of beta
+				beta_0 /= c.V;
 			}
 
-			beta_0 /= beta_0_denominator;
 
-			beta_0V = beta_0;
-
-			//Correct value of beta
-			beta_0 /= c.V;
-
-			if (delta_fix == 0) {
-				for (int f=0;f<c.F;f++) {
-					delta[f] = DirichletEstimation.estimateAlphaLikChanging(sumqfgc[f], delta[f], 200);
+			if (rhot > BURNIN_DOCUMENTS && rhot_step % DELTA_CYCLE == 0) {
+				if (delta_fix == 0) {
+					for (int f=0;f<c.F;f++) {
+						delta[f] = DirichletEstimation.estimateAlphaLikChanging(sumqfgc[f], delta[f], 200);
+					}
 				}
 			}
 
@@ -1249,7 +1451,7 @@ public class HMD_PCSVB {
 		double perplexity = Math.exp(- likelihood / Double.valueOf(totalLength));
 
 		System.out.println("Perplexity: " + perplexity);
-	
+
 		return (perplexity);
 
 

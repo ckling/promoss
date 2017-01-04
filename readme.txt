@@ -32,12 +32,12 @@ Building the jar file
 You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
 ant || ant build-jar
 
-(The ant build might yield errors for packages under development which can be ignored.)
+(The ant build might yield errors for classes under development which can be ignored.)
 
 ***************************
 Demo files
 ***************************
-If you would like to have demo files to play around with, just 
+If you would like to have demo files to play around with, just write a mail to promoss@c-kling.de
 
 ###########################
 Hierarchical Multi-Dirichlet Process Topic Model (Promoss)

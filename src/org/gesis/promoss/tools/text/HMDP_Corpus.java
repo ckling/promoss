@@ -17,6 +17,7 @@ public class HMDP_Corpus extends Corpus {
 	public int[] Cf; //Number of clusters for each feature
 	public int[] Cfd; //Number of documents for each feature
 	public int[][] Cfc; //Number of documents for each cluster (FxCf)
+	public int[][] Cfcw; //Number of words for each cluster (FxCf)
 	public int[][] Cfg; //Number of documents for each group (FxCg)
 
 	public int[][][] A; //Groups and their clusters
@@ -60,12 +61,12 @@ public class HMDP_Corpus extends Corpus {
 		//read non-empty document counts of clusters
 		dictText = new Text();
 
-		int doc_number=0;
+		int m=0;
 		line_number = 0;
-		while((line = dictText.readLine(documentfile)) != null && doc_number < Double.valueOf(M)*TRAINING_SHARE) {
+		while((line = dictText.readLine(documentfile)) != null && m < Double.valueOf(M)*TRAINING_SHARE) {
 			line_number++;
 			if (!empty_documents.contains(line_number)) {
-				doc_number++;
+				m++;
 				String[] lineSplit = line.split(" ");
 
 				String groupString = lineSplit[0];
@@ -77,6 +78,8 @@ public class HMDP_Corpus extends Corpus {
 						int a = A[f][g][c];
 						Cfc[f][a]++;
 						Cfd[f]++;
+						//Cfcw[f][a]+=N[m];
+
 					}
 				}
 
@@ -86,6 +89,25 @@ public class HMDP_Corpus extends Corpus {
 				
 		dictText.close();
 		
+		
+	}
+	
+	public void readClusterSizeWords() {
+		Cfcw=new int[F][];
+		for (int f=0;f<F;f++) {
+			Cfcw[f]=new int[Cf[f]];
+		}
+		
+		for (int m=0;m < Double.valueOf(M)*TRAINING_SHARE;m++) {
+		for (int f=0;f<F;f++) {
+			int g = groups[m][f];
+			for (int c=0;c<A[f][g].length;c++) {
+				int a = A[f][g][c];
+				Cfcw[f][a]+=N[m];
+
+			}
+		}
+		}
 	}
 	
 	public void readDict() {
@@ -360,6 +382,9 @@ public class HMDP_Corpus extends Corpus {
 						}
 					}
 					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
+
+					groups[m]=group;
+
 
 					if (m % Math.round(M/50) == 0)
 						System.out.print(".");

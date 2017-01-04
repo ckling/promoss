@@ -72,7 +72,7 @@ public class DMR_CSVB {
 	//parameters of the regression. As in Mallet: 20
 	public int BURNIN_DOCUMENTS = 20;
 	//How often to train the DMR?
-	public int optimizeInterval = 20;
+	public int OPTIMIZE_INTERVAL = 20;
 	//should the topics be randomly initialised?
 	public double INIT_RAND = 1;
 
@@ -122,9 +122,9 @@ public class DMR_CSVB {
 	public int rhotau_document = 64;
 
 	//tells the number of processed words
-	public int rhot = 0;
+	private int rhot = 0;
 	//tells the number of the current run)
-	public int rhot_step = 0;
+	private int rhot_step = 0;
 	//tells the number of words seen in this document
 	private int[] rhot_words_doc;
 
@@ -139,20 +139,10 @@ public class DMR_CSVB {
 	 */
 
 
-	public double rhostkt_document;
-	public double oneminusrhostkt_document;
-
-	//counts, how many documents we observed in the batch to estimate alpha
-	public int alpha_batch_counter = 0;
+	private double rhostkt_document;
+	private double oneminusrhostkt_document;
 
 
-
-	int numFeatures;
-	int defaultFeatureIndex;
-
-
-	double[][] alphaCache;
-	double[] alphaSumCache;
 
 
 	protected double alphaSum;
@@ -181,6 +171,11 @@ public class DMR_CSVB {
 		initParameters();
 		System.out.println("Processing documents...");
 		c.readDocs();
+		System.out.println("Initialising DMR...");
+		dmr = new DMR(c.meta, nmk);
+		optimizer = new LimitedMemoryBFGS(dmr);				
+
+		
 		System.out.println("Estimating topics...");
 
 
@@ -222,16 +217,11 @@ public class DMR_CSVB {
 
 		updateHyperParameters();
 
-		if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % optimizeInterval) == 0) {
+		if ((rhot_step >= BURNIN_DOCUMENTS) &&  (rhot_step % OPTIMIZE_INTERVAL) == 0) {
 			//Here we train the Dirichlet-Multinomial Regression using original Mallet code
-			if (dmr == null) {
-				dmr = new DMR(c.meta, nmk);
-				optimizer = new LimitedMemoryBFGS(dmr);				
-			}
-			else {
-				//update observations
-				dmr.observations = nmk;
-			}
+			//update observations
+			dmr.observations = nmk;
+			
 
 
 			// Optimize once
@@ -299,7 +289,7 @@ public class DMR_CSVB {
 
 			}
 		}
-
+		
 	}
 
 
