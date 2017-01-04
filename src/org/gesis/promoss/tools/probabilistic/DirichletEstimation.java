@@ -1320,15 +1320,13 @@ public class DirichletEstimation {
 			
 			if (alpha_1 <= 0) {
 				System.out.println("Alpha 1 estimation error: " + alpha_1);
-<<<<<<< HEAD
 				for (int m=0;m<M;m++) {
 					for (int k=0;k<K;k++) {
 						System.out.println("m: "+m+" k: "+k+ " | " + nmk[m][k]);
 					}
 				}
 				
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
+
 				alpha_1 += nominator/denominator;
 				break;
 			}
@@ -1381,7 +1379,7 @@ public class DirichletEstimation {
 			
 			if (alpha_1 <= 0) {
 				System.out.println("Alpha 1 estimation error: " + alpha_1);
-<<<<<<< HEAD
+
 				
 				for (int m=0;m<M;m++) {
 					for (int k=0;k<K;k++) {
@@ -1390,8 +1388,6 @@ public class DirichletEstimation {
 				}
 				
 				
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 				alpha_1 += nominator/denominator;
 				break;
 			}
@@ -1471,11 +1467,7 @@ public class DirichletEstimation {
 			
 			for (int k=0;k<K;k++) {
 				alpha[k] -= (nominators[k] - b2) / denominators[k];
-<<<<<<< HEAD
-				
 
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 				//System.out.println("alpha new: "+ alpha[k]);
 
 			}
@@ -1551,11 +1543,10 @@ public class DirichletEstimation {
 	public static void main(String[] args) throws Exception {
 
 		double[] nm = {1,2,3,4,5};
-<<<<<<< HEAD
+
 		double[][] nmk = {{0.3,0.7},{.4,1.6},{.4,2.6},{.4,3.6},{4.4,.6}};
-=======
-		double[][] nmk = {{0.3,0.7},{0.4,1.6},{0.4,2.6},{0.4,3.6},{4.4,.6}};
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
+
+
 		double[][] pimk = {{0.3,0.7},{0.1,.9},{.4,.6},{0.9,.1},{.4,.6}};
 		//double alpha = 1;
 		double[] alpha = {1,1};

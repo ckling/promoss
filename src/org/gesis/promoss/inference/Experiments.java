@@ -11,22 +11,13 @@ import org.gesis.promoss.inference.DMR_CSVB;
 
 public class Experiments {
 	
-<<<<<<< HEAD
-	private static int RUNS = 20;
-	private static int MIN_DICT_WORDS = 100;
-	private static int BATCHSIZE = 8;
-	private static int T = 50;
 
-	//private static String directory = "/home/c/work/topicmodels/facebook/";
-	private static String directory = "/home/c/work/topicmodels/ml8/";
-=======
 	private static int RUNS = 1000;
 	private static int MIN_DICT_WORDS = 1000;
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
 	private static String directory = "/home/c/work/topicmodels/ml8_smaller/";
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 
 	
 	public static void main(String[] args) {
@@ -34,15 +25,11 @@ public class Experiments {
 		String corpusname = "corpus.txt";
 		String metaname = "meta.txt";
 		
-<<<<<<< HEAD
+
 		//String params ="G(100)";
 		String params ="T(L1000)";
 		//String params ="N";
-		
-=======
-		String params ="T(L100)";
 
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 		//File corpusfile = new File(hmdp.c.directory + corpusname);
 		//File metafile = new File(hmdp.c.directory + metaname);
 
@@ -75,10 +62,9 @@ public class Experiments {
 		//hmd2();
 		//delall();
 		hmdp();
-<<<<<<< HEAD
+
 		//mvhmdp2();
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
+
 		if (1==1)return;
 		
 		directory = "/home/c/work/topicmodels/porn_hmd/";
@@ -148,8 +134,7 @@ public class Experiments {
 		
 	}
 	public static void dmr2() {
-<<<<<<< HEAD
-		
+
 			
 		DMR_CSVB dmr = new DMR_CSVB();
 		
@@ -159,18 +144,6 @@ public class Experiments {
 		
 		dmr.BATCHSIZE = BATCHSIZE;
 		
-=======
-		
-			
-		DMR_CSVB dmr = new DMR_CSVB();
-		
-		dmr.c.directory = directory;
-		
-		dmr.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
-		
-		dmr.BATCHSIZE = BATCHSIZE;
-		
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 		dmr.T = T;
 		
 		dmr.TRAINING_SHARE = 0.9;
@@ -242,37 +215,6 @@ public class Experiments {
 			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+BasicMath.sum(hmd.alpha_0)+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0]);
 		}
 		text.close();
-<<<<<<< HEAD
-
-		hmd = null;
-		
-	}
-	
-	public static void hmdp () {
-
-		HMDP_PCSVB hmd = new HMDP_PCSVB();
-		
-		hmd.c.directory = directory;
-		
-		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
-		
-		hmd.BATCHSIZE = BATCHSIZE;
-		
-		
-		hmd.T = T;
-		
-		//hmd.BURNIN_DOCUMENTS = 20;
-		
-		
-		hmd.TRAINING_SHARE = 0.9;
-		
-		hmd.delta_fix = 10;
-				
-		hmd.initialise();
-		
-		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
-
-=======
 
 		hmd = null;
 		
@@ -301,7 +243,7 @@ public class Experiments {
 		
 		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
 
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
+
 		Text text = new Text();
 		text.write(ppxFileName,"",false);
 		
@@ -317,16 +259,12 @@ public class Experiments {
 			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
 		}
 		text.close();
-<<<<<<< HEAD
 		hmd.save();
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 
 		hmd = null;
 		
 	}
 	
-<<<<<<< HEAD
 	public static void mvhmdp () {
 
 		MVHMDP_PCSVB hmd = new MVHMDP_PCSVB();
@@ -422,8 +360,6 @@ public class Experiments {
 		
 	}
 	
-=======
->>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 	public static void hmd2 () {
 
 		HMD_PCSVB hmd = new HMD_PCSVB();
