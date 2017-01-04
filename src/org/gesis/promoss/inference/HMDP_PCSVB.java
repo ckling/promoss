@@ -713,10 +713,15 @@ public class HMDP_PCSVB {
 				alpha_batch_counter++;
 				
 				if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
+<<<<<<< HEAD
 					
 					alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,1.0,20);
 
 					//alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
+=======
+
+					alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
+>>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 					alpha_batch_counter=0;
 					
 				}
@@ -969,8 +974,12 @@ public class HMDP_PCSVB {
 
 	public void updateHyperParameters() {
 
+<<<<<<< HEAD
 		//we have to have at least one run for learning the cluster-specific parameters
 		if(rhot_step>BURNIN_DOCUMENTS+2) {
+=======
+		if(rhot_step>BURNIN_DOCUMENTS) {
+>>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 
 			//			double table_sum = 0;
 			//			for (int f=0;f<c.F;f++) {
@@ -1094,9 +1103,13 @@ public class HMDP_PCSVB {
 				}
 			}
 			
+<<<<<<< HEAD
 			//TODO: estimate!
 		
 			alpha_0 = DirichletEstimation.estimateAlphaMap(sumfck, sumfc, pi_0, alpha_0,1,1,20);
+=======
+			alpha_0 = DirichletEstimation.estimateAlphaNewton(sumfc, sumfck, pi_0, alpha_0,1,1);
+>>>>>>> bfbdba671a773d228fa7fbbc0c653420c2a6a2e8
 
 
 		}

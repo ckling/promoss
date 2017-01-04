@@ -97,8 +97,8 @@ public class Corpus {
 		
 		Load load = new Load();
 
-		//Try to read parsed documents
-		if (load.readSVMlight(directory+"wordsets", this)) {			
+		//TODO Try to read parsed documents
+		if (1==2 && load.readSVMlight(directory+"wordsets", this)) {			
 			return;
 		}
 		
