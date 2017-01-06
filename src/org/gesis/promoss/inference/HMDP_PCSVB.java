@@ -61,7 +61,7 @@ public class HMDP_PCSVB {
 	public int BATCHSIZE = 128;
 	public int BATCHSIZE_GROUPS = -1;
 	//How many observations do we take before updating alpha_1
-	public int BATCHSIZE_ALPHA = 1000;
+	public int BATCHSIZE_ALPHA = 0;
 	//After how many steps a sample is taken to estimate alpha
 	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
@@ -455,12 +455,21 @@ public class HMDP_PCSVB {
 				sumqfgc[f][g] = new double[c.A[f][g].length];
 			}
 		}
+		
+		if (BATCHSIZE_ALPHA == 0) {
+			BATCHSIZE_ALPHA = c.M;
+		}
 
 		alpha_1_nm = new int[BATCHSIZE_ALPHA];
 		alpha_1_nmk = new double[BATCHSIZE_ALPHA][T];
 		alpha_1_pimk = new double[BATCHSIZE_ALPHA][T];
 
+
+		
 		SAMPLE_ALPHA = (int) Math.ceil(c.M / BATCHSIZE_ALPHA);
+		if (SAMPLE_ALPHA <= 0) {
+			SAMPLE_ALPHA = 1;
+		}
 
 	}
 
@@ -699,8 +708,8 @@ public class HMDP_PCSVB {
 		}
 
 		//take 10000 samples to estimate alpha_1
-		if (rhot_step>BURNIN_DOCUMENTS) {
-
+		//we have to have at least one run before we estimate alpha!
+		if (rhot_step>BURNIN_DOCUMENTS+1) {
 			//ignore documents containing only one word.
 			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
 				alpha_1_nm[alpha_batch_counter] = c.getN(m);
@@ -712,8 +721,10 @@ public class HMDP_PCSVB {
 				alpha_batch_counter++;
 				
 				if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
+					
+					alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,0.0,1);
 
-					alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
+					//alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
 					alpha_batch_counter=0;
 					
 				}
@@ -765,7 +776,9 @@ public class HMDP_PCSVB {
 					nkt[k][v] += rhostktnormC * tempnkt[k][v];
 					//estimate tables in the topic per word, we just assume that the topic-word assignment is 
 					//identical for the other words in the corpus.
-					mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words)))));
+					mkt[k][v] += rhostkt * ((1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words))))));
+
+
 					if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
 						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] );
 						debug = true;
@@ -858,7 +871,7 @@ public class HMDP_PCSVB {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS)  {
+			if (rhot_step > BURNIN_DOCUMENTS+2)  {
 				//Update global topic distribution
 				updateGlobalTopicDistribution();
 			}
@@ -964,7 +977,8 @@ public class HMDP_PCSVB {
 
 	public void updateHyperParameters() {
 
-		if(rhot_step>BURNIN_DOCUMENTS) {
+		//we have to have at least one run for learning the cluster-specific parameters
+		if(rhot_step>BURNIN_DOCUMENTS+1) {
 
 			//			double table_sum = 0;
 			//			for (int f=0;f<c.F;f++) {
@@ -1088,7 +1102,9 @@ public class HMDP_PCSVB {
 				}
 			}
 			
-			alpha_0 = DirichletEstimation.estimateAlphaNewton(sumfc, sumfck, pi_0, alpha_0,1,1);
+			//TODO: estimate!
+		
+			alpha_0 = DirichletEstimation.estimateAlphaMap(sumfck, sumfc, pi_0, alpha_0,1,1,1);
 
 
 		}

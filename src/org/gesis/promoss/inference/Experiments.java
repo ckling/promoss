@@ -11,12 +11,13 @@ import org.gesis.promoss.inference.DMR_CSVB;
 
 public class Experiments {
 	
-	private static int RUNS = 1000;
-	private static int MIN_DICT_WORDS = 1000;
-	private static int BATCHSIZE = 64;
-	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/ml8_smaller/";
+	private static int RUNS = 200;
+	private static int MIN_DICT_WORDS = 2;
+	private static int BATCHSIZE = 64;
+	private static int T = 100;
+
+	private static String directory = "/home/c/work/topicmodels/maryam9/";
 
 	
 	public static void main(String[] args) {
@@ -24,7 +25,10 @@ public class Experiments {
 		String corpusname = "corpus.txt";
 		String metaname = "meta.txt";
 		
-		String params ="T(L100)";
+
+		String params ="G(100)";
+		//String params ="T(L1000)";
+		//String params ="N";
 
 		//File corpusfile = new File(hmdp.c.directory + corpusname);
 		//File metafile = new File(hmdp.c.directory + metaname);
@@ -58,6 +62,9 @@ public class Experiments {
 		//hmd2();
 		//delall();
 		hmdp();
+
+		//mvhmdp2();
+
 		if (1==1)return;
 		
 		directory = "/home/c/work/topicmodels/porn_hmd/";
@@ -127,7 +134,7 @@ public class Experiments {
 		
 	}
 	public static void dmr2() {
-		
+
 			
 		DMR_CSVB dmr = new DMR_CSVB();
 		
@@ -225,7 +232,52 @@ public class Experiments {
 		
 		hmd.T = T;
 		
-		//hmd.BURNIN_DOCUMENTS = 20;
+		hmd.BURNIN_DOCUMENTS = 10;
+		
+		
+		hmd.TRAINING_SHARE = 0.9;
+		
+		hmd.delta_fix = 10;
+				
+		hmd.initialise();
+		
+		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
+
+
+		Text text = new Text();
+		text.write(ppxFileName,"",false);
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			
+			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
+			
+			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
+		}
+		text.close();
+		hmd.save();
+
+		hmd = null;
+		
+	}
+	
+	public static void mvhmdp () {
+
+		MVHMDP_PCSVB hmd = new MVHMDP_PCSVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		hmd.BATCHSIZE = BATCHSIZE;
+		
+		hmd.T = T;
+		
+		hmd.BURNIN_DOCUMENTS = 0;
 		
 		
 		hmd.TRAINING_SHARE = 0.9;
@@ -252,6 +304,58 @@ public class Experiments {
 		}
 		text.close();
 
+		hmd.save();
+		
+		hmd = null;
+		
+	}
+	
+	public static void mvhmdp2 () {
+
+		MVHMDP_PCSVB hmd = new MVHMDP_PCSVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		hmd.BATCHSIZE = BATCHSIZE;
+		
+		hmd.T = T;
+		
+		hmd.c.processed=false;
+		hmd.c.stemming=true;
+		hmd.c.stopwords=true;
+		hmd.c.language="de";
+		
+		hmd.BURNIN_DOCUMENTS = 0;
+		
+		
+		hmd.TRAINING_SHARE = 0.9;
+		
+		hmd.delta_fix = 10;
+				
+		hmd.initialise();
+		
+		String ppxFileName = directory+"hmdperplexity"+(System.currentTimeMillis()/1000);
+
+		Text text = new Text();
+		text.write(ppxFileName,"",false);
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			
+			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
+			
+			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
+		}
+		text.close();
+
+		hmd.save();
+		
 		hmd = null;
 		
 	}

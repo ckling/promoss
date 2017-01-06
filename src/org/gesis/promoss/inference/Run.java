@@ -13,8 +13,10 @@ public class Run {
 		if (new File("/home/c/work/").exists() && (args == null || args.length == 0)) {
 
 
-			args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
+			args = "-directory /home/c/work/topicmodels/schelter/ -method HMDP -BURNIN 1 -BURNIN_DOCUMENTS 10 -T 50 -meta_params T(L70) -MIN_DICT_WORDS 10 -RUNS 100 -TRAINING_SHARE 1.0".split(" ");
 
+
+			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 
 		}
 		

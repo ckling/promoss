@@ -261,10 +261,11 @@ public class BasicMath {
 	
 	public static double[] normalise (double[] x) {
 		double sum = sum(x);
+		double[] x2 = new double[x.length];
 		for (int i=0;i<x.length;i++) {
-			x[i]/=sum;
+			x2[i] = x[i]/sum;
 		}
-		return x;
+		return x2;
 	}
 
 	public static float[] normalise (float[] x) {

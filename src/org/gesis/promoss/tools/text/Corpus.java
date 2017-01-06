@@ -43,7 +43,7 @@ public class Corpus {
 	public Boolean stopwords = false;
 	//Should words be stemmed? (using the Snowball stemmer)
 	public Boolean stemming = false;
-	//Should words be separated using regular expressions, or is the text processed already?
+	//Is the text processed already?
 	public Boolean processed = true;
 	//Store some zeros for empty documents in the doc_topic matrix?
 	public Boolean store_empty = true;
