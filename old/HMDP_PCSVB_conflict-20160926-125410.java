@@ -61,7 +61,7 @@ public class HMDP_PCSVB {
 	public int BATCHSIZE = 128;
 	public int BATCHSIZE_GROUPS = -1;
 	//How many observations do we take before updating alpha_1
-	public int BATCHSIZE_ALPHA = 0;
+	public int BATCHSIZE_ALPHA = 1000;
 	//After how many steps a sample is taken to estimate alpha
 	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
@@ -151,7 +151,8 @@ public class HMDP_PCSVB {
 	public int rhot = 0;
 	//tells the number of the current run)
 	public int rhot_step = 0;
-
+	//tells the number of words seen in this document
+	private int[] rhot_words_doc;
 
 	//count number of words seen in the batch
 	//remember that rhot counts the number of documents, not words
@@ -194,6 +195,9 @@ public class HMDP_PCSVB {
 	//sum over document-topic table estimates \sum_{m=0}^{M} p(n_{mk} > 0)) for batch
 	public double sumnmk_ge0=0.0;
 
+	//denominator for alpha_0 estimate
+	private double alpha_1_estimate_denominator;
+
 	//counts over the feature use
 	private double[] tempsumqf;
 	//counts over the group use
@@ -207,10 +211,6 @@ public class HMDP_PCSVB {
 
 	//counts, how many documents we observed in the batch to estimate alpha_1
 	public int alpha_batch_counter = 0;
-	//document lengths in sample
-	private double[][] alpha_1_pimk;
-	private int[] alpha_1_nm;
-	private double[][] alpha_1_nmk;
 
 	private RandomSamplers rs = new RandomSamplers();
 
@@ -369,6 +369,7 @@ public class HMDP_PCSVB {
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
+		rhot_words_doc=new int[c.M];
 		rhot_group = new int[c.F][];
 		for (int f=0;f<c.F;f++) {
 			rhot_group[f]=new int[c.A[f].length];
@@ -455,21 +456,6 @@ public class HMDP_PCSVB {
 				sumqfgc[f][g] = new double[c.A[f][g].length];
 			}
 		}
-		
-		if (BATCHSIZE_ALPHA == 0) {
-			BATCHSIZE_ALPHA = c.M;
-		}
-
-		alpha_1_nm = new int[BATCHSIZE_ALPHA];
-		alpha_1_nmk = new double[BATCHSIZE_ALPHA][T];
-		alpha_1_pimk = new double[BATCHSIZE_ALPHA][T];
-
-
-		
-		SAMPLE_ALPHA = (int) Math.ceil(c.M / BATCHSIZE_ALPHA);
-		if (SAMPLE_ALPHA <= 0) {
-			SAMPLE_ALPHA = 1;
-		}
 
 	}
 
@@ -551,7 +537,8 @@ public class HMDP_PCSVB {
 			//How often doas t appear in the document?
 			int termfreq = termFreqs[i];
 
-
+			//update number of words seen
+			rhot_words_doc[m]+=termfreq;
 			if (rhot_step>BURNIN) {
 				//increase number of words seen in that batch
 				batch_words[t]+=termfreq;
@@ -708,28 +695,29 @@ public class HMDP_PCSVB {
 		}
 
 		//take 10000 samples to estimate alpha_1
-		//we have to have at least one run before we estimate alpha!
-		if (rhot_step>BURNIN_DOCUMENTS+1) {
+		if (rhot_step>BURNIN_DOCUMENTS) {
 
 			//ignore documents containing only one word.
 			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
-				alpha_1_nm[alpha_batch_counter] = c.getN(m);
-				for (int k=0;k<T;k++) {
-					alpha_1_nmk[alpha_batch_counter][k] = nmk[m][k];
-					alpha_1_pimk[alpha_batch_counter][k] = topic_prior[k];
-				}
-				
+				sumnmk_ge0+=BasicMath.sum(topic_ge_0);
+				alpha_1_estimate_denominator += Gamma.digamma0(c.getN(m)+alpha_1);
 				alpha_batch_counter++;
-				
-				if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
-					
-
-					alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,1.0,1);
 
 
-					//alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
-					alpha_batch_counter=0;
-					
+				//We use the estimate from Sato and guess the table sum based on the batch
+				if (alpha_batch_counter%BATCHSIZE_ALPHA == 0) {
+
+					alpha_1_estimate_denominator-= BATCHSIZE_ALPHA * Gamma.digamma0(alpha_1);
+					//this is for preventing updates after we saw only empty documents
+					if (sumnmk_ge0>0) {
+						alpha_1 = (sumnmk_ge0 / alpha_1_estimate_denominator);
+					}
+
+					//reset sumnmk_ge0
+					sumnmk_ge0 = 0;
+					//get new denominator
+					alpha_1_estimate_denominator = 0;
+					alpha_batch_counter = 0;
 				}
 			}
 		}
@@ -779,9 +767,7 @@ public class HMDP_PCSVB {
 					nkt[k][v] += rhostktnormC * tempnkt[k][v];
 					//estimate tables in the topic per word, we just assume that the topic-word assignment is 
 					//identical for the other words in the corpus.
-					mkt[k][v] += rhostkt * ((1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words))))));
-
-
+					mkt[k][v] += rhostkt * (1.0-Math.exp(tempmkt[k][v]*(c.C / Double.valueOf(BasicMath.sum(batch_words)))));
 					if(!debug &&  (Double.isInfinite(tempmkt[k][v]) || Double.isInfinite(mkt[k][v]))) {
 						System.out.println("mkt estimate " + tempmkt[k][v] + " " + mkt[k][v] );
 						debug = true;
@@ -874,7 +860,7 @@ public class HMDP_PCSVB {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS+2)  {
+			if (rhot_step > BURNIN_DOCUMENTS+1)  {
 				//Update global topic distribution
 				updateGlobalTopicDistribution();
 			}
@@ -948,22 +934,18 @@ public class HMDP_PCSVB {
 
 		double[] pi_ = new double[T];
 		//TODO: 1-pi
-		for (int k=0;k<T-1;k++) {
+		for (int k=0;k<T;k++) {
 			pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 		}
-		for (int k=0;k<T-1;k++) {
+		for (int k=0;k<T;k++) {
 			pi_0[k]=pi_[k];
 			int sort_index = index_reverted[k];
 			for (int l=0;l<sort_index;l++) {
 				int sort_index_lower = index[l];
 				pi_0[k]*=(1.0-pi_[sort_index_lower]);
 			}
+
 		}
-		//probability of last pi_0 is the rest
-		pi_0[T-1]=0.0;
-		pi_0[T-1]=1.0 - BasicMath.sum(pi_0);
-
-
 
 		//MAP estimation for gamma (Sato (6))
 		double gamma_denominator = 0.0;
@@ -971,17 +953,45 @@ public class HMDP_PCSVB {
 			gamma_denominator += Gamma.digamma0(ahat[k] + bhat[k])- Gamma.digamma0(bhat[k]);
 		}
 
-		int a = 1;
-		int b = 0;
-		gamma = (T + a - 2) / (gamma_denominator + b);
+		gamma = (T -1) / gamma_denominator;
 
 
 	}
 
 	public void updateHyperParameters() {
 
-		//we have to have at least one run for learning the cluster-specific parameters
 		if(rhot_step>BURNIN_DOCUMENTS+1) {
+
+			//System.out.println("Updating hyperparameters...");
+
+			//Update alpha_0 using the table counts per cluster
+			//Cf is the number of clusters per feature
+
+			int observations = 0;
+			double alpha_0_denominator = 0;
+			for (int f = 0; f < c.F; f++) {
+				for (int i = 0; i < c.Cf[f]; i++) {
+					//sumqfck => potential number of tables
+					double sum = BasicMath.sum(sumqfck[f][i]);
+					if (sum > 0) {
+						alpha_0_denominator += Gamma.digamma0(sum + alpha_0);
+						observations++;
+					}
+				}
+			}
+			alpha_0_denominator -= observations * Gamma.digamma0(alpha_0);
+
+			//sumqfck_ge0 => number of tables
+			alpha_0 = BasicMath.sum(sumqfck_ge0) / alpha_0_denominator;
+
+
+
+
+			//set upper limit
+			if (alpha_0 > T) {
+				alpha_0 = T;
+			}
+
 
 			//			double table_sum = 0;
 			//			for (int f=0;f<c.F;f++) {
@@ -1079,36 +1089,6 @@ public class HMDP_PCSVB {
 					delta[f] = DirichletEstimation.estimateAlphaLikChanging(sumqfgc[f], delta[f], 200);
 				}
 			}
-			
-			//sum over tables
-			int clusters = BasicMath.sum(c.Cf);
-			double[][] sumfck = new double[clusters][T];
-			double[] sumfc = new double[clusters];
-
-
-			//Now add observed estimated counts
-
-			int j=0;
-			//sum_cluster_tables = 0;
-			for (int f=0;f<c.F;f++) {
-				for (int i=0;i< c.Cf[f];i++) {
-					//Check for empty clusters
-					if (BasicMath.sum(sumqfck[f][i])>0) {
-						sumfck[i] = new double[T];
-						for (int k=0;k<T;k++) {
-							sumfck[j][k] = sumqfck[f][i][k];
-							sumfc[j]+=sumqfck[f][i][k];
-							//System.out.println(sumfck[j][k]);
-						}
-						j++;
-					}
-				}
-			}
-			
-			//TODO: estimate!
-		
-			alpha_0 = DirichletEstimation.estimateAlphaMap(sumfck, sumfc, pi_0, alpha_0,1,1,1);
-
 
 		}
 

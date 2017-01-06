@@ -12,8 +12,9 @@ import org.gesis.promoss.inference.DMR_CSVB;
 public class Experiments {
 	
 
+
 	private static int RUNS = 200;
-	private static int MIN_DICT_WORDS = 2;
+	private static int MIN_DICT_WORDS = 1000;
 	private static int BATCHSIZE = 64;
 	private static int T = 100;
 
@@ -28,6 +29,10 @@ public class Experiments {
 
 		String params ="G(100)";
 		//String params ="T(L1000)";
+
+		//String params ="G(100)";
+		//String params ="T(L1000)";
+
 		//String params ="N";
 
 		//File corpusfile = new File(hmdp.c.directory + corpusname);
@@ -265,6 +270,8 @@ public class Experiments {
 		
 	}
 	
+
+	
 	public static void mvhmdp () {
 
 		MVHMDP_PCSVB hmd = new MVHMDP_PCSVB();
@@ -277,7 +284,7 @@ public class Experiments {
 		
 		hmd.T = T;
 		
-		hmd.BURNIN_DOCUMENTS = 0;
+		hmd.BURNIN_DOCUMENTS = 10;
 		
 		
 		hmd.TRAINING_SHARE = 0.9;
@@ -327,7 +334,9 @@ public class Experiments {
 		hmd.c.stopwords=true;
 		hmd.c.language="de";
 		
-		hmd.BURNIN_DOCUMENTS = 0;
+
+		hmd.BURNIN_DOCUMENTS = 10;
+
 		
 		
 		hmd.TRAINING_SHARE = 0.9;
