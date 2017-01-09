@@ -31,7 +31,7 @@ import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.ArmSampler;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Vectors;
-import org.knowceans.util.Samplers;
+//import org.knowceans.util.Samplers;
 
 
 
@@ -1574,7 +1574,7 @@ public class DirichletEstimation {
 		for (int m = 0; m < nmk.length; m++) {
 			nm[m] = (int) (N0 + N * Math.random());
 			nm2[m] = (double) nm[m];
-			nmk[m] = Samplers.randMultFreqs(Samplers.randDir(alpha), nm[m]);
+			//nmk[m] = Samplers.randMultFreqs(Samplers.randDir(alpha), nm[m]);
 			for (int k = 0; k < K; k++) {
 				nmk2[m][k] = nmk[m][k];
 			}

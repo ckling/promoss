@@ -13,10 +13,10 @@ public class Experiments {
 	
 
 
-	private static int RUNS = 200;
-	private static int MIN_DICT_WORDS = 1000;
+	private static int RUNS = 50;
+	private static int MIN_DICT_WORDS = 2;
 	private static int BATCHSIZE = 64;
-	private static int T = 100;
+	private static int T = 50;
 
 	private static String directory = "/home/c/work/topicmodels/maryam9/";
 
@@ -27,10 +27,10 @@ public class Experiments {
 		String metaname = "meta.txt";
 		
 
-		String params ="G(100)";
+		//String params ="";
 		//String params ="T(L1000)";
 
-		//String params ="G(100)";
+		String params ="G(100)";
 		//String params ="T(L1000)";
 
 		//String params ="N";
@@ -41,7 +41,7 @@ public class Experiments {
 		File textsFile = new File(directory + "texts.txt");
 		File groupClusterFile = new File(directory + "groups.txt");
 
-		if (1==1 || !textsFile.exists() || !groupClusterFile.exists()) {
+		if (1==0 || !textsFile.exists() || !groupClusterFile.exists()) {
 			
 			System.out.println("Clustering metadata...");
 			ClusterMetadata.transformData(params, directory, metaname, corpusname, "cluster/");
@@ -63,12 +63,12 @@ public class Experiments {
 		//hmd();
 		//delall();
 		//dmr2();
-		delall();
+		//delall();
 		//hmd2();
 		//delall();
-		hmdp();
+		//hmdp();
 
-		//mvhmdp2();
+		mvhmdp2();
 
 		if (1==1)return;
 		
@@ -335,7 +335,7 @@ public class Experiments {
 		hmd.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 10;
+		hmd.BURNIN_DOCUMENTS = 0;
 
 		
 		

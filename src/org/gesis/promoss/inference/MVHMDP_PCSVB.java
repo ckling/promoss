@@ -552,12 +552,15 @@ public class MVHMDP_PCSVB {
 			batch_mfg[f] = new double[c.A[f].length];
 		}
 
-
+		if (SAMPLE_ALPHA <= 0) {
+			SAMPLE_ALPHA = (int) (c.M*TRAINING_SHARE);
+		}
+		
 		alpha_1_nm = new int[BATCHSIZE_ALPHA];
 		alpha_1_nmk = new double[BATCHSIZE_ALPHA][T];
 		alpha_1_pimk = new double[BATCHSIZE_ALPHA][T];
 
-		SAMPLE_ALPHA = (int) Math.ceil(c.M / Double.valueOf(BATCHSIZE_ALPHA));
+		SAMPLE_ALPHA = Math.max(1, (int) Math.ceil(c.M*TRAINING_SHARE / Double.valueOf(BATCHSIZE_ALPHA)));
 
 		//number of words for cluster-specific topics
 		nfckt = new float[c.F][][][];
@@ -724,6 +727,8 @@ public class MVHMDP_PCSVB {
 												+"\n pi0k " + pi_0[k] 
 														+"\n mfc" + mfc[f][a]
 																+"\n nm_alpha "+nm_alpha);
+						System.exit(0);
+
 					}
 
 
@@ -821,7 +826,8 @@ public class MVHMDP_PCSVB {
 																			+"\n nfckt "+nfckt[f][i][k][t]
 																					+"\n beta_0 " +beta_0
 																					+"\n nfck "+nfck[f][i][k]
-											);									
+											);		
+									System.exit(0);
 								}
 							}
 							else {
@@ -1085,6 +1091,9 @@ public class MVHMDP_PCSVB {
 				nky[k][y] = (float)(oneminusrhostkt * nky[k][y] + rhostkt * batch_nky[k][y] * (c.C / Double.valueOf(sum_batch_words)));
 			}
 			lambda[k] = (float) ((nky[k][0] + kappa)/(nky[k][0]+nky[k][1]+2*kappa));
+			if (debug && lambda[k]==0) {
+				System.out.println("nky0 "+nky[k][0] + " nky1 " +nky[k][1] + " kappa " +kappa);
+			}
 
 		}
 
@@ -1246,6 +1255,11 @@ public class MVHMDP_PCSVB {
 			//Start with pseudo-counts from the Beta prior
 			for (int k=0;k<T;k++) {
 				bhat[k]=gamma;
+				if (debug && (Double.isNaN(bhat[k]) || bhat[k]<=0)){
+					System.out.println( "gamma " + gamma
+					);
+					System.exit(0);
+		}
 			}
 			//Now add observed estimated counts
 
@@ -1268,6 +1282,17 @@ public class MVHMDP_PCSVB {
 								System.out.println( "lfck f " + f + " c " + i + " k " + k + " | "+lfck[f][i][k]);
 							}
 							tables = (lfck[f][i][k] > 0) ? a0pik * lfck[f][i][k] * (Gamma.digamma0(a0pik + mfck[f][i][k] / lfck[f][i][k]) - Gamma.digamma0(a0pik)) : 0;
+							
+							if (debug && (Double.isNaN(tables) || tables<0)){
+										System.out.println( "lfck f " + f + " c " + i + " k " + k + " | "+lfck[f][i][k]
+												+"\n mfck" + mfck[f][i][k]
+												+"\n a0pik " + a0pik
+												+"\n alpha_0 "+ alpha_0
+												+"\n pi_0[k] "+ pi_0[k]
+										);
+										System.exit(0);
+							}
+							
 							//}
 							//else {
 							//Sampled number of tables -> better perplexity
@@ -1284,59 +1309,117 @@ public class MVHMDP_PCSVB {
 			for (int k=0;k<T;k++) {
 				ahat[k]=1.0+sumfck[k];
 			}
-
-
 			double[] ahat_copy = new double[T];
 			System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 			//get indices of sticks ordered by size (given by ahat)
 			int[] index = ArrayUtils.sortArray(ahat_copy,"desc");
 
 			int[] index_reverted = ArrayUtils.reverseIndex(index);
+			
+//			for (int k=0;k<T;k++) {
+//				System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]+ " " + index_reverted[k]);
+//			}
 
-			//bhat is the sum over the counts of all topics > k
-			for (int k=0;k<T;k++) {
-				int sort_index = index_reverted[k];
-				for (int k2=sort_index+1;k2<T;k2++) {
-					int sort_index_greater = index[k2];
-					bhat[k] += sumfck[sort_index_greater];
-				}
+			//bhat is the sum over the counts of all topics > k		
+			int sum = 0;
+			for (int k2=0;k2<T;k2++) {
+				int i = index[k2];
+				sum += (double) sumfck[i];
+				bhat[i]=sum;
 			}
+			
+//			for (int k2=0;k2<T;k2++) {
+//				int i = index_reverted[k2];
+//				System.out.println(bhat[i]);
+//			}
+				
 
 			double[] pi_ = new double[T];
 
-			for (int k=0;k<T-1;k++) {
+			for (int k=0;k<T;k++) {
 				pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 			}
-			for (int k=0;k<T-1;k++) {
-				pi_0[k]=pi_[k];
-				int sort_index = index_reverted[k];
-				for (int l=0;l<sort_index;l++) {
-					int sort_index_lower = index[l];
-					pi_0[k]*=(1.0-pi_[sort_index_lower]);
-				}
-			}
-			//probability of last pi_0 is the rest
-			pi_0[T-1]=0.0;
-			pi_0[T-1]=1.0 - BasicMath.sum(pi_0);
+//			for (int k=0;k<T-1;k++) {
+//				pi_0[k]=pi_[k];
+//			}
+//			for (int k=0;k<T-1;k++) {
+//
+//				int sort_index = index_reverted[k];
+//				System.out.println();
+//
+//				for (int l=0;l<sort_index;l++) {
+//					int sort_index_lower = index[l];
+//										System.out.print(sort_index_lower + " ");
+//					pi_0[k]*=(1.0-pi_[sort_index_lower]);
+//				}
+//				System.out.println();
+//
+//				if (debug && (Double.isNaN(pi_0[k]) || pi_0[k]<0 || pi_0[k] > 1 || Double.isNaN(ahat[k]) || ahat[k] <=0 || Double.isNaN(bhat[k])|| bhat[k] <=0)){
+//					System.out.println(
+//							"ahatk " + ahat[k]
+//							+"\n bhatk " + bhat[k]
+//							+"\n sumfck "+ sumfck[k]
+//							);
+//					System.exit(0);
+//				}
+//			}
+//			//probability of last pi_0 is the rest
 
+			
+			//rest is the remaining stick length
+			double rest = 1.0;
+			int i0 = index[0];
+			pi_0[i0] = pi_[i0];
+			rest -= pi_0[i0];
+			
+			for (int k2=1;k2<T-1;k2++) {
+				int i_minus = index[k2-1];
+				int i = index[k2];
+				pi_0[i] = pi_[i]*rest;
+				rest -= pi_0[i];
+			}
+			
+			//probability of last pi_0 is the rest (truncation)
+			int last_index = index[T-1];
+			pi_0[last_index]=rest;
+//			for (int k2=0;k2<T;k2++) {
+//				System.out.println("k2 " + k2 + " " + pi_0[k2]);
+//			}
 
 
 			//MAP estimation for gamma (Sato (6))
 			double gamma_denominator = 0.0;
 			for (int k=0;k<T-1;k++) {
 				gamma_denominator += Gamma.digamma0(ahat[k] + bhat[k])- Gamma.digamma0(bhat[k]);
+				if (debug && (Double.isNaN(pi_0[k]) || pi_0[k]<0 || pi_0[k] > 1 || Double.isNaN(ahat[k]) || ahat[k] <=0 || Double.isNaN(bhat[k])|| bhat[k] <=0)){
+				System.out.println(
+						"ahatk " + ahat[k]
+						+"\n bhatk " + bhat[k]
+						+"\n sumfck "+ sumfck[k]
+						);
+				System.exit(0);
+				}
 			}
 
 			int a = 1;
 			int b = 0;
 			gamma = (T + a - 2) / (gamma_denominator + b);
+			
+			if (debug && (Double.isNaN(gamma) || gamma<=0)){
+				System.out.println(
+						"\n gamma_denominator "+ gamma_denominator
+						);
+				System.exit(0);
+
+			}
+			
 		}
 
 	}
 
 	public void updateHyperParameters() {
 
-		if(rhot_step>BURNIN_DOCUMENTS+1) {
+		if(rhot_step>BURNIN_DOCUMENTS+2) {
 
 
 			//TODO: update beta_0
@@ -1637,7 +1720,7 @@ public class MVHMDP_PCSVB {
 
 					List<Pair> wordprob = new ArrayList<Pair>(); 
 					for (int v = 0; v < c.V; v++){
-						wordprob.add(new Pair(c.dict.getWord(v), (nfct[f][i][v]+beta_0)/(nfc[f][i]+beta_0V), false));
+						wordprob.add(new Pair(c.dict.getWord(v), (nfckt[f][i][k][v]+beta_0)/(nfck[f][i][k]+beta_0V), false));
 					}
 					Collections.sort(wordprob);
 

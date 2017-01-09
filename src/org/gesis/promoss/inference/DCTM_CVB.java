@@ -34,17 +34,18 @@ import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Pair;
 import org.gesis.promoss.tools.text.Corpus;
+import org.gesis.promoss.tools.text.DCTM_Corpus;
 import org.gesis.promoss.tools.text.Save;
 
 /**
  * This is the practical collapsed stochastic variational inference
  * for the Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
  */
-public class DCTM_CSVB {
+public class DCTM_CVB {
 
 	//This class holds the corpus and its properties
 	//including metadata
-	public Corpus c;
+	public DCTM_Corpus c;
 
 	//We have a debugging mode for checking the parameters
 	public boolean debug = false;
@@ -54,7 +55,7 @@ public class DCTM_CSVB {
 	public int RUNS = 500;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
-	public int BATCHSIZE = 128;
+	
 	//How many observations do we take before updating alpha
 	public int BATCHSIZE_ALPHA = 1000;
 	//After how many steps a sample is taken to estimate alpha
@@ -71,61 +72,50 @@ public class DCTM_CSVB {
 
 	public String save_prefix = "";
 
-	public int T = 100; //Number of topics
+	public int K = 100; //Number of topics
+	public int K2 = K; //Number of comment topics
 
-
-	public double[] alpha;
+	public double[][] alpha0;
+	public double[][] alpha1;
+	public double[][] alpha2;
 
 	//Dirichlet concentration parameter for topic-word distributions
 	public double beta = 0.01;
+	public double beta2 = 0.01;
 
 	//helping variable beta*V
 	private double beta_V;
+	private double beta2_V;
 
 	//Store some zeros for empty documents in the doc_topic matrix?
 	public Boolean store_empty = true;
 
 	//Estimated number of times term t appeared in topic k
 	public float[][] nkt;
-	//Estimated number of times term t appeared in topic k in the batch
-	private float[][] tempnkt;
 	//Estimated number of words in topic k
 	public float[] nk;
-	//Topic "counts" per document
+	//Estimated number of times term t appeared in topic k
+	public float[][] nkt2;
+	//Estimated number of words in topic k
+	public float[] nk2;
+	//Topic counts per document
 	public float[][] nmk;
-
-	public int rhos = 1;
-	public double rhokappa = 0.5;
-	public int rhotau = 64;
-
-	public int rhos_document = 1;
-	public double rhokappa_document = 0.5;
-	public int rhotau_document = 64;
-
-	//tells the number of processed words
-	public int rhot = 0;
-	//tells the number of the current run)
-	public int rhot_step = 0;
-
-
-	//count number of words seen in the batch
-	//remember that rhot counts the number of documents, not words
-	private int[] batch_words;
-
-	/*
-	 * Here we define helper variables
-	 * Every feature has clusters
-	 * Clusters belong to groups of connected clusters (e.g. adjacent clusters).
-	 */
-
-	public double rhostkt_document;
-	public double oneminusrhostkt_document;
+	public float[][] nmk2;
+	//table counts per comment
+	public float[][] mmk2;
+	
+	//Zc: D x Cd x Nm x (K x K' + 1)
+	private float[][][][][] zc;
+	//z: D x Nm x K
+	private float[][][] z;
 
 	//counts, how many documents we observed in the batch to estimate alpha
 	public int alpha_batch_counter = 0;
+	
+	public int rhot_step = 0;
 
-	DCTM_CSVB() {
-		c = new Corpus();
+	DCTM_CVB() {
+		c = new DCTM_Corpus();
 	}
 
 	public void initialise () {
@@ -151,11 +141,11 @@ public class DCTM_CSVB {
 	public void run () {
 		for (int i=0;i<RUNS;i++) {
 
-			System.out.println(c.directory + " run " + i + " (avg. alpha "+ BasicMath.sum(alpha)/T+ " beta " + beta + ")");
+			System.out.println(c.directory + " run " + i + " (avg. alpha "+ " beta " + beta + ")");
 
 			onePass();
 
-			if (rhot_step%SAVE_STEP==0 || rhot_step == RUNS) {
+			if (rhot_step == RUNS) {
 				//store inferred variables
 				System.out.println("Storing variables...");
 				save();
@@ -167,9 +157,7 @@ public class DCTM_CSVB {
 	public void onePass() {
 		rhot_step++;
 		//get step size
-		rhostkt_document = rho(rhos_document,rhotau_document,rhokappa_document,rhot_step);
-		oneminusrhostkt_document = (1.0 - rhostkt_document);
-
+		
 		int progress = c.M / 50;
 		if (progress==0) progress = 1;
 		for (int m=0;m<Double.valueOf(c.M)*TRAINING_SHARE;m++) {
@@ -190,47 +178,51 @@ public class DCTM_CSVB {
 		beta_V = beta * c.V;
 
 
-		if (rhos_document < 0) 
-			rhos_document = rhos;
-
-		if (rhotau_document < 0) 
-			rhotau_document = rhotau;
-
-
-		if (rhokappa_document < 0) 
-			rhokappa_document = rhokappa;
-
 
 		c.V = c.dict.length();
 
-		alpha = new double[T];
-		for (int k=0;k<T;k++) {
-			alpha[k] = 5.0 / T;
-		}
+		alpha0 = new double[c.G][K];
+		alpha1 = new double[c.G];
+		alpha2 = new double[c.G][K2];
+
 
 		beta_V = beta * c.V;
 
-		batch_words = new int[c.V];
-
-		nk = new float[T];
-		nkt = new float[T][c.V];	
-		tempnkt = new float[T][c.V];	
-
-
+		nk = new float[K];
+		nkt = new float[K][c.V];	
 
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
-		nmk = new float[c.M][T];
+		nmk = new float[c.M][K];
 
 		for (int t=0; t < c.V; t++) {
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 
 				nkt[k][t]= (float) (Math.random()*INIT_RAND);
 				nk[k]+=nkt[k][t];
 
 			}
 		}
+		
+		zc = new float[c.D][][][][];
+		for (int d=0;d<c.D;d++) {
+			zc[d] = new float[c.Cd[d]][][][];
+			for (int cd = 0; cd < c.Cd[d]; cd++) {
+				zc[d][cd] = new float[c.Nm[m]]][][][];
+			}
+		}
+		for (int m=0;m<c.M;m++) {
+			int d = c.meta[m][1];
+			int cd = c.meta[m][2];
+			if (cd > 0) {
+				zc[d][cd]=new float[c.getN(m)][K+1][K2];
+//TODO: change dimensionality of alpha2 in plate
+			}
+		}
+		
+		
+		z = new float[c.D][K];
 
 		System.out.println("Initialising count variables...");
 
@@ -241,13 +233,15 @@ public class DCTM_CSVB {
 
 	public void inferenceDoc(int m) {
 
-		//increase counter of documents seen
-		rhot++;
-
-		double rhostkt_documentNm = rhostkt_document * c.getN(m);
-
 		int[] termIDs = c.getTermIDs(m);
 		short[] termFreqs = c.getTermFreqs(m);
+		
+		int g = c.meta[m][0];
+		int d = c.meta[m][1];
+		int commentID = c.meta[m][2];
+		
+		//Normal docs
+		if (commentID == 0) {
 
 		//Process words of the document
 		for (int i=0;i<termIDs.length;i++) {
@@ -257,24 +251,21 @@ public class DCTM_CSVB {
 			//How often doas t appear in the document?
 			int termfreq = termFreqs[i];
 
-			//update number of words seen
-			if (rhot_step>BURNIN) {
-				//increase number of words seen in that batch
-				batch_words[t]+=termfreq;
-			}
-
 			//topic probabilities - q(z)
-			double[] q = new double[T];
+			double[] q = new double[K];
 			//sum for normalisation
 			double qsum = 0.0;
 
-			for (int k=0;k<T;k++) {
+			for (int k=0;k<K;k++) {
 				if (c.getN(m) == termfreq) {
 					nmk[m][k] = 0;
 				}
-
+				else {
+					nmk[m][k]-=z[d][i][k];
+				}
+				
 				q[k] = 	//probability of topic given feature & group
-						(nmk[m][k] + alpha[k])
+						(nmk[m][k] + alpha0[g][k])
 						//probability of topic given word w
 						* (nkt[k][t] + beta) 
 						/ (nk[k] + beta_V);
@@ -282,108 +273,13 @@ public class DCTM_CSVB {
 				qsum+=q[k];
 
 			}
-
-
-
-
-			//Normalise gamma (sum=1), update counts and probabilities
-			for (int k=0;k<T;k++) {
-				//normalise
-				q[k]/=qsum;
-
-				if ((Double.isInfinite(q[k]) || q[k]>1 || Double.isNaN(q[k]) || Double.isNaN(nmk[m][k]) ||  Double.isInfinite(nmk[m][k])) && !debug) {
-					System.out.println("Error calculating gamma " +
-							" second part: " + (nkt[k][t] + beta) / (nk[k] + beta_V) + 
-							" m " + m+ " " + c.getN(m)+ " " + termfreq + " "+ Math.pow(oneminusrhostkt_document,termfreq) + 
-							" sumqmk " + 
-							" qk " + q[k] + 
-							" nmk " + nmk[m][k] + 
-							" nkt " + nkt[k][t]+ 	
-							" alpha1 " + alpha +
-							" beta " + beta + 
-							" betaV " + beta_V
-							);
-
-					debug = true;
-					//Skip this file...
-					break;
-				}
-
-				//add to batch counts
-				if (rhot_step>BURNIN) {
-					tempnkt[k][t]+=q[k]*termfreq;
-				}
-
-				//in case the document contains only this word, we do not use nmk
-
-				//update document-topic counts
-				if (c.getN(m) != termfreq) {
-					//update document-feature-cluster-topic counts
-					if (termfreq==1) {
-						nmk[m][k] = (float) (oneminusrhostkt_document * nmk[m][k] + rhostkt_documentNm * q[k]);
-					}
-					else {
-						double temp = Math.pow(oneminusrhostkt_document,termfreq);
-						nmk[m][k] = (float) (temp * nmk[m][k] + (1.0-temp) * c.getN(m) * q[k]);
-					}
-				}
-				else {
-					nmk[m][k]=(float) (q[k]*termfreq);
-				}
-
-			}
+		}
 
 		}
-		//End of loop over document words
 
-
-		//We update global topic-word counts in batches (mini-batches lead to local optima)
-		//after a burn-in phase
-		if (rhot%BATCHSIZE == 0 && rhot_step>BURNIN) {
-			updateTopicWordCounts();
-		}
 
 	}
 
-	/**
-	 * Here we do stochastic updates of the document-topic counts
-	 */
-	public synchronized void updateTopicWordCounts() {
-
-
-
-		double rhostkt = rho(rhos,rhotau,rhokappa,rhot/BATCHSIZE);
-		double rhostktnormC = rhostkt * (c.C / Double.valueOf(BasicMath.sum(batch_words)));
-
-
-
-		nk = new float[T];
-		for (int k=0;k<T;k++) {
-			for (int v=0;v<c.V;v++) {
-				double oneminusrhostkt = (1.0 - rhostkt);
-
-				nkt[k][v] *= oneminusrhostkt;
-
-				//we estimate the topic counts as the average q (tempnkt consists of BATCHSIZE observations)
-				//and multiply this with the size of the corpus C
-				if (tempnkt[k][v]>0) {
-
-					nkt[k][v] += rhostktnormC * tempnkt[k][v];
-
-					//reset batch counts
-					tempnkt[k][v] = 0;
-					//reset word counts in the last topic iteration
-					if (k+1==T) {
-						batch_words[v] = 0;
-					}
-				}
-
-				nk[k] += nkt[k][v];
-
-			}
-		}
-
-	}
 
 	public void updateHyperParameters() {
 
@@ -393,25 +289,12 @@ public class DCTM_CSVB {
 
 			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 
-			//if (BasicMath.sum(alpha) > T) {
-			//	for (int k=0;k<T;k++) {
-			//		alpha[k]=1.0;
-			//	}					
-			//}
-
-			//beta = DirichletEstimation.estimateAlphaLikChanging(nkt,beta,1);
-			//beta_V = beta * c.V;
 
 			
 			
 		}
 
 
-	}
-
-
-	public double rho (int s,int tau, double kappa, int t) {
-		return Double.valueOf(s)/Math.pow((tau + t),kappa);
 	}
 
 
@@ -446,18 +329,18 @@ public class DCTM_CSVB {
 
 				//#documents including empty documents
 				int Me = c.M + c.empty_documents.size();
-				doc_topic = new float[Me][T];
+				doc_topic = new float[Me][K];
 				for (int m=0;m<Me;m++) {
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						doc_topic[m][k]  = 0;
 					}
 				}
 				int m = 0;
 				for (int me=0;me<Me;me++) {
 					if (c.empty_documents.contains(me)) {
-						doc_topic[me]  = new float[T];
-						for (int k=0;k<T;k++) {
-							doc_topic[me][k] = (float) (1.0 / T);
+						doc_topic[me]  = new float[K];
+						for (int k=0;k<K;k++) {
+							doc_topic[me][k] = (float) (1.0 / K);
 						}
 					}
 					else {				
@@ -469,9 +352,9 @@ public class DCTM_CSVB {
 
 			}
 			else {
-				doc_topic = new float[c.M][T];
+				doc_topic = new float[c.M][K];
 				for (int m=0;m < c.M;m++) {
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						doc_topic[m][k]  = 0;
 					}
 				}
@@ -490,9 +373,9 @@ public class DCTM_CSVB {
 		}
 
 
-		String[][] topktopics = new String[T*2][topk];
+		String[][] topktopics = new String[K*2][topk];
 
-		for (int k=0;k<T;k++) {
+		for (int k=0;k<K;k++) {
 
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < c.V; v++){
@@ -543,7 +426,7 @@ public class DCTM_CSVB {
 			short[] termFreqs = c.getTermFreqs(m);
 
 			int termlength = termIDs.length;
-			double[][] z = new double[termlength][T];
+			double[][] z = new double[termlength][K];
 
 			//sample for 200 runs
 			for (int RUN=0;RUN<runmax;RUN++) {
@@ -559,16 +442,16 @@ public class DCTM_CSVB {
 					int termfreq = termFreqs[i];
 
 					//remove old counts 
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						nmk[m][k] -= termfreq * z[n][k];
 					}
 
 					//topic probabilities - q(z)
-					double[] q = new double[T];
+					double[] q = new double[K];
 					//sum for normalisation
 					double qsum = 0.0;
 
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 
 						q[k] = 	//probability of topic given feature & group
 								(nmk[m][k] + alpha[k])
@@ -582,7 +465,7 @@ public class DCTM_CSVB {
 					}
 
 					//Normalise gamma (sum=1), update counts and probabilities
-					for (int k=0;k<T;k++) {
+					for (int k=0;k<K;k++) {
 						//normalise
 						q[k]/=qsum;
 						z[n][k]=q[k];
@@ -603,7 +486,7 @@ public class DCTM_CSVB {
 
 				double lik = 0;
 
-				for (int k=0;k<T;k++) {
+				for (int k=0;k<K;k++) {
 					lik +=   z[n][k] * (nkt[k][t] + beta) / (nk[k] + beta_V);				
 				}
 
@@ -612,7 +495,7 @@ public class DCTM_CSVB {
 				n++;
 			}
 
-			for (int k=0;k<T;k++) nmk[m][k] = 0;
+			for (int k=0;k<K;k++) nmk[m][k] = 0;
 
 		}
 

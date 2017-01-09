@@ -1,6 +1,7 @@
 package org.gesis.promoss.tools.text;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -10,9 +11,14 @@ public class DCTM_Corpus extends Corpus {
 
 	public String metafile;
 
+	public int G = 0; //Number of Groups
 	
-	public double[][] meta; //metadata of documents: Document and Comment ID
+	public int[][] meta; //metadata of documents: Group, Document and Comment ID
 
+	private HashSet<Integer> hs = new HashSet<Integer>();
+	
+	public int[] Cd; //Number of comments per document d
+	public int D; //Number of commented documents
 	
 
 	
@@ -57,7 +63,7 @@ public class DCTM_Corpus extends Corpus {
 
 		int doc_number=0;
 		line_number = 0;
-		while((line = dictText.readLine(documentfile)) != null && doc_number < Double.valueOf(M)*TRAINING_SHARE) {
+		while((line = dictText.readLine(documentfile)) != null) {
 			line_number++;
 			if (!empty_documents.contains(line_number)) {
 				doc_number++;
@@ -73,8 +79,7 @@ public class DCTM_Corpus extends Corpus {
 		}
 		
 		N = new int[M];
-		
-	}
+		}
 
 	@SuppressWarnings("unchecked")
 	public void readDocs() {
@@ -82,7 +87,7 @@ public class DCTM_Corpus extends Corpus {
 		//Try to read parsed documents
 		Load load = new Load();
 
-		meta = load.readFileDouble2(directory+"meta");
+		meta = load.readFileInt2(directory+"meta");
 		//Try to read parsed documents
 		if (load.readSVMlight(directory+"wordsets", this) && meta != null) {			
 			return;
@@ -93,7 +98,7 @@ public class DCTM_Corpus extends Corpus {
 		
 		Save saveSVMlight = new Save();
 
-		meta = new double[M+empty_documents.size()][2];
+		meta = new int[M+empty_documents.size()][3];
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
 		int empty_counter = 0;
@@ -118,13 +123,21 @@ public class DCTM_Corpus extends Corpus {
 			String[] docSplit = line.split(" ");
 			String[] metaString = metaline.split(",");
 
-			double[] meta_value = new double[2];
-			for (int f=0; f<2; f++) {
-				meta_value[f] = Double.valueOf(metaString[f]);
+			int[] meta_value = new int[3];
+			for (int f=0; f<3; f++) {
+				meta_value[f] = Integer.valueOf(metaString[f]);
+			}
+			if (!hs.contains(meta_value[0])) {
+				hs.add(meta_value[0]);
+				G++;
+			}
+			//we count the number of commmented documents
+			//as their commentID is 0, we do it like this
+			if (meta_value[2] == 0) {
+				D++;
 			}
 
 			if (!empty_documents.contains(line_number)) {
-
 				if (docSplit.length>=1) {
 					if (processed) {
 						for(int i = 0; i < docSplit.length; i++) {
@@ -174,10 +187,15 @@ public class DCTM_Corpus extends Corpus {
 					meta[M+empty_counter]=meta_value;
 					empty_counter++;
 				}
-
 			}
-
-
+		}
+		
+		Cd=new int[D];
+		for (int i=0;i<meta.length;i++) {
+			if (meta[i][2] != 0) {
+				int d = meta[i][1];
+				Cd[d]++;
+			}
 		}
 
 		System.out.println("");
