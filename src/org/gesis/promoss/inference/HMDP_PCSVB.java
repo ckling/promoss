@@ -939,19 +939,21 @@ public class HMDP_PCSVB {
 		System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 		//get indices of sticks ordered by size (given by ahat)
 		int[] index = ArrayUtils.sortArray(ahat_copy,"desc");
-
-		int[] index_reverted = ArrayUtils.reverseIndex(index);
+		//on which position in the list is the given index
+		//int[] index_reverted = ArrayUtils.reverseIndex(index);
 		
 //		for (int k=0;k<T;k++) {
-//			System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]+ " " + index_reverted[k]);
+//			System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]);//+ " " + index_reverted[k]);
 //		}
 
 		//bhat is the sum over the counts of all topics > k		
 		int sum = 0;
-		for (int k2=0;k2<T;k2++) {
+		for (int k2=T-1;k2>=0;k2--) {
 			int i = index[k2];
+			if (k2<T-1) {
+				bhat[i]=sum;
+			}
 			sum += (double) sumfck[i];
-			bhat[i]=sum;
 		}
 		
 //		for (int k2=0;k2<T;k2++) {
@@ -999,7 +1001,6 @@ public class HMDP_PCSVB {
 		rest -= pi_0[i0];
 		
 		for (int k2=1;k2<T-1;k2++) {
-			int i_minus = index[k2-1];
 			int i = index[k2];
 			pi_0[i] = pi_[i]*rest;
 			rest -= pi_0[i];

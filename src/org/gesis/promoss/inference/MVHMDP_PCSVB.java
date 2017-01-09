@@ -129,9 +129,7 @@ public class MVHMDP_PCSVB {
 	private float[][] batch_mkt;
 	//Context-cluster-topic "counts" per document M x T
 	public float[][] nmk;
-	//variational parameters for the stick breaking process - parameters for Beta distributions \hat{a} and \hat{b}
-	private double[] ahat;
-	private double[] bhat;
+
 
 
 	//rho: Learning rate; rho = s / ((tau + t)^kappa);
@@ -470,8 +468,7 @@ public class MVHMDP_PCSVB {
 			}
 		}
 		pi_0 = new double[T];
-		ahat = new double[T];
-		bhat = new double[T];
+
 
 		pi_0[0] = 1.0 / (1.0+gamma);
 		for (int i=1;i<T;i++) {
@@ -1251,7 +1248,10 @@ public class MVHMDP_PCSVB {
 		if (rhot_step > BURNIN_DOCUMENTS+1)  {
 			//sum over tables
 			double[] sumfck = new double[T];
+			double[] ahat = new double[T];
+			double[] bhat = new double[T];
 
+			
 			//Start with pseudo-counts from the Beta prior
 			for (int k=0;k<T;k++) {
 				bhat[k]=gamma;
@@ -1313,19 +1313,21 @@ public class MVHMDP_PCSVB {
 			System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 			//get indices of sticks ordered by size (given by ahat)
 			int[] index = ArrayUtils.sortArray(ahat_copy,"desc");
-
-			int[] index_reverted = ArrayUtils.reverseIndex(index);
+			//on which position in the list is the given index
+			//int[] index_reverted = ArrayUtils.reverseIndex(index);
 			
 //			for (int k=0;k<T;k++) {
-//				System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]+ " " + index_reverted[k]);
+//				System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]);//+ " " + index_reverted[k]);
 //			}
 
 			//bhat is the sum over the counts of all topics > k		
 			int sum = 0;
-			for (int k2=0;k2<T;k2++) {
+			for (int k2=T-1;k2>=0;k2--) {
 				int i = index[k2];
+				if (k2<T-1) {
+					bhat[i]=sum;
+				}
 				sum += (double) sumfck[i];
-				bhat[i]=sum;
 			}
 			
 //			for (int k2=0;k2<T;k2++) {
@@ -1373,7 +1375,6 @@ public class MVHMDP_PCSVB {
 			rest -= pi_0[i0];
 			
 			for (int k2=1;k2<T-1;k2++) {
-				int i_minus = index[k2-1];
 				int i = index[k2];
 				pi_0[i] = pi_[i]*rest;
 				rest -= pi_0[i];
