@@ -1004,6 +1004,10 @@ public class HMDP_PCSVB {
 			int i = index[k2];
 			pi_0[i] = pi_[i]*rest;
 			rest -= pi_0[i];
+			//make sure that we do not get a negative rest
+			rest = Math.max(0, rest);
+			//make sure that pi does not become larger than 1
+			pi_0[i] = Math.min(1, pi_0[i]);
 		}
 		
 		//probability of last pi_0 is the rest (truncation)

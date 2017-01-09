@@ -1378,6 +1378,10 @@ public class MVHMDP_PCSVB {
 				int i = index[k2];
 				pi_0[i] = pi_[i]*rest;
 				rest -= pi_0[i];
+				//make sure that we do not get a negative rest
+				rest = Math.max(0, rest);
+				//make sure that pi does not become larger than 1
+				pi_0[i] = Math.min(1, pi_0[i]);
 			}
 			
 			//probability of last pi_0 is the rest (truncation)
@@ -1394,7 +1398,8 @@ public class MVHMDP_PCSVB {
 				gamma_denominator += Gamma.digamma0(ahat[k] + bhat[k])- Gamma.digamma0(bhat[k]);
 				if (debug && (Double.isNaN(pi_0[k]) || pi_0[k]<0 || pi_0[k] > 1 || Double.isNaN(ahat[k]) || ahat[k] <=0 || Double.isNaN(bhat[k])|| bhat[k] <=0)){
 				System.out.println(
-						"ahatk " + ahat[k]
+						"pi_0 " + pi_0
+						+"ahatk " + ahat[k]
 						+"\n bhatk " + bhat[k]
 						+"\n sumfck "+ sumfck[k]
 						);
