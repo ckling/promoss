@@ -182,7 +182,7 @@ public class DCTM_CVB {
 		c.V = c.dict.length();
 
 		alpha0 = new double[c.G][K];
-		alpha1 = new double[c.G];
+		alpha1 = new double[c.G][K2];
 		alpha2 = new double[c.G][K2];
 
 
