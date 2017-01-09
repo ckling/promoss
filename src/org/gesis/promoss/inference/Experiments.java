@@ -18,7 +18,7 @@ public class Experiments {
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/maryam9/";
+	private static String directory = "/home/c/work/topicmodels/porn_hmd/";
 
 	
 	public static void main(String[] args) {
@@ -27,10 +27,10 @@ public class Experiments {
 		String metaname = "meta.txt";
 		
 
-		//String params ="";
+		String params ="";
 		//String params ="T(L1000)";
 
-		String params ="G(100)";
+		//String params ="G(100)";
 		//String params ="T(L1000)";
 
 		//String params ="N";

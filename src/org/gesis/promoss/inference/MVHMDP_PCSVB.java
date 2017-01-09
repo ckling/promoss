@@ -1325,7 +1325,7 @@ public class MVHMDP_PCSVB {
 			for (int k2=T-1;k2>=0;k2--) {
 				int i = index[k2];
 				if (k2<T-1) {
-					bhat[i]=sum;
+					bhat[i]=+sum;
 				}
 				sum += (double) sumfck[i];
 			}
