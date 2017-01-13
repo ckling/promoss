@@ -99,7 +99,7 @@ public class MVHMDP_PCSVB {
 	//Dirichlet parameter for multinomial over features for topic-word multinomials
 	public double[] epsilon2;
 
-	public double gamma = 10;
+	public double gamma = 1;
 
 	//Dirichlet concentration parameter for topic-word distributions
 	public double beta_0 = 0.01;
