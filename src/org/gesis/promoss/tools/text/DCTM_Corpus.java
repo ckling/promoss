@@ -131,8 +131,11 @@ public class DCTM_Corpus extends Corpus {
 				hs.add(meta_value[0]);
 				G++;
 			}
+<<<<<<< HEAD
 			//use G as index
 			meta_value[0]=G;
+=======
+>>>>>>> 86857db5953a1f74568ce2a48ac6ae134972bac9
 			//we count the number of commmented documents
 			//as their commentID is 0, we do it like this
 			if (meta_value[2] == 0) {

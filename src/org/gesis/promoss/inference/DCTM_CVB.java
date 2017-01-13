@@ -75,11 +75,8 @@ public class DCTM_CVB {
 	public int K = 100; //Number of topics
 	public int K2 = K; //Number of comment topics
 
-	//global prior: G x K 
 	public double[][] alpha0;
-	//concentration: GxK'
 	public double[][] alpha1;
-	//global comment prior: G x K'
 	public double[][] alpha2;
 
 	//Dirichlet concentration parameter for topic-word distributions
@@ -93,26 +90,22 @@ public class DCTM_CVB {
 	//Store some zeros for empty documents in the doc_topic matrix?
 	public Boolean store_empty = true;
 
-	//Estimated number of times term t appeared in topic k: K x V
-	private float[][] nkt;
-	//Estimated number of words in topic k: K 
-	private float[] nk;
-	//Estimated number of times term t appeared in topic k: K' x V
-	private float[][] nkt2;
-	//Estimated number of words in topic k: K'
-	private float[] nk2;
+	//Estimated number of times term t appeared in topic k
+	public float[][] nkt;
+	//Estimated number of words in topic k
+	public float[] nk;
+	//Estimated number of times term t appeared in topic k
+	public float[][] nkt2;
+	//Estimated number of words in topic k
+	public float[] nk2;
 	//Topic counts per document
-	private float[][] nmk;
-	//mmk table counts for the comments of document m
-	private float[][] mmk;
-	//table counts per comment: D x Cd x K' x (K + 1)
-	private float[][][][] mmik;
-	//table counts for the transition matrix: G x K x K'
-	private float[][][] mgkk;
-
+	public float[][] nmk;
+	public float[][] nmk2;
+	//table counts per comment
+	public float[][] mmk2;
 	
-	//Zc: D x Cd x Nm x K'
-	private float[][][][] z2;
+	//Zc: D x Cd x Nm x (K x K' + 1)
+	private float[][][][][] zc;
 	//z: D x Nm x K
 	private float[][][] z;
 
@@ -196,34 +189,13 @@ public class DCTM_CVB {
 		beta_V = beta * c.V;
 
 		nk = new float[K];
-		nkt = new float[K][c.V];
-		nk2 = new float[K];
-		nkt2 = new float[K][c.V];
-		
-		mgkk = new float[c.G][K][K2];
-		
-		//create initial imbalance
-		for (int k=0;k<K;k++) {
-			for (int t=0;t<c.V;t++) {
-				nkt[k][t]=(float) Math.random();
-				nk[k]+=nkt[k][t];
-			}			
-		}
-		
+		nkt = new float[K][c.V];	
 
-		for (int k2=0;k2<K2;k2++) {
-			for (int t=0;t<c.V;t++) {
-				nkt2[k2][t]=(float) Math.random();
-				nk2[k2]+=nkt[k2][t];
-			}			
-		}
-		
-	
 		//read corpus size and initialise nkt / nk
 		c.readCorpusSize();
 
-		nmk = new float[c.M][];
-		
+		nmk = new float[c.M][K];
+
 		for (int t=0; t < c.V; t++) {
 			for (int k=0;k<K;k++) {
 
@@ -233,33 +205,24 @@ public class DCTM_CVB {
 			}
 		}
 		
-		mmk = new float[c.D][K];
-		
-		z = new float[c.D][][];
-		z2 = new float[c.D][][][];
-		mmik = new float[c.D][][][];
+		zc = new float[c.D][][][][];
 		for (int d=0;d<c.D;d++) {
-			z2[d] = new float[c.Cd[d]][][];
-			mmik[d] = new float[c.Cd[d]][][];
+			zc[d] = new float[c.Cd[d]][][][];
+			for (int cd = 0; cd < c.Cd[d]; cd++) {
+				zc[d][cd] = new float[c.Nm[m]]][][][];
+			}
 		}
 		for (int m=0;m<c.M;m++) {
 			int d = c.meta[m][1];
 			int cd = c.meta[m][2];
 			if (cd > 0) {
-				//comment
-				nmk[m] = new float[K2];
-				z2[d][cd]=new float[c.getN(m)][K2];
-				mmik[d][cd] = new float[K2][K+1]; 
-			}
-			else {
-				//document
-				nmk[m] = new float[K];
-				z[cd] = new float[c.getN(m)][K];
+				zc[d][cd]=new float[c.getN(m)][K+1][K2];
+//TODO: change dimensionality of alpha2 in plate
 			}
 		}
 		
 		
-
+		z = new float[c.D][K];
 
 		System.out.println("Initialising count variables...");
 
@@ -275,10 +238,10 @@ public class DCTM_CVB {
 		
 		int g = c.meta[m][0];
 		int d = c.meta[m][1];
-		int ci = c.meta[m][2];
+		int commentID = c.meta[m][2];
 		
-		//Document inference
-		if (ci == 0) {
+		//Normal docs
+		if (commentID == 0) {
 
 		//Process words of the document
 		for (int i=0;i<termIDs.length;i++) {
@@ -298,9 +261,7 @@ public class DCTM_CVB {
 					nmk[m][k] = 0;
 				}
 				else {
-					nmk[m][k]-=termfreq*z[d][i][k];
-					nkt[k][t]-=termfreq*z[d][i][k];
-					nk[k]-=termfreq*z[d][i][k];
+					nmk[m][k]-=z[d][i][k];
 				}
 				
 				q[k] = 	//probability of topic given feature & group
@@ -310,132 +271,10 @@ public class DCTM_CVB {
 						/ (nk[k] + beta_V);
 
 				qsum+=q[k];
-				
 
 			}
-			for (int k=0;k<K;k++) {
-				q[k]/=qsum;
-				nmk[m][k]+=termfreq*q[k];
-				nkt[k][t]+=termfreq*q[k];
-				nk[k]+=termfreq*q[k];
-			}		
-			
-			
 		}
 
-		}
-		//Comment inference
-		else {
-			
-			//infer tables
-			double[] ge0 = new double[K2];
-			for (int k2=0;k2<K2;k2++) {
-				ge0[k2]=1;
-			}
-			
-			//index of the commented document
-			int document_m = m-ci;
-			
-			//calculate prior
-			double[] prior = alpha2[g];
-			//calculate sources of prior
-			double[][] prior_sources = new double[K2][K+1];
-			//the last index is for the global prior alpha2
-			for (int k2=0;k2<K2;k2++) {
-				prior_sources[k2][K] = alpha2[g][k2];
-			}
-			
-			double[] theta = new double[K];
-			double theta_sum = 0;
-
-			for (int k=0;k<K;k++) {
-				theta[k] = alpha1[g][k] * (nmk[document_m][k] + mmk[document_m][k] + alpha0[g][k]);
-				theta_sum+=theta[k];
-			}
-			for (int k=0;k<K;k++) {
-				theta[k]/=theta_sum;
-				for (int k2=0;k2<K2;k2++) {
-					double temp = alpha1[g][k] * theta[k] * (mgkk[g][k][k2]);
-					prior[k2]+=temp;
-					prior_sources[k2][k] = temp;
-				}
-			}
-			for (int k2=0;k2<K2;k2++) {
-				prior_sources[k2] = BasicMath.normalise(prior_sources[k2]);
-			}
-			
-			//Process words of the document
-			for (int i=0;i<termIDs.length;i++) {
-
-				//term index
-				int t = termIDs[i];
-				//How often doas t appear in the document?
-				int termfreq = termFreqs[i];
-
-				//topic probabilities - q(z)
-				double[] q = new double[K2];
-				//sum for normalisation
-				double qsum = 0.0;
-
-				for (int k2=0;k2<K2;k2++) {
-					if (c.getN(m) == termfreq) {
-						nmk[m][k2] = 0;
-					}
-					else {
-						nmk[m][k2]-=termfreq*z2[d][ci][i][k2];
-						nkt2[k2][t]-=termfreq*z2[d][ci][i][k2];
-						nk2[k2]-=termfreq*z2[d][ci][i][k2];
-					}
-
-
-							
-					q[k2] = 	//probability of topic given feature & group
-							(nmk[m][k2] + prior[k2])
-							//probability of topic given word w
-							* (nkt[k2][t] + beta) 
-							/ (nk[k2] + beta_V);
-
-					qsum+=q[k2];
-					
-
-				}
-				for (int k2=0;k2<K2;k2++) {
-					q[k2]/=qsum;
-					nmk[m][k2]+=termfreq*q[k2];
-					nkt2[k2][t]+=termfreq*q[k2];
-					nk2[k2]+=termfreq*q[k2];
-					z2[d][ci][i][k2]=(float) q[k2];
-					ge0[k2]*=(1.0-q[k2]);
-				}		
-				
-				
-			}
-			
-			double[] table = new double[K2];
-			for (int k2=0;k2<K2;k2++) {
-				
-				//remove tables
-				for (int k=0;k<K;k++) {	
-					mmk[d][k]-=mmik[d][ci][k2][k];
-					mgkk[g][k][k2]-=mmik[d][ci][k2][k];													
-				}
-				
-				//calculate new expectation of tables as in Teh 06: CVB for DP
-				ge0[k2] = 1.0 - ge0[k2];				
-				table[k2] = prior[k2] * ge0[k2] * Gamma.digamma(prior[k2] + nmk[m][k2]) - Gamma.digamma(prior[k2]);
-				
-				for (int k=0;k<K+1;k++) {	
-					mmik[d][ci][k2][k]=(float) (prior_sources[k2][k]*table[k2]);
-					mmk[d][k]+=mmik[d][ci][k2][k];
-					mgkk[g][k][k2]+=mmik[d][ci][k2][k];			
-				}
-				
-				
-			}
-			
-			
-			
-			
 		}
 
 
@@ -447,12 +286,8 @@ public class DCTM_CVB {
 		if(rhot_step>BURNIN_DOCUMENTS) {
 
 			
-			//TODO filter for documents -> sample! (asymmetric prior)
-			alpha0 = DirichletEstimation.estimateAlphaLik(nmk,alpha);
-			//TODO get transition matrix, calculate alpha1 based on tables and prior probabilities (asymmetric prior)
-			alpha1
-			//TODO use tables for estimate (asymmetric prior)
-			alpha2
+
+			alpha = DirichletEstimation.estimateAlphaLik(nmk,alpha);
 
 
 			
