@@ -22,6 +22,8 @@
  * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+//TODO: Apply changes from MVHMDP -> batch for clusters (not groups!)
+
 package org.gesis.promoss.inference;
 
 import java.io.File;
@@ -61,7 +63,7 @@ public class HMDP_PCSVB {
 	public int BATCHSIZE = 128;
 	public int BATCHSIZE_GROUPS = -1;
 	//How many observations do we take before updating alpha_1
-	public int BATCHSIZE_ALPHA = 1000;
+	public int BATCHSIZE_ALPHA = 0;
 	//After how many steps a sample is taken to estimate alpha
 	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
@@ -187,6 +189,7 @@ public class HMDP_PCSVB {
 
 	//statistic over gamma, used to do batch-updates of clusters: sum of gamma
 	private double[][][][] tempsumqfgc;
+	
 	//statistic over gamma, used to do batch-updates of features: sum of gamma
 	//private static double[] sumqtemp2_features;
 	//statistic over gamma, used to do batch-updates of clusters: prodct of gamma-1
@@ -455,12 +458,21 @@ public class HMDP_PCSVB {
 				sumqfgc[f][g] = new double[c.A[f][g].length];
 			}
 		}
+		
+		if (BATCHSIZE_ALPHA == 0) {
+			BATCHSIZE_ALPHA = (int) Math.floor(c.M*TRAINING_SHARE);
+		}
 
 		alpha_1_nm = new int[BATCHSIZE_ALPHA];
 		alpha_1_nmk = new double[BATCHSIZE_ALPHA][T];
 		alpha_1_pimk = new double[BATCHSIZE_ALPHA][T];
 
-		SAMPLE_ALPHA = (int) Math.ceil(c.M / BATCHSIZE_ALPHA);
+
+		
+		SAMPLE_ALPHA = (int) Math.ceil(c.M*TRAINING_SHARE / BATCHSIZE_ALPHA);
+		if (SAMPLE_ALPHA <= 0) {
+			SAMPLE_ALPHA = 1;
+		}
 
 	}
 
@@ -504,6 +516,7 @@ public class HMDP_PCSVB {
 
 		//Prior of the document-topic distribution
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
+		double sum = 0;
 		double[] topic_prior = new double[T];
 		for (int f=0;f<c.F;f++) {
 			int g = group[f];
@@ -517,12 +530,15 @@ public class HMDP_PCSVB {
 					double temp = 	(sumqfck[f][a][k] + (alpha_0 * pi_0[k])) * temp3;
 					double temp4 = temp*featureprior[f];
 					topic_prior[k]+=temp4;
+					sum+=temp4;
 					pk_f[k][f]+=temp4;
 					pk_fck[f][i][k] = temp4;
 				}
 			}
 		}
-
+		for (int k=0;k<T;k++) {
+			topic_prior[k] /= sum;
+		}
 
 		for (int k=0;k<T;k++) {
 			pk_f[k]=BasicMath.normalise(pk_f[k]);
@@ -707,14 +723,17 @@ public class HMDP_PCSVB {
 				alpha_1_nm[alpha_batch_counter] = c.getN(m);
 				for (int k=0;k<T;k++) {
 					alpha_1_nmk[alpha_batch_counter][k] = nmk[m][k];
-					alpha_1_pimk[alpha_batch_counter][k] = topic_prior[k];
 				}
+				alpha_1_pimk[alpha_batch_counter] = topic_prior;
+
 				
 				alpha_batch_counter++;
 				
 				if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
 					
+
 					alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,1.0,1);
+
 
 					//alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
 					alpha_batch_counter=0;
@@ -863,7 +882,7 @@ public class HMDP_PCSVB {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS)  {
+			if (rhot_step > BURNIN_DOCUMENTS+2)  {
 				//Update global topic distribution
 				updateGlobalTopicDistribution();
 			}
@@ -917,40 +936,84 @@ public class HMDP_PCSVB {
 		for (int k=0;k<T;k++) {
 			ahat[k]=1.0+sumfck[k];
 		}
-
-
 		double[] ahat_copy = new double[T];
 		System.arraycopy(ahat, 0, ahat_copy, 0, ahat.length);
 		//get indices of sticks ordered by size (given by ahat)
 		int[] index = ArrayUtils.sortArray(ahat_copy,"desc");
+		//on which position in the list is the given index
+		//int[] index_reverted = ArrayUtils.reverseIndex(index);
+		
+//		for (int k=0;k<T;k++) {
+//			System.out.println("k " + k + " " + index[k] + " " + ahat[k] + " " + ahat[index[k]]);//+ " " + index_reverted[k]);
+//		}
 
-		int[] index_reverted = ArrayUtils.reverseIndex(index);
-
-		//bhat is the sum over the counts of all topics > k
-		for (int k=0;k<T;k++) {
-			int sort_index = index_reverted[k];
-			for (int k2=sort_index+1;k2<T;k2++) {
-				int sort_index_greater = index[k2];
-				bhat[k] += sumfck[sort_index_greater];
+		//bhat is the sum over the counts of all topics > k		
+		int sum = 0;
+		for (int k2=T-1;k2>=0;k2--) {
+			int i = index[k2];
+			if (k2<T-1) {
+				bhat[i]+=sum;
 			}
+			sum += (double) sumfck[i];
 		}
+		
+//		for (int k2=0;k2<T;k2++) {
+//			int i = index_reverted[k2];
+//			System.out.println(bhat[i]);
+//		}
+			
 
 		double[] pi_ = new double[T];
-		//TODO: 1-pi
-		for (int k=0;k<T-1;k++) {
+
+		for (int k=0;k<T;k++) {
 			pi_[k]=ahat[k] / (ahat[k]+bhat[k]);
 		}
-		for (int k=0;k<T-1;k++) {
-			pi_0[k]=pi_[k];
-			int sort_index = index_reverted[k];
-			for (int l=0;l<sort_index;l++) {
-				int sort_index_lower = index[l];
-				pi_0[k]*=(1.0-pi_[sort_index_lower]);
-			}
+//		for (int k=0;k<T-1;k++) {
+//			pi_0[k]=pi_[k];
+//		}
+//		for (int k=0;k<T-1;k++) {
+//
+//			int sort_index = index_reverted[k];
+//			System.out.println();
+//
+//			for (int l=0;l<sort_index;l++) {
+//				int sort_index_lower = index[l];
+//									System.out.print(sort_index_lower + " ");
+//				pi_0[k]*=(1.0-pi_[sort_index_lower]);
+//			}
+//			System.out.println();
+//
+//			if (debug && (Double.isNaN(pi_0[k]) || pi_0[k]<0 || pi_0[k] > 1 || Double.isNaN(ahat[k]) || ahat[k] <=0 || Double.isNaN(bhat[k])|| bhat[k] <=0)){
+//				System.out.println(
+//						"ahatk " + ahat[k]
+//						+"\n bhatk " + bhat[k]
+//						+"\n sumfck "+ sumfck[k]
+//						);
+//				System.exit(0);
+//			}
+//		}
+//		//probability of last pi_0 is the rest
+
+		
+		//rest is the remaining stick length
+		double rest = 1.0;
+		int i0 = index[0];
+		pi_0[i0] = pi_[i0];
+		rest -= pi_0[i0];
+		
+		for (int k2=1;k2<T-1;k2++) {
+			int i = index[k2];
+			pi_0[i] = pi_[i]*rest;
+			rest -= pi_0[i];
+			//make sure that we do not get a negative rest
+			rest = Math.max(0, rest);
+			//make sure that pi does not become larger than 1
+			pi_0[i] = Math.min(1, pi_0[i]);
 		}
-		//probability of last pi_0 is the rest
-		pi_0[T-1]=0.0;
-		pi_0[T-1]=1.0 - BasicMath.sum(pi_0);
+		
+		//probability of last pi_0 is the rest (truncation)
+		int last_index = index[T-1];
+		pi_0[last_index]=rest;
 
 
 

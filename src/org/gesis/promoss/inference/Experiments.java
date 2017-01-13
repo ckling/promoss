@@ -12,12 +12,13 @@ import org.gesis.promoss.inference.DMR_CSVB;
 public class Experiments {
 	
 
-	private static int RUNS = 1000;
-	private static int MIN_DICT_WORDS = 1000;
+
+	private static int RUNS = 50;
+	private static int MIN_DICT_WORDS = 2;
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/ml8_smaller/";
+	private static String directory = "/home/c/work/topicmodels/porn_hmd/";
 
 	
 	public static void main(String[] args) {
@@ -26,8 +27,12 @@ public class Experiments {
 		String metaname = "meta.txt";
 		
 
+		String params ="";
+		//String params ="T(L1000)";
+
 		//String params ="G(100)";
-		String params ="T(L1000)";
+		//String params ="T(L1000)";
+
 		//String params ="N";
 
 		//File corpusfile = new File(hmdp.c.directory + corpusname);
@@ -36,7 +41,7 @@ public class Experiments {
 		File textsFile = new File(directory + "texts.txt");
 		File groupClusterFile = new File(directory + "groups.txt");
 
-		if (1==1 || !textsFile.exists() || !groupClusterFile.exists()) {
+		if (1==0 || !textsFile.exists() || !groupClusterFile.exists()) {
 			
 			System.out.println("Clustering metadata...");
 			ClusterMetadata.transformData(params, directory, metaname, corpusname, "cluster/");
@@ -58,12 +63,12 @@ public class Experiments {
 		//hmd();
 		//delall();
 		//dmr2();
-		delall();
+		//delall();
 		//hmd2();
 		//delall();
-		hmdp();
+		//hmdp();
 
-		//mvhmdp2();
+		mvhmdp2();
 
 		if (1==1)return;
 		
@@ -232,7 +237,7 @@ public class Experiments {
 		
 		hmd.T = T;
 		
-		//hmd.BURNIN_DOCUMENTS = 20;
+		hmd.BURNIN_DOCUMENTS = 10;
 		
 		
 		hmd.TRAINING_SHARE = 0.9;
@@ -264,6 +269,8 @@ public class Experiments {
 		hmd = null;
 		
 	}
+	
+
 	
 	public static void mvhmdp () {
 
@@ -327,7 +334,9 @@ public class Experiments {
 		hmd.c.stopwords=true;
 		hmd.c.language="de";
 		
-		hmd.BURNIN_DOCUMENTS = 10;
+
+		hmd.BURNIN_DOCUMENTS = 0;
+
 		
 		
 		hmd.TRAINING_SHARE = 0.9;
