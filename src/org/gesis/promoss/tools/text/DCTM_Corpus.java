@@ -12,12 +12,17 @@ public class DCTM_Corpus extends Corpus {
 	public String metafile;
 
 	public int G = 0; //Number of Groups
+	public int[] Gd; //Number of documents per group
+	public int[] Gc; //Number of comments per group
+
 	
 	public int[][] meta; //metadata of documents: Group, Document and Comment ID
 
-	private HashSet<Integer> hs = new HashSet<Integer>();
+	private HashMap<Integer,Integer> hm = new HashMap<Integer,Integer>();
+	private HashMap<Integer,Integer>[] postMap;
+
 	
-	public int[] Cd; //Number of comments per document d
+	public int[][] Cd; //Number of comments per document d of group g
 	public int D; //Number of commented documents
 	
 
@@ -76,20 +81,99 @@ public class DCTM_Corpus extends Corpus {
 				}
 
 			}
-		}
+		}	
 		
 		N = new int[M];
 		}
 
 	@SuppressWarnings("unchecked")
 	public void readDocs() {
+		
+		
 
 		//Try to read parsed documents
 		Load load = new Load();
 
 		meta = load.readFileInt2(directory+"meta");
 		//Try to read parsed documents
-		if (load.readSVMlight(directory+"wordsets", this) && meta != null) {			
+		if (load.readSVMlight(directory+"wordsets", this) && meta != null) {	
+			
+			G=0;
+			//System.out.println(meta.length + " " + M);
+			
+			for (int i=0;i<M;i++) {
+				
+				//map g to indices
+				if (!hm.containsKey(meta[i][0])) {
+					hm.put(meta[i][0],G);
+					G++;
+				}
+				meta[i][0] = hm.get(meta[i][0]);
+
+				//Save mapping
+				Save save = new Save();
+				save.saveVar(hm, directory+"groupmap");
+				
+				 postMap = new HashMap[G];
+				 for (int g=0;g<G;g++) {
+					 postMap[g]=new HashMap<Integer,Integer>();
+							 }
+				
+			if (meta[i][2] == 0) {
+				//we count the number of commmented documents
+				//as their commentID is 0, we do it like this
+				D++;
+			}
+			}
+			Cd = new int[G][];
+			Gd = new int[G]; 
+			Gc = new int[G];
+			
+
+			
+			for (int i=0;i<M;i++) {
+				int g = meta[i][0];
+				int docID = meta[i][1];
+				int cID = meta[i][2];
+
+				//map d to indices (per group g)
+				if (!postMap[g].containsKey(docID)) {
+					//new post!
+					postMap[g].put(docID, Gd[g]);
+					Gd[g]++;				
+				}
+				
+				if (cID>0) {
+					Gc[g]++;
+				}
+				meta[i][1] = postMap[g].get(docID);
+				
+			}
+					
+			for (int g=0;g<G;g++) {
+				Gd[g] = postMap[g].size();
+
+				Cd[g]=new int[Gd[g]];
+			}
+
+			for (int i=0;i<M;i++) {
+				int g = meta[i][0];
+				int d = meta[i][1];
+				int cID = meta[i][2];
+				
+				//System.out.println(g + " " + d+ " " + G + " " + Gd[g] + " " + Cd[g][d]);
+
+				if (cID > 0) {
+				
+					meta[i][2]=Cd[g][d]+1;
+					Cd[g][d]++;
+
+				}
+
+			}
+			
+				
+			
 			return;
 		}
 		
@@ -116,30 +200,32 @@ public class DCTM_Corpus extends Corpus {
 		String metaline = "";
 		int m=0;
 		int line_number = 0;
+		System.out.println(metafile);
+		System.out.println(documentfile);
+
 		while ((line = documentText.readLine(documentfile))!=null && (metaline = metaText.readLine(metafile))!=null) {
 			line_number++;
 			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
-			String[] docSplit = line.split(" ");
 			String[] metaString = metaline.split(",");
 
 			int[] meta_value = new int[3];
 			for (int f=0; f<3; f++) {
 				meta_value[f] = Integer.valueOf(metaString[f]);
 			}
-			if (!hs.contains(meta_value[0])) {
-				hs.add(meta_value[0]);
+			if (!hm.containsKey(meta_value[0])) {
+				hm.put(meta_value[0],G);
 				G++;
 			}
-			//we count the number of commmented documents
-			//as their commentID is 0, we do it like this
-			if (meta_value[2] == 0) {
-				D++;
-			}
+			//use G as index
+			meta_value[0]=hm.get(meta_value[0]);
+
+
 
 			if (!empty_documents.contains(line_number)) {
-				if (docSplit.length>=1) {
 					if (processed) {
+						String[] docSplit = line.split(" ");
+
 						for(int i = 0; i < docSplit.length; i++) {
 							String word = docSplit[i];
 							if (dict.contains(word)) {
@@ -156,11 +242,12 @@ public class DCTM_Corpus extends Corpus {
 						}
 					}
 					else {
-						documentText.setText(docSplit[1]);
+						documentText.setText(line);
 						Iterator<String> words = documentText.getTerms();
 
 						while(words.hasNext()) {
 							String word = words.next();
+							//System.out.println("m " + m + " "+ word);
 							if (dict.contains(word)) {
 								int wordID = dict.getID(word);
 								if (distinctWords.containsKey(wordID)) {
@@ -175,10 +262,12 @@ public class DCTM_Corpus extends Corpus {
 					}
 					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
-					if (m % Math.round(M/50) == 0)
+					if (m % Math.round(M/50) == 0) 
 						System.out.print(".");
 
 					saveSVMlight.saveVar(wordset, directory+"wordsets");
+					
+					//System.out.println(M+ " " + m + " " + empty_counter);
 					
 					meta[m]=meta_value;
 					m++;
@@ -187,16 +276,11 @@ public class DCTM_Corpus extends Corpus {
 					meta[M+empty_counter]=meta_value;
 					empty_counter++;
 				}
-			}
+			
 		}
 		
-		Cd=new int[D];
-		for (int i=0;i<meta.length;i++) {
-			if (meta[i][2] != 0) {
-				int d = meta[i][1];
-				Cd[d]++;
-			}
-		}
+		
+		
 
 		System.out.println("");
 

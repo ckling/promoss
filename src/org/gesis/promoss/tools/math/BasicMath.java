@@ -259,6 +259,33 @@ public class BasicMath {
 		
 	}
 	
+	public static double[][][] normalise (double[][][] x) {
+		double sum = sum(x);
+		double[][][] x2 = new double[x.length][][];
+		for (int i=0;i<x.length;i++) {
+			x2[i]=new double [x[i].length][];
+			for (int j=0;j<x[i].length;j++) {
+				x2[i][j]=new double [x[i][j].length];
+				for (int k=0;k<x[i][j].length;k++) {
+				x2[i][j][k] = x[i][j][j]/sum;
+				}
+			}
+		}
+		return x2;
+	}
+	
+	public static double[][] normalise (double[][] x) {
+		double sum = sum(x);
+		double[][] x2 = new double[x.length][];
+		for (int i=0;i<x.length;i++) {
+			x2[i]=new double [x[i].length];
+			for (int j=0;j<x[i].length;j++) {
+				x2[i][j] = x[i][j]/sum;
+			}
+		}
+		return x2;
+	}
+	
 	public static double[] normalise (double[] x) {
 		double sum = sum(x);
 		double[] x2 = new double[x.length];

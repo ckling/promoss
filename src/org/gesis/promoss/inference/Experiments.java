@@ -18,11 +18,14 @@ public class Experiments {
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/porn_hmd/";
+	private static String directory = "/home/c/work/topicmodels/facebook/";
 
 	
 	public static void main(String[] args) {
 
+		dctm();
+		System.exit(0);
+		
 		String corpusname = "corpus.txt";
 		String metaname = "meta.txt";
 		
@@ -287,7 +290,7 @@ public class Experiments {
 		hmd.BURNIN_DOCUMENTS = 10;
 		
 		
-		hmd.TRAINING_SHARE = 0.9;
+		hmd.TRAINING_SHARE = 1.0;
 		
 		hmd.delta_fix = 10;
 				
@@ -339,7 +342,7 @@ public class Experiments {
 
 		
 		
-		hmd.TRAINING_SHARE = 0.9;
+		hmd.TRAINING_SHARE = 1.0;
 		
 		hmd.delta_fix = 10;
 				
@@ -360,6 +363,54 @@ public class Experiments {
 			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
 			
 			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
+		}
+		text.close();
+
+		hmd.save();
+		
+		hmd = null;
+		
+	}
+	
+	public static void dctm () {
+
+		String directory="/home/c/ownCloud/files/fb_party_small/";
+
+		
+		DCTM_CVB hmd = new DCTM_CVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		hmd.K = T;
+		
+		hmd.c.processed=false;
+		hmd.c.stemming=true;
+		hmd.c.stopwords=true;
+		hmd.c.language="de";
+		
+
+		hmd.BURNIN_DOCUMENTS = 0;
+
+		
+		
+		
+				
+		hmd.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(",");
+			
 		}
 		text.close();
 
