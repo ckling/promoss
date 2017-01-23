@@ -163,7 +163,7 @@ public class Experiments {
 		String ppxFileName = directory+"dmr2perplexity"+(System.currentTimeMillis()/1000);
 
 
-		Text text = new Text();
+		Text text = new Text();/home/c/work/topicmodels/facebook/
 		text.write(ppxFileName,"",false);
 		
 		long timeSpent = 0;
@@ -358,7 +358,7 @@ public class Experiments {
 			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 			hmd.onePass();		
 			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
-			timeSpent +=  timeNow - timeStart;
+			timeSpent +=  timeNow - timeSt/home/c/work/topicmodels/facebook/art;
 			
 			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
 			
@@ -374,7 +374,7 @@ public class Experiments {
 	
 	public static void dctm () {
 
-		String directory="/home/c/ownCloud/files/fb_party_small/";
+		String directory="/home/c/work/topicmodels/fb_party";
 
 		
 		DCTM_CVB hmd = new DCTM_CVB();

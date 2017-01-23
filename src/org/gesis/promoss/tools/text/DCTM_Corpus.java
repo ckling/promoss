@@ -217,10 +217,12 @@ public class DCTM_Corpus extends Corpus {
 				hm.put(meta_value[0],G);
 				G++;
 			}
+
 			//use G as index
 			meta_value[0]=hm.get(meta_value[0]);
 
 
+	
 
 			if (!empty_documents.contains(line_number)) {
 					if (processed) {

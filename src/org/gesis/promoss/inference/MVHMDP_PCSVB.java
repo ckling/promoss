@@ -687,8 +687,9 @@ public class MVHMDP_PCSVB {
 
 				//term index
 				int t = termIDs[wordIndex];
-				//How often doas t appear in the document?
+				//How often does t appear in the document?
 				int termfreq = termFreqs[wordIndex];
+
 
 				int k= (int) Math.floor(Math.random()*T);
 				nkt[k][t]+=termfreq;
@@ -745,11 +746,19 @@ public class MVHMDP_PCSVB {
 				int a= c.A[f][g][i];
 				double alpha_fi = alpha_1* zeta[f] * eta[f][g][i];
 				for (int k=0;k<T;k++) {
+<<<<<<< HEAD
 					m_alpha_fi[f][i][k] = 
 							(alpha_fi * 
 									(mfck[f][a][k] + alpha_0 * pi_0[k]) /
 									(mfc[f][a] + alpha_0))
 									;
+=======
+					n_alpha_fi[f][i][k] = 
+							(nmk[m][k] + (alpha_fi * 
+									(mfck[f][a][k] + alpha_0 * pi_0[k]) /
+									(mfc[f][a] + alpha_0))) 
+									/ nm_alpha;
+>>>>>>> 08e1132a5de5ee2fb063fd8e01dc40b73332db45
 
 					if (debug && (Double.isNaN(m_alpha_fi[f][i][k]) ) ) {
 						System.out.println(
@@ -774,6 +783,7 @@ public class MVHMDP_PCSVB {
 					}
 
 
+<<<<<<< HEAD
 					pk_f[k][f]+=m_alpha_fi[f][i][k];
 					topic_prior[k]+=m_alpha_fi[f][i][k];
 					
@@ -792,7 +802,20 @@ public class MVHMDP_PCSVB {
 					for (int f=0;f<c.F;f++) {
 						System.out.println("k " + k + "f " + f +" " + pk_f[k][f]);
 					}
+=======
+					pk_f[k][f]+=n_alpha_fi[f][i][k];
+					topic_prior[k]+=n_alpha_fi[f][i][k];
+
+
+>>>>>>> 08e1132a5de5ee2fb063fd8e01dc40b73332db45
 				}
+			}
+		}
+
+		if (rhot_step<=BURNIN) {
+			topic_prior = BasicMath.normalise(topic_prior);
+			for (int k=0; k<T; k++) {
+				pk_f[k] = BasicMath.normalise(pk_f[k]);
 			}
 		}
 
@@ -1001,6 +1024,17 @@ public class MVHMDP_PCSVB {
 
 		if (rhot_step>BURNIN_DOCUMENTS) {
 
+<<<<<<< HEAD
+=======
+			for (int k=0;k<T;k++) {
+				for (int f=0;f<c.F;f++) {
+					for (int i=0;i<grouplength[f];i++) {
+						n_alpha_fi[f][i][k]/=topic_prior[k];
+					}
+				}
+			}
+
+>>>>>>> 08e1132a5de5ee2fb063fd8e01dc40b73332db45
 			for (int f=0;f<c.F;f++) {
 
 				int g = group[f];
@@ -1022,9 +1056,15 @@ public class MVHMDP_PCSVB {
 
 
 						//p(not_seeing_fik)
+<<<<<<< HEAD
 						batch_logmfck[f][a][k] += Math.log(1.0 - (topic_ge_0[k] * m_alpha_fi[f][i][k]));
 						//expected counts
 						batch_mfck[f][a][k] += topic_ge_0[k] * m_alpha_fi[f][i][k];
+=======
+						batch_logmfck[f][a][k] += Math.log(1.0 - (topic_ge_0[k] * n_alpha_fi[f][i][k]));
+						//expected counts
+						batch_mfck[f][a][k] += topic_ge_0[k] * n_alpha_fi[f][i][k];
+>>>>>>> 08e1132a5de5ee2fb063fd8e01dc40b73332db45
 						if (debug&& (Double.isNaN(batch_logmfck[f][a][k]))) {
 							System.out.println(
 									"batch_logmfck "+batch_logmfck[f][a][k]
