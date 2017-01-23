@@ -374,7 +374,7 @@ public class Experiments {
 	
 	public static void dctm () {
 
-		String directory="/home/c/work/topicmodels/fb_party";
+		String directory="/home/c/work/topicmodels/fb_party/";
 
 		
 		DCTM_CVB hmd = new DCTM_CVB();
