@@ -32,6 +32,7 @@ import org.gesis.promoss.tools.probabilistic.ArmSampler;
 import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Vectors;
 //import org.knowceans.util.Samplers;
+//import org.knowceans.util.Samplers;
 
 
 
@@ -1594,8 +1595,9 @@ public class DirichletEstimation {
 		// FIXME: ARMS only works for higher alpha
 
 		//double[] alpha = {0.35, 0.35, 0.05, 0.24, 0.31};
-		double[] alpha = {1.35, 1.35, 1.35, 1.35, 1.35};
-		
+		double[] alpha = {1.35, 0.35, 1.35, 0.35, 1.35};
+		double[] alpha2 = {1,1,1,1,1};
+
 		double[] alpha_mean = BasicMath.normalise(alpha);
 
 		System.out.println("original alpha");
@@ -1641,6 +1643,10 @@ public class DirichletEstimation {
 
 		System.out.println("guess alpha via Polya moment match");
 		alpha = guessAlphaDirect(nmk, nm);
+		System.out.println(Vectors.print(alpha));
+		
+		System.out.println("guess alpha via MLE");
+		alpha = estimateAlphaLik(nmk2, alpha2);
 		System.out.println(Vectors.print(alpha));
 
 		System.out

@@ -14,11 +14,11 @@ public class Experiments {
 
 
 	private static int RUNS = 50;
-	private static int MIN_DICT_WORDS = 2;
+	private static int MIN_DICT_WORDS = 100;
 	private static int BATCHSIZE = 64;
 	private static int T = 50;
 
-	private static String directory = "/home/c/work/topicmodels/facebook/";
+	private static String directory = "~/work/topicmodels/facebook/";
 
 	
 	public static void main(String[] args) {
@@ -75,7 +75,7 @@ public class Experiments {
 
 		if (1==1)return;
 		
-		directory = "/home/c/work/topicmodels/porn_hmd/";
+		directory = "~/work/topicmodels/porn_hmd/";
 		MIN_DICT_WORDS = 100;
 		BATCHSIZE = 64;
 		T=100;
@@ -84,7 +84,7 @@ public class Experiments {
 		//delall();
 		//lda();
 
-		directory = "/home/c/work/topicmodels/porn_dmr/";
+		directory = "~/work/topicmodels/porn_dmr/";
 		//delall();
 
 		//dmr2();
@@ -163,7 +163,7 @@ public class Experiments {
 		String ppxFileName = directory+"dmr2perplexity"+(System.currentTimeMillis()/1000);
 
 
-		Text text = new Text();/home/c/work/topicmodels/facebook/
+		Text text = new Text();
 		text.write(ppxFileName,"",false);
 		
 		long timeSpent = 0;
@@ -358,7 +358,7 @@ public class Experiments {
 			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 			hmd.onePass();		
 			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
-			timeSpent +=  timeNow - timeSt/home/c/work/topicmodels/facebook/art;
+			timeSpent +=  timeNow - timeStart;
 			
 			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
 			
@@ -374,8 +374,9 @@ public class Experiments {
 	
 	public static void dctm () {
 
-		String directory="/home/c/work/topicmodels/fb_party/";
-
+		//String directory="/home/ckling/work/topicmodels/fb_party/";
+		directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 20;
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
 		DCTM_CVB hmd = new DCTM_CVB();
 		
@@ -385,6 +386,7 @@ public class Experiments {
 		
 		
 		hmd.K = T;
+		hmd.K2 = T;
 		
 		hmd.c.processed=false;
 		hmd.c.stemming=true;
@@ -392,10 +394,7 @@ public class Experiments {
 		hmd.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 0;
-
-		
-		
+		hmd.BURNIN_DOCUMENTS = 20;	
 		
 				
 		hmd.initialise();
@@ -409,7 +408,7 @@ public class Experiments {
 			hmd.onePass();		
 			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 			timeSpent +=  timeNow - timeStart;
-			System.out.println(",");
+			System.out.println(i);
 			
 		}
 		text.close();

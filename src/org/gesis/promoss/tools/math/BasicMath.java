@@ -327,5 +327,13 @@ public class BasicMath {
 		return ret;
 	}
 
+	public static double sum(float[][][] a) {
+		double ret = 0;
+		for (int i=0;i<a.length;i++) {
+			ret+=sum(a[i]);
+		}
+		return ret;
+	}
+
 
 }

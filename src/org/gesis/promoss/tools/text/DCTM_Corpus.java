@@ -110,9 +110,7 @@ public class DCTM_Corpus extends Corpus {
 				}
 				meta[i][0] = hm.get(meta[i][0]);
 
-				//Save mapping
-				Save save = new Save();
-				save.saveVar(hm, directory+"groupmap");
+
 				
 				 postMap = new HashMap[G];
 				 for (int g=0;g<G;g++) {
@@ -125,6 +123,12 @@ public class DCTM_Corpus extends Corpus {
 				D++;
 			}
 			}
+			
+			//Save mapping
+			Save save = new Save();
+			save.saveVar(hm, directory+"groupmap");
+			save.close();
+			
 			Cd = new int[G][];
 			Gd = new int[G]; 
 			Gc = new int[G];
@@ -136,11 +140,13 @@ public class DCTM_Corpus extends Corpus {
 				int docID = meta[i][1];
 				int cID = meta[i][2];
 
+				//System.out.println(g +" " + G +" " + hm.size());
+				
 				//map d to indices (per group g)
 				if (!postMap[g].containsKey(docID)) {
 					//new post!
-					postMap[g].put(docID, Gd[g]);
-					Gd[g]++;				
+					postMap[g].put(docID, postMap[g].size());
+					//System.out.println(i + " " + g + " " + postMap[g].size() + " "+  postMap[g].get(docID));
 				}
 				
 				if (cID>0) {
@@ -213,16 +219,10 @@ public class DCTM_Corpus extends Corpus {
 			for (int f=0; f<3; f++) {
 				meta_value[f] = Integer.valueOf(metaString[f]);
 			}
-			if (!hm.containsKey(meta_value[0])) {
-				hm.put(meta_value[0],G);
-				G++;
-			}
+
 
 			//use G as index
-			meta_value[0]=hm.get(meta_value[0]);
-
-
-	
+			//meta_value[0]=hm.get(meta_value[0]);	
 
 			if (!empty_documents.contains(line_number)) {
 					if (processed) {
