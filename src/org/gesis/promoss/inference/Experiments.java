@@ -374,8 +374,11 @@ public class Experiments {
 	
 	public static void dctm () {
 
-		//String directory="/home/ckling/work/topicmodels/fb_party/";
-		directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 20;
+
+		String directory="/home/ckling/work/topicmodels/fb_party/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 20;
+		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
 		DCTM_CVB hmd = new DCTM_CVB();
@@ -394,7 +397,7 @@ public class Experiments {
 		hmd.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 20;	
+		hmd.BURNIN_DOCUMENTS = 0;	
 		
 				
 		hmd.initialise();

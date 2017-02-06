@@ -1078,7 +1078,7 @@ public class HMD_PCSVB {
 				}
 			}
 			if (c>0) {
-				alpha_0 = DirichletEstimation.estimateAlphaNewton(sumfc, sumfck, alpha_0, 0, 1, 1);
+				alpha_0 = DirichletEstimation.estimateAlphaLik(sumfck,sumfc);
 			}
 
 

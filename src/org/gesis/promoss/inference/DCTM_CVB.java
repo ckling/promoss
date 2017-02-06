@@ -76,7 +76,7 @@ public class DCTM_CVB {
 	//global prior: G x K 
 	public double[][] alpha0;
 	//concentration: GxK'
-	public double[][] alpha1;
+	public double[][][] alpha1;
 	//global comment prior: G x K'
 	public double[][] alpha2;
 
@@ -326,7 +326,7 @@ public class DCTM_CVB {
 
 
 		alpha0 = new double[c.G][K];
-		alpha1 = new double[c.G][K2];
+		alpha1 = new double[c.G][K][K2];
 		alpha2 = new double[c.G][K2];
 
 		for (int g=0;g<c.G;g++) {
@@ -334,7 +334,10 @@ public class DCTM_CVB {
 				alpha0[g][k]=0.1;
 			}
 			for (int k=0;k<K;k++) {
-				alpha1[g][k]=K2*0.1;
+				for (int k2=0;k2<K2;k2++) {
+
+				alpha1[g][k][k2]=K2*0.1;
+				}
 			}
 			for (int k2=0;k2<K2;k2++) {
 				alpha2[g][k2]=0.1;
@@ -488,7 +491,7 @@ public class DCTM_CVB {
 
 				for (int k2=0;k2<K2;k2++) {
 					double temp = theta[k] 
-							* alpha1[g][k] 
+							* alpha1[g][k][k2] 
 									* (mgkk[g][k][k2] +1) / (mgkSum[g][k] +K2);
 					prior[k2]+= (1.0-eta[g]) * temp;
 					prior_sources[k2][k] = (1.0-eta[g]) * temp;
@@ -580,8 +583,8 @@ public class DCTM_CVB {
 				//calculate new expectation of tables as in Teh 06: CVB for DP
 				ge0[k2] = 1.0 - ge0[k2];				
 				//System.out.println(prior[k2] + nmk2[g][d][ci-1][k2]);
-				table[k2] = prior[k2] * ge0[k2] * Gamma.digamma(prior[k2] + nmk2[g][d][ci-1][k2]) - Gamma.digamma(prior[k2]);
-				if (table[k2]<0) {
+				table[k2] = prior[k2] * ge0[k2] * Gamma.digamma0(prior[k2] + nmk2[g][d][ci-1][k2]) - Gamma.digamma0(prior[k2]);
+				if (table[k2]<0 || Double.isNaN(table[k2])) {
 					table[k2] = 0;
 				}
 				for (int k=0;k<K;k++) {					
@@ -665,6 +668,15 @@ public class DCTM_CVB {
 
 			}
 			System.out.println("Estimating alpha1...");
+			
+			
+			//double[][] nmalpha2 = new double[c.G][];
+			for (int g=0;g<c.G;g++) {
+				//nmalpha2[g]=new double[c.Gc[g]];
+				for (int j=0;j<c.Gc[g];j++) {
+					//nmalpha2[g][j] = BasicMath.sum(nmkalpha2[g][j]);
+				}
+			}
 
 			for (int g=0;g<c.G;g++) {
 
@@ -675,16 +687,21 @@ public class DCTM_CVB {
 					//		+ " " + BasicMath.sum(nmkalpha1[g][k]) 
 					//		+ " " + BasicMath.sum(prioralpha1[g][k]) 
 					//		+ " " +alpha1[g][k]);
-					alpha1[g][k] = DirichletEstimation.estimateAlphaMap(nmkalpha1[g][k],nmalpha1[g][k],prioralpha1[g][k],alpha1[g][k],1.0,1.0,1);
-
+					//double[][] alphas = DirichletEstimation.estimateAlphaNewton(nmalpha1[g][k],nmkalpha1[g][k],prioralpha1[g][k],alpha1[g],alpha2[g]);
+					
+					//alpha1[g]=alphas[0];
+					//alpha2[g]=alphas[1];
+					alpha1[g][k]=DirichletEstimation.estimateAlphaNewton(nmalpha1[g][k],nmkalpha1[g][k],prioralpha1[g][k],alpha1[g][k]);
+					//System.out.println(BasicMath.sum(alpha1[g]));
 				}
 			}
 			System.out.println("Estimating alpha2...");
 
+
 			for (int g=0;g<c.G;g++) {
 				//System.out.println(BasicMath.sum(nmkalpha2[g]));
 
-				alpha2[g] = DirichletEstimation.estimateAlphaLik(nmkalpha2[g],alpha2[g]);
+				alpha2[g]=DirichletEstimation.estimateAlphaLik(nmkalpha2[g],alpha2[g]);
 
 			}
 
@@ -719,9 +736,15 @@ public class DCTM_CVB {
 		save.close();
 		save.saveVar(alpha0, output_folder+save_prefix+"alpha0");
 		save.close();
-		save.saveVar(alpha1, output_folder+save_prefix+"alpha1");
+		for (int g=0;g<c.G;g++) {
+
+		save.saveVar(alpha1[g], output_folder+save_prefix+"alpha1_"+g);
 		save.close();
+		}
 		save.saveVar(alpha2, output_folder+save_prefix+"alpha2");
+		save.close();
+		
+		save.saveVar(eta, output_folder+save_prefix+"eta");
 		save.close();
 
 		for (int g=0;g<c.G;g++) {

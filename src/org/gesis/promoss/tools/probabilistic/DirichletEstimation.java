@@ -33,6 +33,7 @@ import org.gesis.promoss.tools.probabilistic.Gamma;
 import org.gesis.promoss.tools.probabilistic.Vectors;
 //import org.knowceans.util.Samplers;
 //import org.knowceans.util.Samplers;
+//import org.knowceans.util.Samplers;
 
 
 
@@ -702,7 +703,7 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
-	
+
 
 
 	public static double estimateAlphaMap(double[][] nmk, int[] nm, double[][] pi, double alpha,
@@ -738,6 +739,8 @@ public class DirichletEstimation {
 		return alpha;
 	}
 
+
+
 	public static double estimateAlphaMap(double[][] nmk, double[] nm, double[] pi, double alpha,
 			double a, double b, int iter) {
 		double summk, summ;
@@ -770,7 +773,7 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
-	
+
 	//observation-specific prior!
 	public static double estimateAlphaMap(float[][] nmk, float[] nm, float[][] pi, double alpha,
 			double a, double b, int iter) {
@@ -859,7 +862,7 @@ public class DirichletEstimation {
 
 
 
-	
+
 	public static double[] estimateAlphaLik(float[][] nmk, double[] alpha) {
 		int iter = 200;
 		double summ;
@@ -885,17 +888,21 @@ public class DirichletEstimation {
 					if (iter==0) {
 						nm[m] = BasicMath.sum(nmk[m]);
 					}
-					summ += digamma(BasicMath.sum(alpha) + BasicMath.sum(nmk[m]));
+					summ += Gamma.digamma0(BasicMath.sum(alpha) + BasicMath.sum(nmk[m]));
 					for (int k = 0; k < K; k++) {
-						summk[k] += digamma(alpha[k] + nmk[m][k]);
+						summk[k] += Gamma.digamma0(alpha[k] + nmk[m][k]);
 					}
 				}
 			}
 			if (count == 0) break;
-			summ -= count * digamma(BasicMath.sum(alpha));
+			summ -= count * Gamma.digamma0(BasicMath.sum(alpha));
 			for (int k = 0; k < K; k++) {
-				summk[k] -= count * digamma(alpha[k]);
-				alpha[k] = (alpha[k] * summk[k]) / (summ);
+				summk[k] -= count * Gamma.digamma0(alpha[k]);
+				double new_alpha= (alpha[k] * summk[k]) / (summ);
+				if (Double.isNaN(new_alpha) || new_alpha <= 0) {
+					break;
+				}
+				alpha[k] = new_alpha;
 			}
 			// System.out.println(alpha);
 			// System.out.println(Math.abs(alpha - alpha0));
@@ -910,6 +917,8 @@ public class DirichletEstimation {
 		}
 		return alpha;
 	}
+	
+	
 
 	/**
 	 * fixpoint iteration on alpha using counts as input and estimating by Polya
@@ -1280,6 +1289,55 @@ public class DirichletEstimation {
 	}
 
 
+	//	public static double[][] estimateAlphaMapERROR(float[] nm, float[][] nmk, float[][] a, double[] alpha, double[] alpha2) {
+	//
+	//		double[] alphanew;
+	//		int  M, K, iter = 200;
+	//		double prec = 1e-5;
+	//
+	//		M = nmk.length;
+	//		K = alpha.length;
+	//
+	//		alphanew = new double[K];
+	//
+	//		// alpha_k = alpha_k * ( [sum_m digamma(nmk + alpha_k) -
+	//		// digamma(alpha_k)] ) /
+	//		// ( [sum_m digamma(nm + sum_k alpha_k) - digamma(sum_k * alpha_k)] )
+	//		for (int i = 0; i < iter; i++) {
+	//			
+	//			double sumalpha2 = BasicMath.sum(alpha2);
+	//			
+	//			for (int k = 0; k < K; k++) {
+	//				double summk = 0;
+	//				double summ = 0;
+	//				for (int m = 0; m < M; m++) {
+	//			
+	//					double sumalpha = 0;
+	//					for (int k2 = 0; k2 < K; k2++) {
+	//						sumalpha+=a[m][k];
+	//					}
+	//					
+	//					summk += a[m][k] * digamma(nmk[m][k] + alpha[k]);
+	//					summ += digamma(nm[m] + sumalpha);
+	//				}
+	//				summk -= M * digamma(alpha[k]);
+	//				summ -= M * digamma(sumalpha);
+	//				// MAP version
+	//				alphanew[k] = alpha[k] * (a + summk) / (b / K + summ);
+	//				// ML version
+	//				// alphanew[k] = alpha[k] * summk / summ;
+	//			}
+	//			if (Vectors.sqdist(alphanew, alpha) < prec) {
+	//				return alphanew;
+	//			}
+	//			// System.out.println(Vectors.print(alphanew));
+	//			// update alpha to new values
+	//			alpha = Vectors.copy(alphanew);
+	//		}
+	//		return alpha;
+	//	}
+
+
 
 	static class GammaPolyaParams {
 		int[][] nmk;
@@ -1382,135 +1440,225 @@ public class DirichletEstimation {
 
 	}
 
-	public static double estimateAlphaNewton(double[] nm, double[][] nmk, double[] pi, double alpha_1, int a, int b) {
 
-		int M = nmk.length;
+
+
+	public static double[][] estimateAlphaNewton(float[] nm, float[][] nmk, float[][] a, double[] alpha, double[] alpha2) {
+
+		int M = nmk.length;		
 		int K = nmk[0].length;
-		double[][] pi2 = new double[M][K];
-		for (int m=0;m<M;m++) {
-			for (int k=0;k<K;k++) {
-				pi2[m][k]=pi[k]*pi[k];
-			}
-		}
-
+		
+		double gamma_a = 1;
+		double gamma_b = 0;
+		
 		int iterations = 20;
+		int samples = K*10;
+		int offset = (int) (Math.random() * M);
+		
+		//int[] permutation = new RandomSamplers().randPerm(M);
+
 		for (int i=0;i<iterations;i++) {
+			System.out.println("Iteration " + i);
 
-			double nominator = M * Gamma.digamma(alpha_1);
-			for (int m=0;m<M;m++) {
-				nominator -= Gamma.digamma(alpha_1+nm[m]);
-				for (int k=0;k<K;k++) {
-					nominator+= Gamma.digamma(alpha_1 * pi[k] + nmk[m][k]) * pi[k];
-					nominator-=Gamma.digamma(alpha_1 * pi[k])* pi[k];
-				}
+
+			double[] sum_alpha_k = new double[K];	
+
+			double[] g = new double[K*2];
+			double[][] g2 = new double[K*2][K*2];
+			
+			//add gamma priors
+			for (int k=0;k<K;k++) {
+				g[k] += (gamma_a -1.0) / alpha[k] - gamma_b;
 			}
-			nominator+=(a-1)/alpha_1 - b;
-
-
-			double denominator = M *  Gamma.trigamma(alpha_1);
-			for (int m=0;m<M;m++) {
-				denominator -= Gamma.trigamma(alpha_1+nm[m]);
-				for (int k=0;k<K;k++) {
-					denominator+= Gamma.trigamma(alpha_1 * pi[k] +nmk[m][k])* pi2[m][k];
-					denominator-=Gamma.trigamma(alpha_1 * pi[k])* pi2[m][k];
-				}
+			for (int k=0;k<K;k++) {
+				g[K+k] += (gamma_a -1.0) / alpha2[k] - gamma_b;
 			}
-			denominator+=(1-a) / (alpha_1*alpha_1);
+			for (int k=0;k<K;k++) {
+				g2[k][k] += (1.0-gamma_a) / (alpha[k]*alpha[k]);
+			}
+			for (int k=0;k<K;k++) {
+				g2[K+k][K+k] += (1.0-gamma_a) / (alpha2[k]*alpha2[k]);
+			}
+			
+			for (int m2=0;m2<samples;m2++) {
+			//for (int m=0;m<M;m++) {
+				int m = (offset + i*samples+m2) % M;
+				
+				double sum_alpha = 0;
+				for (int k=0;k<K;k++) {
+					sum_alpha_k[k] = alpha[k] * a[m][k] + alpha2[k];
+					sum_alpha+=sum_alpha_k[k];
+				}
 
-			//System.out.println("alpha: "+ alpha_1 + " "  + nominator + " "  + denominator);
+				double h = Gamma.digamma(sum_alpha) - Gamma.digamma(nm[m]+sum_alpha) ;
+				//System.out.println(h); System.exit(0);
 
-			alpha_1 -= nominator/denominator;
+				
+				double[] z = new double[K];
+				for (int k=0;k<K;k++) {
+					z[k] = Gamma.digamma(nmk[m][k]+sum_alpha_k[k]) - Gamma.digamma(sum_alpha_k[k]);
+				}
 
-			if (alpha_1 <= 0) {
-				System.out.println("Alpha 1 estimation error: " + alpha_1);
+				for (int k=0;k<K;k++) {
+					g[k] += a[m][k] * (h + z[k]);
+					g[K+k] += (h + z[k]);
+				}
+				
+								
+				
+				double h2 = (Gamma.trigamma(nm[m]) - Gamma.trigamma(nm[m]+sum_alpha));
 
+				double[] z2 = new double[K];
+				for (int k=0;k<K;k++) {
+					z2[k] = Gamma.digamma(nmk[m][k] + sum_alpha_k[k]) - Gamma.digamma(sum_alpha_k[k]);
+				}
 
-				for (int m=0;m<M;m++) {
-					for (int k=0;k<K;k++) {
-						System.out.println("m: "+m+" k: "+k+ " | " + nmk[m][k]);
+				for (int k=0;k<K;k++) {
+					for (int k2=0;k2<K;k2++) {
+						double temp = h2;
+						if (k==k2) {
+							temp += z2[k];
+						}
+						g2[k][k2] += a[m][k] * a[m][k2] * temp;
+						g2[k][K+k2] += a[m][k] * temp;
+						g2[K+k][k2] += a[m][k2] * temp;
+						g2[K+k][K+k2] += temp;
 					}
 				}
 
-
-				alpha_1 += nominator/denominator;
-				break;
 			}
+			
+			
+
+			//get update: g * H^-1
+			double[] change = Vectors.gradientByHessian(g2,g);
+
+			for (int k=0;k<K;k++) {
+				//update alpha_1
+				//System.out.println("change alpha1: " + k + " " +alpha[k] + " - " + change);
+
+				alpha[k] = alpha[k] + change[k];
+				if (alpha[k]<=0) {
+					//System.out.println("alpha1 error: " +k + " " + alpha[k]);
+					alpha[k] = alpha[k] - change[k];
+				}
+
+				//update alpha_2
+				//System.out.println("change alpha2: " + k + " " +alpha2[k] + " - " + change);
+
+				alpha2[k] = alpha2[k] + change[K+k];
+				
+				if (alpha2[k]<=0) {
+					//System.out.println("alpha2 error: " +k + " " + alpha2[k]);
+
+					alpha2[k] =  alpha2[k] - change[K+k];
+				}
+
+				//System.out.println("alpha new: "+ alpha[k]);
+
+			}
+
 		}
 
-		return alpha_1;
+		double[][] ret = {alpha,alpha2};
+		return ret;
 
 	}
+	
 
 
-	public static double[] estimateAlphaNewton(double[] nm, double[][] nmk, double[] alpha, int M, int a, int b) {
+	public static double[] estimateAlphaNewton(float[] nm, float[][] nmk, float[][] a, double[] alpha) {
 
-		if (M==0) {
-			M = nmk.length;
-		}
+		double min = 0.000001;
+
+		int M = nmk.length;		
 		int K = nmk[0].length;
-
-
-		double[] nominators = new double[K];
-
+		
+		double gamma_a = 1;
+		double gamma_b = 0;
+		
 		int iterations = 20;
+		int samples = K*20;
+		int offset = (int) (Math.random() * M);
+		
+		//int[] permutation = new RandomSamplers().randPerm(M);
+
 		for (int i=0;i<iterations;i++) {
-
-			double sum_alpha = BasicMath.sum(alpha);
-
-			//first parts of the equations are independent of k
-			double fp_1 = M * Gamma.digamma(sum_alpha);
-			double fp_2 = M * Gamma.trigamma(sum_alpha);
-
-			for (int m=0;m<M;m++) {
-				fp_1 -= Gamma.digamma(nm[m]+sum_alpha);
-				fp_2 -= Gamma.trigamma(nm[m]+sum_alpha);
-			}
+			//System.out.println("Iteration " + i);
 
 
+			double[] sum_alpha_k = new double[K];	
 
+			double[] g = new double[K];
+			double[][] g2 = new double[K][K];
+			
+			//add gamma priors
 			for (int k=0;k<K;k++) {
-				nominators[k] = fp_1;
+				g[k] += (gamma_a -1.0) / alpha[k] - gamma_b;
 			}
-
+			for (int k=0;k<K;k++) {
+				g2[k][k] += (1.0-gamma_a) / (alpha[k]*alpha[k]);
+			}
+			
+			//for (int m2=0;m2<samples;m2++) {
 			for (int m=0;m<M;m++) {
+				//int m = (offset + i*samples+m2) % M;
+				
+				double sum_alpha = 0;
 				for (int k=0;k<K;k++) {
-					nominators[k]+= Gamma.digamma(alpha[k] + nmk[m][k]) - Gamma.digamma(alpha[k]);
+					sum_alpha_k[k] = alpha[k] * a[m][k];
+					sum_alpha+=sum_alpha_k[k];
 				}
-			}
 
-			for (int k=0;k<K;k++) {
-				nominators[k] += (a-1)/sum_alpha - b;
-			}
+				double h = Gamma.digamma(sum_alpha) - Gamma.digamma(nm[m]+sum_alpha) ;
+				//System.out.println(h); System.exit(0);
 
-			double[] denominators = new double[K];
-			for (int k=0;k<K;k++) {
-				denominators[k]=0;
-			}
-			for (int m=0;m<M;m++) {
+				
+				double[] z = new double[K];
 				for (int k=0;k<K;k++) {
-					denominators[k]+= Gamma.trigamma(alpha[k] +nmk[m][k]) - Gamma.trigamma(alpha[k]);
+					z[k] = Gamma.digamma(nmk[m][k]+sum_alpha_k[k]) - Gamma.digamma(sum_alpha_k[k]);
 				}
+
+				for (int k=0;k<K;k++) {
+					g[k] += a[m][k] * (h + z[k]);
+				}
+				
+								
+				
+				double h2 = (Gamma.trigamma(nm[m]) - Gamma.trigamma(nm[m]+sum_alpha));
+
+				double[] z2 = new double[K];
+				for (int k=0;k<K;k++) {
+					z2[k] = Gamma.digamma(nmk[m][k] + sum_alpha_k[k]) - Gamma.digamma(sum_alpha_k[k]);
+				}
+
+				for (int k=0;k<K;k++) {
+					for (int k2=0;k2<K;k2++) {
+						double temp = h2;
+						if (k==k2) {
+							temp += z2[k];
+						}
+						g2[k][k2] += a[m][k] * a[m][k2] * temp;
+					}
+				}
+
 			}
+			
+			
+
+			//get update: g * H^-1
+			double[] change = Vectors.gradientByHessian(g2,g);
 
 			for (int k=0;k<K;k++) {
-				denominators[k] += (1-a)/(sum_alpha*sum_alpha);
-			}
+				//update alpha_1
+				//System.out.println("change alpha1: " + k + " " +alpha[k] + " - " + change);
 
-			//System.out.println("alpha: "+ alpha_1 + " "  + nominator + " "  + denominator);
+				alpha[k] = alpha[k] + change[k];
+				if (alpha[k]<=0) {
+					//System.out.println("alpha1 error: " +k + " " + alpha[k]);
+					alpha[k] = alpha[k] - change[k];
+				}
 
-			double invsum = 0;
-			for (int k=0;k<K;k++) {
-				invsum += 1/denominators[k];
-			}
-
-			double b2 = 0;
-			for (int k=0;k<K;k++) {
-				b2 += (nominators[k] / denominators[k]);
-			}
-			b2 /= ((1/fp_2) + invsum);
-
-			for (int k=0;k<K;k++) {
-				alpha[k] -= (nominators[k] - b2) / denominators[k];
 
 				//System.out.println("alpha new: "+ alpha[k]);
 
@@ -1521,6 +1669,8 @@ public class DirichletEstimation {
 		return alpha;
 
 	}
+	
+	
 
 
 	//	public static double[] estimateAlphaNewton(int[] nm, double[][] nmk, double[] alpha, int M) {
@@ -1589,14 +1739,23 @@ public class DirichletEstimation {
 	public static void testPolya() {
 
 		int M = 10000;
-		int K = 5;
+		int K = 100;
 		int N = 0;
 		int N0 = 100;
 		// FIXME: ARMS only works for higher alpha
 
 		//double[] alpha = {0.35, 0.35, 0.05, 0.24, 0.31};
-		double[] alpha = {1.35, 0.35, 1.35, 0.35, 1.35};
-		double[] alpha2 = {1,1,1,1,1};
+		double[] alpha = new double[K];// {1.35, 0.35, 1.35, 0.35, 1.35};
+		double[] alpha2= new double[K];// = {1,1,1,1,1};
+		double[] alpha3= new double[K];// = {1,1,1,1,1};
+		for (int k = 0; k < K; k++) {
+			alpha[k]=0.35;
+			if (k%2 == 0) {
+				alpha[k]=1.35;
+			}
+			alpha2[k]=1;
+			alpha3[k]=1;
+		}
 
 		double[] alpha_mean = BasicMath.normalise(alpha);
 
@@ -1607,6 +1766,9 @@ public class DirichletEstimation {
 		int[] nm = new int[M];
 		double[] nm2 = new double[M];
 		double[][] nmk2 = new double[M][K];
+		float[] nm3 = new float[M];
+		float[][] nmk3 = new float[M][K];
+		float[][] ak3 = new float[M][K];
 		double[][] pi = new double[M][K];
 
 
@@ -1614,9 +1776,14 @@ public class DirichletEstimation {
 		for (int m = 0; m < nmk.length; m++) {
 			nm[m] = (int) (N0 + N * Math.random());
 			nm2[m] = (double) nm[m];
+			nm3[m] = (float) nm[m];
 			//nmk[m] = Samplers.randMultFreqs(Samplers.randDir(alpha), nm[m]);
 			for (int k = 0; k < K; k++) {
 				nmk2[m][k] = nmk[m][k];
+
+				nmk3[m][k] = nmk[m][k];
+
+				ak3[m][k] = (float) ( Math.random()); //(float) (Math.random()*0.01 ); //(float) 0.5;
 			}
 			pi[m] = alpha_mean;
 
@@ -1631,41 +1798,58 @@ public class DirichletEstimation {
 		System.out.println("sample counts in categories");
 		System.out.println(Vectors.print(nk));
 
-		alpha = guessAlpha(nmk);
-		System.out.println("estimated alpha from counts (moments matching)");
-		System.out.println(Vectors.print(alpha));
 
-		// System.out.println(Vectors.print(nmk));
-		alpha = estimateAlpha(nmk);
-		System.out
-		.println("estimated alpha from counts (fixed point via Dirichlet Eq. 9)");
-		System.out.println(Vectors.print(alpha));
+		if (1==0) {
+			alpha = guessAlpha(nmk);
+			System.out.println("estimated alpha from counts (moments matching)");
+			System.out.println(Vectors.print(alpha));
 
-		System.out.println("guess alpha via Polya moment match");
-		alpha = guessAlphaDirect(nmk, nm);
-		System.out.println(Vectors.print(alpha));
+			// System.out.println(Vectors.print(nmk));
+			alpha = estimateAlpha(nmk);
+			System.out
+			.println("estimated alpha from counts (fixed point via Dirichlet Eq. 9)");
+			System.out.println(Vectors.print(alpha));
+
+			System.out.println("guess alpha via Polya moment match");
+			alpha = guessAlphaDirect(nmk, nm);
+			System.out.println(Vectors.print(alpha));
+
+			System.out.println("guess alpha via MLE");
+			alpha = estimateAlphaLik(nmk2, alpha2);
+			System.out.println(Vectors.print(alpha));
+
+			System.out
+			.println("estimated scalar alpha from counts via precision (moment matching)");
+			System.out.println(estimateAlphaMomentMatch(nmk, nm));
+			System.out.println("estimated scalar alpha from counts via MAP estimator");
+			System.out.println(estimateAlphaMap(nmk, nm, 0.1, 0.5, 0.5));
+
+			System.out
+			.println("estimated vector alpha from counts via MAP estimator");
+			double[] astart = Vectors.ones(K, 0.1);
+			System.out.println(Vectors.print(estimateAlphaMap(nmk, nm, astart, 1,
+					0)));
+
+			System.out.println("estimated alpha from counts with weights via MAP estimator");
+			System.out.println(estimateAlphaMap(nmk2, nm, pi, 0.1, 1, 1, 200));
+			System.out.println(estimateAlphaMap(nmk2, nm2, alpha_mean, 0.1, 1, 1, 200));
+
+		}
+
+
+
 		
-		System.out.println("guess alpha via MLE");
-		alpha = estimateAlphaLik(nmk2, alpha2);
-		System.out.println(Vectors.print(alpha));
 
-		System.out
-		.println("estimated scalar alpha from counts via precision (moment matching)");
-		System.out.println(estimateAlphaMomentMatch(nmk, nm));
-		System.out.println("estimated scalar alpha from counts via MAP estimator");
-		System.out.println(estimateAlphaMap(nmk, nm, 0.1, 0.5, 0.5));
+		System.out.println("estimated alpha from counts via Newton correct");
+		for (int k = 0; k < nk.length; k++) alpha2[k] = 1;
 
-		System.out
-		.println("estimated vector alpha from counts via MAP estimator");
-		double[] astart = Vectors.ones(K, 0.1);
-		System.out.println(Vectors.print(estimateAlphaMap(nmk, nm, astart, 1,
-				0)));
 
-		System.out.println("estimated alpha from counts with weights via MAP estimator");
-		System.out.println(estimateAlphaMap(nmk2, nm, pi, 0.1, 1, 1, 200));
-		System.out.println(estimateAlphaMap(nmk2, nm2, alpha_mean, 0.1, 1, 1, 200));
+		double[][] alphas = estimateAlphaNewton(nm3, nmk3, ak3, alpha2, alpha3);
+		System.out.println("alpha_1: " +Vectors.print(alphas[0]));
+		System.out.println("alpha_2: " +Vectors.print(alphas[1]));
 
-		
+
+
 		//double[][] nmk, double[] nm, double[] pi, double alpha,		double a, double b, int iter
 	}
 
@@ -1682,8 +1866,7 @@ public class DirichletEstimation {
 		//double alpha = 1;
 		double[] alpha = {1,1};
 
-		alpha = estimateAlphaNewton(nm,nmk,alpha,0,1,1);
-		System.out.println(alpha[0] +" " + alpha[1]);
+		
 		// testing estimation of alpha from p
 
 		//testDirichlet();
