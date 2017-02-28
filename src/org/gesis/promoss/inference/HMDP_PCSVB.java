@@ -731,8 +731,8 @@ public class HMDP_PCSVB {
 				
 				if (alpha_batch_counter>=BATCHSIZE_ALPHA) {
 					
-
-					alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,1.0,1);
+					//TODO: fix estimate
+					//alpha_1 = DirichletEstimation.estimateAlphaMap(alpha_1_nmk,alpha_1_nm,alpha_1_pimk,alpha_1,1.0,1.0,1);
 
 
 					//alpha_1 = DirichletEstimation.estimateAlphaNewton(alpha_1_nm,alpha_1_nmk,alpha_1_pimk,alpha_1,1,1);
@@ -1046,7 +1046,7 @@ public class HMDP_PCSVB {
 			//						//NEW:
 			//						//Table counts like in Teh, Collapsed Variational Inference for HDP (but with 0-order Taylor approximation)
 			//						double a0pik=alpha_0 * pi_0[k];
-			//						table_sum+=a0pik * sumqfck_ge0[f][i][k] * (Gamma.digamma0(a0pik + sumqfck[f][i][k]) - Gamma.digamma0(a0pik));
+			//						table_sum+=a0pik * sumqfck_ge0[f][i][k] * (Gamma.digamma0(a0pik + sumqfck[f][i][k]/sumqfck_ge0[f][i][k]) - Gamma.digamma0(a0pik));
 			//					}
 			//				}
 			//			}

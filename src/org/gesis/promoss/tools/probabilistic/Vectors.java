@@ -31,6 +31,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.DecompositionSolver;
+import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.NonPositiveDefiniteMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -1939,24 +1940,23 @@ public class Vectors {
 			 RealMatrix coefficients =new Array2DRowRealMatrix(hessian);
 			 RealVector constants = new ArrayRealVector(gradient);
 			 solver = new  CholeskyDecomposition(coefficients).getSolver();
+			 //solver = new  LUDecomposition(coefficients).getSolver();
 			 RealVector solution = solver.solve(constants);
 			 return solution.toArray();
 		 }
-		 catch (NonPositiveDefiniteMatrixException ex) {
-			 //if matrix is not positive definite -> SVD
-			 RealMatrix coefficients =new Array2DRowRealMatrix(hessian);
-			 solver = new  SingularValueDecomposition(coefficients).getSolver();
-			 RealVector constants = new ArrayRealVector(gradient);
-			 RealVector solution = solver.solve(constants);
-			 return solution.toArray();
-		 }
-		 catch (SingularMatrixException ex) {
+		 catch (NonPositiveDefiniteMatrixException|SingularMatrixException ex) {
+//			 for (int i=0;i<gradient.length;i++) {
+//				 gradient[i]*=0.0001;
+//			 }
+//			 return(gradient);
+			 
 			 //if matrix is not singular -> SVD
 			 RealMatrix coefficients =new Array2DRowRealMatrix(hessian);
 			 solver = new  SingularValueDecomposition(coefficients).getSolver();
 			 RealVector constants = new ArrayRealVector(gradient);
 			 RealVector solution = solver.solve(constants);
 			 return solution.toArray();
+			 
 		 }
 
 

@@ -452,7 +452,7 @@ public class Experiments {
 		hmd.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 10;	
+		hmd.BURNIN_DOCUMENTS = 1;	
 		
 				
 		hmd.initialise();

@@ -12,6 +12,22 @@ public class BasicMath {
 		return ret;
 	}
 	
+	public static double[] mult(double[] a, double b) {
+		double[] ret = new double[a.length];
+		for (int i=0;i<a.length;i++) {
+			ret[i]=a[i]*b;
+		}
+		return ret;
+	}
+	
+	public static double[] div(double[] a, double b) {
+		double[] ret = new double[a.length];
+		for (int i=0;i<a.length;i++) {
+			ret[i]=a[i] / b;
+		}
+		return ret;
+	}
+	
 	public static double sum(int[][] a) {
 
 		double result = 0;
@@ -289,9 +305,11 @@ public class BasicMath {
 	public static double[] normalise (double[] x) {
 		double sum = sum(x);
 		double[] x2 = new double[x.length];
+
 		for (int i=0;i<x.length;i++) {
 			x2[i] = x[i]/sum;
 		}
+		
 		return x2;
 	}
 
