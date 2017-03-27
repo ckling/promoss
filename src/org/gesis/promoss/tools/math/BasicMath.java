@@ -4,6 +4,31 @@ import java.math.BigDecimal;
 
 public class BasicMath {
 
+	public static double[] setTo(double[] a, double b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=b;
+		}
+		return a;
+	}
+	public static double[][] setTo(double[][] a, double b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=setTo(a[i],b);
+		}
+		return a;
+	}
+	public static float[] setTo(float[] a, float b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=b;
+		}
+		return a;
+	}
+	public static float[][] setTo(float[][] a, float b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=setTo(a[i],b);
+		}
+		return a;
+	}
+	
 	public static void print(double[] a) {
 		for (int i=0;i<a.length;i++) {
 			System.out.print(i +": " + a[i] + " ");

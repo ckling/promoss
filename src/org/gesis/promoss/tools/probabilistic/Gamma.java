@@ -22,6 +22,11 @@
  */
 package org.gesis.promoss.tools.probabilistic;
 
+
+
+import jdistlib.math.PolyGamma;
+
+
 import static java.lang.Math.log;
 
 /**
@@ -32,6 +37,14 @@ import static java.lang.Math.log;
 
 public class Gamma {
 
+	public static double tetragamma(double x) {
+		return PolyGamma.tetragamma(x);
+	}
+	
+	public static double pentagamma(double x) {
+		return PolyGamma.pentagamma(x);
+	}
+	
     /**
      * <a href="http://en.wikipedia.org/wiki/Euler-Mascheroni_constant">Euler-
      * Mascheroni constant</a>
