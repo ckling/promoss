@@ -475,6 +475,12 @@ public class Experiments {
 
 		hmd.save();
 		
+		//now do perplexity calculations
+		hmd.test=true;
+		hmd.c.documentfile="";
+		hmd.c.metafile="";
+		
+		
 		hmd = null;
 		
 	}
