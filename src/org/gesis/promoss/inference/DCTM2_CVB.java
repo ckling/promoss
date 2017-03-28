@@ -467,6 +467,8 @@ public class DCTM2_CVB {
 				}
 
 			}
+			
+			mg[g]=0;
 		}
 
 		nmk1 = new float[c.G][][];
@@ -560,9 +562,9 @@ public class DCTM2_CVB {
 					nmk1var[g][d][k]-=termfreq*(z[g][d][i][k]*(1.0-z[g][d][i][k]));
 					nkt0[k][t]/=Math.pow((1.0-z[g][d][i][k]),termfreq);
 					nktvar[k][t]-=termfreq*z[g][d][i][k]*(1.0-z[g][d][i][k]);
+					if (nktvar[k][t]<0) nktvar[k][t]=0;
 					nkvar[k]-=termfreq*z[g][d][i][k]*(1.0-z[g][d][i][k]);
-
-
+					if (nkvar[k]<0) nkvar[k]=0;
 
 				}
 
@@ -685,7 +687,10 @@ public class DCTM2_CVB {
 
 				for (int k2=0;k2<K2;k2++) {
 					for (int k=0;k<K+1;k++) {	
+						//we subtract the old topic assignment(s) from the counts
+						//and do sanity checks because of imprecisions (float/double)
 						nmk2[g][d][ci-1][k*K2+k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
+						if (nmk2[g][d][ci-1][k*K2+k2]<0) nmk2[g][d][ci-1][k*K2+k2] = 0;
 						nkt2[k2][t]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
 						if (nkt2[k2][t]<0) nkt2[k2][t]=0;
 						nk2[k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
@@ -733,7 +738,8 @@ public class DCTM2_CVB {
 								* topic_probability[k2];
 
 						if (q[k*K2+k2]<0) {
-							System.out.println(topic_probability[k2]);
+							
+							 System.out.println(topic_probability[k2]);
 							System.out.println(alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K2+k2]);
 
 						}
@@ -756,6 +762,8 @@ public class DCTM2_CVB {
 					//if (mgreater0[l]>1) mgreater0[l]=1;
 
 					if (mgreater0[l]>1) {
+						mgreater0[l] = 1;
+						if (debug) {
 						BasicMath.print(q);
 
 						System.out.println("greater0: " + mgreater0[l] + " "  + q[l]);
@@ -768,6 +776,7 @@ public class DCTM2_CVB {
 
 
 						System.exit(0);
+						}
 					}
 
 					Vndck[l]+=termfreq*(q[l] * (1-q[l]));
@@ -1077,7 +1086,7 @@ public class DCTM2_CVB {
 			System.out.println("Estimating alpha1 + alpha2...");
 
 			for (int g=0;g<c.G;g++) {
-				mg[g] = c.Gc[g];
+				
 
 				double mgkk_sum = BasicMath.sum(mgkk[g]);
 				double mgalpha2_sum = BasicMath.sum(mgalpha2[g]);
