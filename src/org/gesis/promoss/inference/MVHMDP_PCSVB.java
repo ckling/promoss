@@ -734,22 +734,24 @@ public class MVHMDP_PCSVB {
 		}
 
 		double[] topic_prior = new double[T];
+		double[] theta_m = new double[T];
 		double nm_alpha = c.getN(m) + alpha_1;
-		double[][][] n_alpha_fi = new double[c.F][][];
+		//prior
+		double[][][] m_alpha_fi = new double[c.F][][];
 		for (int f=0;f<c.F;f++) {
-			n_alpha_fi[f]=new double[grouplength[f]][T];
+			m_alpha_fi[f]=new double[grouplength[f]][T];
 			int g = group[f];
 			for (int i=0;i<grouplength[f];i++) {
 				int a= c.A[f][g][i];
 				double alpha_fi = alpha_1* zeta[f] * eta[f][g][i];
 				for (int k=0;k<T;k++) {
-					n_alpha_fi[f][i][k] = 
-							(nmk[m][k] + (alpha_fi * 
+					m_alpha_fi[f][i][k] = 
+							(alpha_fi * 
 									(mfck[f][a][k] + alpha_0 * pi_0[k]) /
-									(mfc[f][a] + alpha_0))) 
-									/ nm_alpha;
+									(mfc[f][a] + alpha_0))
+									;
 
-					if (debug && Double.isNaN(n_alpha_fi[f][i][k])) {
+					if (debug && (Double.isNaN(m_alpha_fi[f][i][k]) ) ) {
 						System.out.println(
 								"nmk " + nmk[m][k] 
 										+"\n mfck " + mfck[f][a][k] 
@@ -758,21 +760,39 @@ public class MVHMDP_PCSVB {
 																+"\n nm_alpha "+nm_alpha);
 						System.exit(0);
 
+					
+						System.out.println(
+								"m " + m + " f " + f + " a " + a +" k " + " k " 
+								+"nmk " + nmk[m][k] 
+										+"\n mfck " + mfck[f][a][k] 
+												+"\n pi0k " + pi_0[k] 
+														+"\n mfc" + mfc[f][a]
+																+"\n nm_alpha "+nm_alpha
+																+"\n n_alpha_fi " + m_alpha_fi[f][i][k]);
+					
+
 					}
 
 
-					pk_f[k][f]+=n_alpha_fi[f][i][k];
-					topic_prior[k]+=n_alpha_fi[f][i][k];
-
-
+					pk_f[k][f]+=m_alpha_fi[f][i][k];
+					topic_prior[k]+=m_alpha_fi[f][i][k];
+					
 				}
 			}
 		}
+		
+		for (int k=0;k<T;k++) {
+			theta_m[k] = (nmk[m][k] + topic_prior[k])/nm_alpha;
+		}
 
-		if (rhot_step<=BURNIN) {
-			topic_prior = BasicMath.normalise(topic_prior);
+		if (rhot_step>=BURNIN) {
 			for (int k=0; k<T; k++) {
 				pk_f[k] = BasicMath.normalise(pk_f[k]);
+				if (m==-1) {
+					for (int f=0;f<c.F;f++) {
+						System.out.println("k " + k + "f " + f +" " + pk_f[k][f]);
+					}
+				}
 			}
 		}
 
@@ -852,14 +872,14 @@ public class MVHMDP_PCSVB {
 					for (int i=0;i<grouplength[f];i++) {
 						int a= c.A[f][g][i];
 						for (int k=0;k<T;k++) {
-							q[y][f][i][k]=n_alpha_fi[f][i][k] * nu[f][a];
+							q[y][f][i][k]=theta_m[k] * nu[f][a];
 
 							if (y==0) {
 								q[y][f][i][k]*=(1.0-lambda[k]) * p_fi2[f][i] * (nfckt[f][i][k][t] + beta_0) / (nfck[f][i][k] + c.V * beta_0);
 								if (debug && (q[y][f][i][k]==0 || Double.isNaN(q[y][f][i][k])) ) {
 									System.out.println(
 											"nu "+ nu[f][a]
-													+"\n n_alpha_fi "+n_alpha_fi[f][i][k]
+													+"\n n_alpha_fi "+m_alpha_fi[f][i][k]
 															+"\n lambda "+lambda[k]
 																	+"\n p_fi2 "+ p_fi2[f][i]
 																			+"\n nfckt "+nfckt[f][i][k][t]
@@ -981,14 +1001,6 @@ public class MVHMDP_PCSVB {
 
 		if (rhot_step>BURNIN_DOCUMENTS) {
 
-			for (int k=0;k<T;k++) {
-				for (int f=0;f<c.F;f++) {
-					for (int i=0;i<grouplength[f];i++) {
-						n_alpha_fi[f][i][k]/=topic_prior[k];
-					}
-				}
-			}
-
 			for (int f=0;f<c.F;f++) {
 
 				int g = group[f];
@@ -1002,20 +1014,22 @@ public class MVHMDP_PCSVB {
 					batch_cluster_words[f][a]+=c.getN(m);
 
 					for (int k=0;k<T;k++) {
+						
+						m_alpha_fi[f][i][k]/=topic_prior[k];
 
 						//gives the probability that a table of a topic was drawn from the given cluster
 
 
 
 						//p(not_seeing_fik)
-						batch_logmfck[f][a][k] += Math.log(1.0 - (topic_ge_0[k] * n_alpha_fi[f][i][k]));
+						batch_logmfck[f][a][k] += Math.log(1.0 - (topic_ge_0[k] * m_alpha_fi[f][i][k]));
 						//expected counts
-						batch_mfck[f][a][k] += topic_ge_0[k] * n_alpha_fi[f][i][k];
+						batch_mfck[f][a][k] += topic_ge_0[k] * m_alpha_fi[f][i][k];
 						if (debug&& (Double.isNaN(batch_logmfck[f][a][k]))) {
 							System.out.println(
 									"batch_logmfck "+batch_logmfck[f][a][k]
 											+"\n topic_ge_0 " + topic_ge_0[k]
-													+"\n n_alpha_fi " + n_alpha_fi[f][i][k]
+													+"\n n_alpha_fi " + m_alpha_fi[f][i][k]
 									);
 						}
 
@@ -1038,9 +1052,10 @@ public class MVHMDP_PCSVB {
 			//ignore documents containing only one word.
 			if (rhot%SAMPLE_ALPHA == 0 && c.getN(m)>1) {
 				alpha_1_nm[alpha_batch_counter] = c.getN(m);
+				double sum = BasicMath.sum(topic_prior);
 				for (int k=0;k<T;k++) {
 					alpha_1_nmk[alpha_batch_counter][k] = nmk[m][k];
-					alpha_1_pimk[alpha_batch_counter][k] = topic_prior[k];
+					alpha_1_pimk[alpha_batch_counter][k] = topic_prior[k]/sum;
 				}
 
 				alpha_batch_counter++;
@@ -1073,7 +1088,6 @@ public class MVHMDP_PCSVB {
 			batchmf[f] = 0;
 			zeta[f] = mf[f]+epsilon[f];
 		}
-
 		zeta = BasicMath.normalise(zeta);
 
 		nk = new float[T];
@@ -1148,6 +1162,7 @@ public class MVHMDP_PCSVB {
 
 	private synchronized void updateClusterParameters(int f, int a) {
 
+
 		int BATCHSIZE_CLUSTER_MIN = Math.min(c.Cfc[f][a],BATCHSIZE_GROUPS);
 
 		//System.out.println(rhot_cluster[f][a]);
@@ -1204,8 +1219,12 @@ public class MVHMDP_PCSVB {
 					}
 				}
 				nfc[f][a]+=nfck[f][a][k];
+				
 
 			}
+			
+
+
 
 
 			nxfc[0][f][a] = (float) (oneminusrho * nxfc[0][f][a] + (rhost_cluster*batch_nxfc[0][f][a])*c.Cfcw[f][a]/batch_cluster_words[f][a]);
@@ -1336,7 +1355,8 @@ public class MVHMDP_PCSVB {
 							//if mfck is very small, our estimate becomes lfck
 							tables = (lfck[f][i][k] > 0 && pi_0[k]>0.001) ? a0pik * lfck[f][i][k] * (Gamma.digamma0(a0pik + mfck[f][i][k] / lfck[f][i][k]) - Gamma.digamma0(a0pik)) : lfck[f][i][k];
 
-
+							//we do not add the variance here, which could lead to negative values
+							if (tables < 0) tables = 0;
 
 							if (debug && (Double.isNaN(tables) || tables<0 || Double.isInfinite(tables))){
 								System.out.println( 

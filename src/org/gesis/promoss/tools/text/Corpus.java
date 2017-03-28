@@ -265,12 +265,11 @@ public class Corpus {
 			line_number++;
 			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
-			String[] docSplit = line.split(" ");
 
 			if (!empty_documents.contains(line_number)) {
-
-				if (docSplit.length>=1) {
 					if (processed) {
+						String[] docSplit = line.split(" ");
+
 						for(int i = 0; i < docSplit.length; i++) {
 							String word = docSplit[i];
 							if (dict.contains(word)) {
@@ -318,7 +317,7 @@ public class Corpus {
 					empty_counter++;
 				}
 
-			}
+			
 
 
 		}

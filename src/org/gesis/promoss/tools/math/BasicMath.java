@@ -4,10 +4,58 @@ import java.math.BigDecimal;
 
 public class BasicMath {
 
+	public static double[] setTo(double[] a, double b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=b;
+		}
+		return a;
+	}
+	public static double[][] setTo(double[][] a, double b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=setTo(a[i],b);
+		}
+		return a;
+	}
+	public static float[] setTo(float[] a, float b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=b;
+		}
+		return a;
+	}
+	public static float[][] setTo(float[][] a, float b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=setTo(a[i],b);
+		}
+		return a;
+	}
+	
+	public static void print(double[] a) {
+		for (int i=0;i<a.length;i++) {
+			System.out.print(i +": " + a[i] + " ");
+		}
+		System.out.println();
+	}
+	
 	public static double innerProduct(double[] a, double[] b) {
 		double ret = 0;
 		for (int i=0;i<a.length;i++) {
 			ret+=a[i]*b[i];
+		}
+		return ret;
+	}
+	
+	public static double[] mult(double[] a, double b) {
+		double[] ret = new double[a.length];
+		for (int i=0;i<a.length;i++) {
+			ret[i]=a[i]*b;
+		}
+		return ret;
+	}
+	
+	public static double[] div(double[] a, double b) {
+		double[] ret = new double[a.length];
+		for (int i=0;i<a.length;i++) {
+			ret[i]=a[i] / b;
 		}
 		return ret;
 	}
@@ -287,20 +335,26 @@ public class BasicMath {
 	}
 	
 	public static double[] normalise (double[] x) {
+			
 		double sum = sum(x);
 		double[] x2 = new double[x.length];
+
 		for (int i=0;i<x.length;i++) {
 			x2[i] = x[i]/sum;
 		}
+		
 		return x2;
 	}
 
 	public static float[] normalise (float[] x) {
-		double sum = sum(x);
+		float sum = (float) sum(x);
+		float[] x2 = new float[x.length];
+
 		for (int i=0;i<x.length;i++) {
-			x[i]/=sum;
+			x2[i] = x[i]/sum;
 		}
-		return x;
+		
+		return x2;
 	}
 
 	public static double[] add(double[] a, double[] b) {
@@ -323,6 +377,14 @@ public class BasicMath {
 		double[] ret = a;
 		for (int i=0;i<a.length;i++) {
 			ret[i]-=b[i];
+		}
+		return ret;
+	}
+
+	public static double sum(float[][][] a) {
+		double ret = 0;
+		for (int i=0;i<a.length;i++) {
+			ret+=sum(a[i]);
 		}
 		return ret;
 	}

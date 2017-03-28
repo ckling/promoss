@@ -125,7 +125,6 @@ public class DMR_Corpus extends Corpus {
 			line_number++;
 			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
-			String[] docSplit = line.split(" ");
 			String[] metaString = metaline.split(",");
 
 			double[] meta_value = new double[F];
@@ -134,6 +133,7 @@ public class DMR_Corpus extends Corpus {
 			}
 
 			if (!empty_documents.contains(line_number)) {
+				String[] docSplit = line.split(" ");
 
 				if (docSplit.length>=1) {
 					if (processed) {
@@ -153,7 +153,7 @@ public class DMR_Corpus extends Corpus {
 						}
 					}
 					else {
-						documentText.setText(docSplit[1]);
+						documentText.setText(line);
 						Iterator<String> words = documentText.getTerms();
 
 						while(words.hasNext()) {

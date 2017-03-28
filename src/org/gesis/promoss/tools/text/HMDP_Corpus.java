@@ -12,7 +12,7 @@ public class HMDP_Corpus extends Corpus {
 
 	public String groupfile;
 
-	
+
 	public int F = 0; //Number of features
 	public int[] Cf; //Number of clusters for each feature
 	public int[] Cfd; //Number of documents for each feature
@@ -29,7 +29,7 @@ public class HMDP_Corpus extends Corpus {
 	//followed by the groups of the empty documents
 	public int[][] groups;
 
-	
+
 	public void readCorpusSize() {
 		// Read dictionary from file
 		// The file contains words, one in each row
@@ -86,30 +86,37 @@ public class HMDP_Corpus extends Corpus {
 
 			}
 		}
-				
+
 		dictText.close();
-		
-		
+
+
 	}
-	
+
 	public void readClusterSizeWords() {
 		Cfcw=new int[F][];
 		for (int f=0;f<F;f++) {
 			Cfcw[f]=new int[Cf[f]];
 		}
-		
-		for (int m=0;m < Double.valueOf(M)*TRAINING_SHARE;m++) {
-		for (int f=0;f<F;f++) {
-			int g = groups[m][f];
-			for (int c=0;c<A[f][g].length;c++) {
-				int a = A[f][g][c];
-				Cfcw[f][a]+=N[m];
 
+		for (int m=0;m < Double.valueOf(M)*TRAINING_SHARE;m++) {
+			for (int f=0;f<F;f++) {
+				int g = groups[m][f];
+				for (int c=0;c<A[f][g].length;c++) {
+					int a = A[f][g][c];
+					Cfcw[f][a]+=N[m];
+				}
 			}
 		}
-		}
+//		for (int f=0;f<F;f++) {
+//			for (int c=0;c<Cfcw[f].length;c++) {
+//
+//				System.out.println("f " + f + " c " + c + " " + Cfcw[f][c]);
+//			}
+//		}
+
+
 	}
-	
+
 	public void readDict() {
 		// Read dictionary from file
 		// The file contains words, one in each row
@@ -135,7 +142,7 @@ public class HMDP_Corpus extends Corpus {
 				String[] lineSplit = line.split(" ",2);
 				if (lineSplit.length >= 1) {
 					lineSplit = lineSplit[1].split(" ");
-					
+
 					if (processed) {
 						for(int i = 0; i < lineSplit.length; i++) {
 							String word = lineSplit[i];
@@ -183,7 +190,7 @@ public class HMDP_Corpus extends Corpus {
 			}
 
 		}		
-				
+
 		Text dictText = new Text();
 
 		while((line = dictText.readLine(dictfile)) != null) {
@@ -191,7 +198,7 @@ public class HMDP_Corpus extends Corpus {
 			dict.addWord(line);
 
 		}
-		
+
 		dictText.close();
 
 	}
@@ -257,7 +264,7 @@ public class HMDP_Corpus extends Corpus {
 		}
 
 		grouptext.close();
-		
+
 		//fill undefined groups with null
 		//TODO: we have to add a mechanism for adding new groups...
 		for (int f=0;f<F;f++) {
@@ -306,16 +313,16 @@ public class HMDP_Corpus extends Corpus {
 		//Try to read parsed documents
 		Load load = new Load();
 		groups = load.readFileInt2(directory+"groups");
-		
+
 		if (load.readSVMlight(directory+"wordsets", this) && groups != null) {			
 			return;
 		}
-		
+
 		termIDs = new int[M][];
 		termFreqs = new short[M][];
-		
+
 		Save saveSVMlight = new Save();
-		
+
 		groups = new int[M+empty_documents.size()][F];
 		//Counter for the index of the groups of empty documents
 		//They are added after the group information of the regular documents
@@ -404,13 +411,13 @@ public class HMDP_Corpus extends Corpus {
 		System.out.println("");
 
 		saveSVMlight.close();
-		
+
 		Save save = new Save();
 		save.saveVar(groups, directory+"groups");
 		save.close();
-		
+
 		documentText.close();
-		
+
 		readDocs();
 
 		return;

@@ -1,5 +1,6 @@
 package org.gesis.promoss.tools.text;
 
+import java.util.HashMap;
 import java.util.Set;
 import java.util.Map.Entry;
 
@@ -52,6 +53,36 @@ public class Save {
 		
 		int i=0;
 		for (Entry<Integer,Short> e : var) {	
+
+			i++;
+			String key_val = e.getKey() + ":" + e.getValue();
+			saveVar(key_val,filename);
+			if (i < var.size()) {
+				text.write(filename, " ", true);
+			}
+
+		}
+		text.write(filename, "\n", true);
+
+
+	}
+	
+	public void saveVarSet (Set<Entry<Integer, Integer>> var, String filename) {
+
+		checkFile(filename);
+
+		if (var==null || var.isEmpty()) return;
+		
+		int sum = 0;
+		for (Entry<Integer,Integer> e : var) {	
+			sum += e.getValue();
+		}
+		//first sign is the sum over the words of the document
+		text.write(filename, sum+" ", true);
+
+		
+		int i=0;
+		for (Entry<Integer,Integer> e : var) {	
 
 			i++;
 			String key_val = e.getKey() + ":" + e.getValue();
@@ -224,6 +255,14 @@ public class Save {
 			text.write(filename, "", false);
 			currentFile = filename;
 		}
+	}
+
+
+
+	public void saveVar(HashMap<Integer, Integer> hm, String filename) {
+		Set<Entry<Integer, Integer>> set = hm.entrySet();
+		this.saveVarSet(set,filename);
+		
 	}
 
 }

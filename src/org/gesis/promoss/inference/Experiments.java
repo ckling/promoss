@@ -14,15 +14,18 @@ public class Experiments {
 
 
 	private static int RUNS = 50;
-	private static int MIN_DICT_WORDS = 2;
+	private static int MIN_DICT_WORDS = 100;
 	private static int BATCHSIZE = 64;
-	private static int T = 50;
+	private static int T = 100;
 
-	private static String directory = "/home/c/work/topicmodels/porn_hmd/";
-
+	private static String directory = "~/work/topicmodels/facebook/";
+	//private static String directory = "/home/c/ownCloud/files/fb_party_small/";
 	
 	public static void main(String[] args) {
 
+		dctm2();
+		System.exit(0);
+		
 		String corpusname = "corpus.txt";
 		String metaname = "meta.txt";
 		
@@ -56,7 +59,7 @@ public class Experiments {
 		
 		//delall();
 
-		//lda();
+		lda();
 		//delall();
 		//dmr();
 		//delall();
@@ -68,11 +71,11 @@ public class Experiments {
 		//delall();
 		//hmdp();
 
-		mvhmdp2();
+		//mvhmdp2();
 
 		if (1==1)return;
 		
-		directory = "/home/c/work/topicmodels/porn_hmd/";
+		directory = "~/work/topicmodels/porn_hmd/";
 		MIN_DICT_WORDS = 100;
 		BATCHSIZE = 64;
 		T=100;
@@ -81,7 +84,7 @@ public class Experiments {
 		//delall();
 		//lda();
 
-		directory = "/home/c/work/topicmodels/porn_dmr/";
+		directory = "~/work/topicmodels/porn_dmr/";
 		//delall();
 
 		//dmr2();
@@ -113,7 +116,7 @@ public class Experiments {
 		
 		dmr.TRAINING_SHARE = 0.9;
 		
-		dmr.BURNIN_DOCUMENTS =1;	
+		dmr.BURNIN_DOCUMENTS =10;	
 				
 		dmr.initialise();
 		
@@ -287,7 +290,7 @@ public class Experiments {
 		hmd.BURNIN_DOCUMENTS = 10;
 		
 		
-		hmd.TRAINING_SHARE = 0.9;
+		hmd.TRAINING_SHARE = 1.0;
 		
 		hmd.delta_fix = 10;
 				
@@ -339,7 +342,7 @@ public class Experiments {
 
 		
 		
-		hmd.TRAINING_SHARE = 0.9;
+		hmd.TRAINING_SHARE = 1.0;
 		
 		hmd.delta_fix = 10;
 				
@@ -360,6 +363,114 @@ public class Experiments {
 			text.writeLine(ppxFileName,hmd.perplexity()+" " + timeSpent,true);
 			
 			System.out.println(hmd.c.directory + " run " + i + " (alpha_0 "+hmd.alpha_0+" alpha_1 "+ hmd.alpha_1+ " beta_0 " + hmd.beta_0  + " delta " + hmd.delta[0]+ " epsilon " + hmd.epsilon[0] + " gamma "+hmd.gamma);
+		}
+		text.close();
+
+		hmd.save();
+		
+		hmd = null;
+		
+	}
+	
+	public static void dctm () {
+
+
+		String directory="/home/ckling/work/topicmodels/fb_party/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+		}
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
+		
+		DCTM_CVB hmd = new DCTM_CVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		hmd.K = T;
+		
+		hmd.K2 = T;
+		
+		hmd.c.processed=false;
+		hmd.c.stemming=false;
+		hmd.c.stopwords=false;
+		hmd.c.language="de";
+		
+
+		hmd.BURNIN_DOCUMENTS = 20;	
+		
+				
+		hmd.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				hmd.save();
+			}
+		}
+		text.close();
+
+		hmd.save();
+		
+		hmd = null;
+		
+	}
+	
+	public static void dctm2 () {
+
+
+		String directory="/home/ckling/work/topicmodels/fb_party/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+		}
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
+		
+		DCTM2_CVB hmd = new DCTM2_CVB();
+		
+		hmd.c.directory = directory;
+		
+		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		hmd.K = T;
+		
+		hmd.K2 = T;
+		
+		hmd.c.processed=false;
+		hmd.c.stemming=false;
+		hmd.c.stopwords=false;
+		hmd.c.language="de";
+		
+
+		hmd.BURNIN_DOCUMENTS = 1;	
+		
+				
+		hmd.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			hmd.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				hmd.save();
+			}
 		}
 		text.close();
 
@@ -483,14 +594,14 @@ public class Experiments {
 		
 		lda.BURNIN_DOCUMENTS = 1;
 		
-		lda.TRAINING_SHARE = 0.9;
+		lda.TRAINING_SHARE = 1;
 			
 		lda.initialise();
 		
 		for (int k=0;k<lda.T;k++)  {
 			lda.alpha[k] = 1;
 		}
-		lda.BURNIN_DOCUMENTS = 1000;
+		//lda.BURNIN_DOCUMENTS = 1000;
 
 		
 		Text text = new Text();
@@ -504,9 +615,10 @@ public class Experiments {
 			timeSpent +=  timeNow - timeStart;
 			
 
-			text.writeLine(directory+"ldaperplexity"+(System.currentTimeMillis()/1000),lda.perplexity()+" " + timeSpent,true);
+			//text.writeLine(directory+"ldaperplexity"+(System.currentTimeMillis()/1000),lda.perplexity()+" " + timeSpent,true);
 		}
 		text.close();
+		lda.save();
 
 		lda = null;
 		
