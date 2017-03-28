@@ -42,7 +42,7 @@ import org.knowceans.util.Vectors;
  * This is the practical collapsed stochastic variational inference
  * for the Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
  */
-public class DCTM2_CVB {
+public class CopyOfDCTM2_CVB {
 
 	
 	//This class holds the corpus and its properties
@@ -180,7 +180,7 @@ public class DCTM2_CVB {
 	public double b0 = 1;
 
 
-	DCTM2_CVB() {
+	CopyOfDCTM2_CVB() {
 		c = new DCTM_Corpus();
 	}
 
