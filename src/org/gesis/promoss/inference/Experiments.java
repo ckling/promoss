@@ -428,7 +428,6 @@ public class Experiments {
 	
 	public static void dctm2 () {
 
-
 		String directory="/home/ckling/work/topicmodels/fb_party/";
 		if (! new File("/home/ckling/").exists()) {		
 			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
