@@ -5,6 +5,7 @@ import java.lang.management.ManagementFactory;
 
 import org.gesis.promoss.metadata.ClusterMetadata;
 import org.gesis.promoss.tools.math.BasicMath;
+import org.gesis.promoss.tools.text.DCTM_Corpus;
 import org.gesis.promoss.tools.text.Text;
 import org.gesis.promoss.inference.DMR_CSVB;
 
@@ -24,6 +25,8 @@ public class Experiments {
 	public static void main(String[] args) {
 
 		dctm2();
+		//ldadc();
+
 		System.exit(0);
 		
 		String corpusname = "corpus.txt";
@@ -372,36 +375,35 @@ public class Experiments {
 		
 	}
 	
-	public static void dctm () {
+	public static void dctm2 () {
 
-
-		String directory="/home/ckling/work/topicmodels/fb_party/";
+		String directory="/home/ckling/work/topicmodels/fb_party_train/";
 		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+			directory="/home/c/work/topicmodels/fb_party_train/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
-		DCTM_CVB hmd = new DCTM_CVB();
+		DCTM2_CVB model = new DCTM2_CVB();
 		
-		hmd.c.directory = directory;
+		model.c.directory = directory;
 		
-		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
 		
 		
-		hmd.K = T;
+		model.K = T;
 		
-		hmd.K2 = T;
+		model.K2 = T;
 		
-		hmd.c.processed=false;
-		hmd.c.stemming=false;
-		hmd.c.stopwords=false;
-		hmd.c.language="de";
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 20;	
+		model.BURNIN_DOCUMENTS = 1;	
 		
 				
-		hmd.initialise();
+		model.initialise();
 		
 
 		Text text = new Text();
@@ -409,52 +411,83 @@ public class Experiments {
 		long timeSpent = 0;
 		for (int i=0;i<RUNS;i++) {
 			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
-			hmd.onePass();		
+			model.onePass();		
 			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 			timeSpent +=  timeNow - timeStart;
 			System.out.println(i);
 			
 			if ((i+1)%10==0) {
-				hmd.save();
+				model.save();
 			}
 		}
 		text.close();
 
-		hmd.save();
+		model.save();
 		
-		hmd = null;
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory="/home/ckling/work/topicmodels/fb_party_test/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
 		
 	}
 	
-	public static void dctm2 () {
+	
 
-		String directory="/home/ckling/work/topicmodels/fb_party/";
+	
+	public static void ldadc () {
+
+		String directory="/home/ckling/work/topicmodels/fb_party_train/";
 		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/ownCloud/files/fb_party_small/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+			directory="/home/c/work/topicmodels/fb_party_train/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
-		DCTM2_CVB hmd = new DCTM2_CVB();
+		LDA_CVB model = new LDA_CVB();
 		
-		hmd.c.directory = directory;
+		model.c.directory = directory;
 		
-		hmd.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
 		
 		
-		hmd.K = T;
+		model.K = T;
 		
-		hmd.K2 = T;
+		model.K2 = T;
 		
-		hmd.c.processed=false;
-		hmd.c.stemming=false;
-		hmd.c.stopwords=false;
-		hmd.c.language="de";
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
 		
 
-		hmd.BURNIN_DOCUMENTS = 1;	
+		model.BURNIN_DOCUMENTS = 1;	
 		
 				
-		hmd.initialise();
+		model.initialise();
 		
 
 		Text text = new Text();
@@ -462,26 +495,48 @@ public class Experiments {
 		long timeSpent = 0;
 		for (int i=0;i<RUNS;i++) {
 			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
-			hmd.onePass();		
+			model.onePass();		
 			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 			timeSpent +=  timeNow - timeStart;
 			System.out.println(i);
 			
 			if ((i+1)%10==0) {
-				hmd.save();
+				model.save();
 			}
 		}
 		text.close();
 
-		hmd.save();
+		model.save();
 		
 		//now do perplexity calculations
-		hmd.test=true;
-		hmd.c.documentfile="";
-		hmd.c.metafile="";
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory="/home/ckling/work/topicmodels/fb_party_test/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
 		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
 		
-		hmd = null;
+		model.perplexity();
+		
+		model = null;
 		
 	}
 	
