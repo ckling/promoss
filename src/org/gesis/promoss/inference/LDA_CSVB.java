@@ -524,6 +524,10 @@ public class LDA_CSVB {
 	}
 
 	public double perplexity () {
+		
+		if (TRAINING_SHARE==1.0) {
+			return(0);
+		}
 
 		int testsize = (int) Math.floor(TRAINING_SHARE * c.M);
 		if (testsize == 0) return 0;

@@ -16,6 +16,13 @@ public class BasicMath {
 		}
 		return a;
 	}
+	public static double[][][] setTo(double[][][] a, double b) {
+		for (int i=0;i<a.length;i++) {
+			a[i]=setTo(a[i],b);
+		}
+		return a;
+	}
+	
 	public static float[] setTo(float[] a, float b) {
 		for (int i=0;i<a.length;i++) {
 			a[i]=b;
