@@ -24,8 +24,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 ### Building the jar file
 You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
+```
 ant; ant build-jar
-
+```
 (The ant build might yield errors for classes under development which can be ignored.)
 
 ### Demo files
@@ -35,19 +36,22 @@ If you would like to have demo files to play around with, just write a mail to p
 Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
 
 ### Example command line usage
+```
 java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DICT_WORDS 0 -T 5
+```
 
 ### Input files
-
 The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
 
 #### corpus.txt
 Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
-#Example file:#
+Example corpus.txt:
+```
 exist distribut origin softwar distributor agre gpl
 gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
 dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
 gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+```
 
 #### words.txt 
 This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
@@ -90,8 +94,9 @@ An efficient topic model which uses arbitrary document metadata!
 (Practical collapsed stochastic variational inference for hierarchical multi-Dirichlet process topic models) 
 
 ### Example command line usage
+```
 java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -meta_params "T(L1000,W1000,D10,Y100,M20);N" -MIN_DICT_WORDS 1000
-
+```
 
 This will sample topics from a demo dataset of 1000 messages of the linux kernel mailing list. Messages are already stemmed and stopwords were removed. There are 1000 clusters for the first four contexts (which are the timeline and the yearly, weekly and daily cycle). Many clusters are empty, because the original dataset contained >3m documents. This is just for testing if the algorithm runs, a demo dataset  with nicer results is in preparation.
 
@@ -105,32 +110,44 @@ Finally, a groups file with the groups of the documents and a wordsets file with
 #### Variant 1
 ##### corpus.txt 
 Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
-#Example file:#
-exist distribut origin softwar distributor agre gpl
-gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
-dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
-gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+
+Example corpus.txt:
+```
+  exist distribut origin softwar distributor agre gpl
+  gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
+  dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
+  gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+```
+
 
 ##### meta.txt 
 Here we give the metadata values separated by semicolons. Possible metadata are geographical coordinates (latitude and longitude separated by comma), UNIX timestamps (in seconds), nominal values (e.g. category names, numbers) or oordinal variables (stored numbers which correspond to the ordering). The metadata types have to be specified via the -meta_params parameter (see below for a description).
-#Example file:#
+
+Example meta.txt:
+```
 33.150051,-114.365448;1139316299;1
 34.150051,-118.365448;1139316058;2
 43.59772,-116.235705;1139261931;3
 14.559243,120.982732;1139256458;2
+```
 
 #### Variant 2
 ##### texts.txt 
 Each line corresponds to a document. First, the context group IDs (for each context one) are given, separated by commas. The context group in context 0 is given first, then the context group in context 1 and so on. Then follows a space and the words of the documents separated by spaces. 
-#Example file:#
+
+Example texts.txt:
+```
 254,531,790,157,0  exist distribut origin softwar distributor agre gpl
 254,528,789,157,0  gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
 254,901,700,157,0  dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
 254,838,691,157,0  gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+```
 
 ##### groups.txt 
 Each line gives the parent context clusters of a context group. Data are separated by spaces. The first column gives the context id, the second column gives the group ID of the context group, and then the IDs of the context clusters from which the documents of that context group draw their topics are given.
-#Example file:#
+
+Example groups.txt
+```
 0 0 0 1
 0 1 0 1 2
 0 2 1 2 3
@@ -142,6 +159,7 @@ Each line gives the parent context clusters of a context group. Data are separat
 0 8 7 8 9
 0 9 8 9 10
 0 10 9 10 11
+```
 
 The first line reads: For context 0, documents which are assigned to context group 0 draw their topics from context cluster 0 and context cluster 1.
 If no groups.txt is given, all context groups will be linked to a context cluster with the same ID, which means that all context clusters are independent.
@@ -170,8 +188,10 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 			
 
 Example usage: 
-* meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
-			
+```
+meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
+```
+
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
 
 ### Optional parameters:
