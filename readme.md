@@ -57,32 +57,32 @@ Cluster descriptions (e.g. means of the geographical clusters, bins of timestamp
 After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
 
 ### Mandatory parameter
--directory 		String. Gives the directory of the texts.txt and groups.txt file.
+* directory 		String. Gives the directory of the texts.txt and groups.txt file.
 
 
 ### Optional parameters:
--T			Integer. Number of truncated topics
--RUNS			Integer. Number of iterations the sampler will run. Default: 200
--SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
--TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
--BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
--BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
--INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
--MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
--save_prefix		String. If given, this String is appended to all output files.
--alpha			Double. Initial value of alpha_0. Default: 1
--rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
--rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
--rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
--rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
--rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
--rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
--processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
--stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
--stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
--language		String. Currently "en" and "de" are available languages for stemming.
--store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
--topk			Integer. Set the number of top words returned in the topktopics file of the output.
+* T			Integer. Number of truncated topics
+* RUNS			Integer. Number of iterations the sampler will run. Default: 200
+* SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+* TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+* BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
+* BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+* INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
+* MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
+* save_prefix		String. If given, this String is appended to all output files.
+* alpha			Double. Initial value of alpha_0. Default: 1
+* rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
+* rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
+* rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
+* rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
+* rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
+* rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
+* processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
+* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
+* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
+* language		String. Currently "en" and "de" are available languages for stemming.
+* store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
+* topk			Integer. Set the number of top words returned in the topktopics file of the output.
 
 
 ## Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
@@ -154,7 +154,7 @@ Cluster descriptions (e.g. means of the geographical clusters, bins of timestamp
 After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
 
 ### Mandatory parameter
--directory 		String. Gives the directory of the texts.txt and groups.txt file.
+* directory 		String. Gives the directory of the texts.txt and groups.txt file.
 
 ### Mandatory Parameters when Using corpus.txt and meta.txt (Input Variant 1)
 * meta_params		String. Specifies the metadata types and gives the desired clustering. Types of metadata are given separated by semicolons (and correspond to the number of different metadata in the meta.txt file. Possible datatypes are:
@@ -170,43 +170,43 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 			
 
 Example usage: 
--meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
+* meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
 			
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
 
 ### Optional parameters:
--T			Integer. Number of truncated topics
--RUNS			Integer. Number of iterations the sampler will run. Default: 200
--SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
--TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
--BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
--BATCHSIZE_GROUPS	Integer. Batch size for group-specific parameter estimation. Default: BATCHSIZE
--BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
--BURNIN_DOCUMENTS	Integer. Gives the number of sampling iterations where the group-specific parameters are not updated yet. Default: 0
--INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
--SAMPLE_ALPHA		Integer. Every SAMPLE_ALPHAth document is used to estimate alpha_1. Default: 1
--BATCHSIZE_ALPHA	Integer. How many observations do we take before updating alpha_1. Default: 1000
--MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
--save_prefix		String. If given, this String is appended to all output files.
--alpha_0		Double. Initial value of alpha_0. Default: 1
--alpha_1		Double. Initial value of alpha_1. Default: 1
--epsilon		Comma-separated double. Dirichlet prior over the weights of contexts. Comma-separated double values, with dimensionality equal to the number of contexts.
--delta_fix 		If set, delta is fixed and set to this value. Otherwise delta is learned during inference.
--rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
--rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
--rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
--rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
--rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
--rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
--rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
--rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
--rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
--processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
--stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
--stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
--language		String. Currently "en" and "de" are available languages for stemming.
--store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
--topk			Integer. Set the number of top words returned in the topktopics file of the output.
+* T			Integer. Number of truncated topics
+* RUNS			Integer. Number of iterations the sampler will run. Default: 200
+* SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+* TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+* BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
+* BATCHSIZE_GROUPS	Integer. Batch size for group-specific parameter estimation. Default: BATCHSIZE
+* BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+* BURNIN_DOCUMENTS	Integer. Gives the number of sampling iterations where the group-specific parameters are not updated yet. Default: 0
+* INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
+* SAMPLE_ALPHA		Integer. Every SAMPLE_ALPHAth document is used to estimate alpha_1. Default: 1
+* BATCHSIZE_ALPHA	Integer. How many observations do we take before updating alpha_1. Default: 1000
+* MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
+* save_prefix		String. If given, this String is appended to all output files.
+* alpha_0		Double. Initial value of alpha_0. Default: 1
+* alpha_1		Double. Initial value of alpha_1. Default: 1
+* epsilon		Comma-separated double. Dirichlet prior over the weights of contexts. Comma-separated double values, with dimensionality equal to the number of contexts.
+* delta_fix 		If set, delta is fixed and set to this value. Otherwise delta is learned during inference.
+* rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
+* rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
+* rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
+* rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
+* rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
+* rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
+* rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
+* rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
+* rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
+* processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
+* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
+* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
+* language		String. Currently "en" and "de" are available languages for stemming.
+* store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
+* topk			Integer. Set the number of top words returned in the topktopics file of the output.
 
 
 
