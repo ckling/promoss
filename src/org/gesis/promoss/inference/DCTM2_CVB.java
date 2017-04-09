@@ -229,16 +229,6 @@ public class DCTM2_CVB {
 		rhot_step++;
 		//get step size
 
-
-		//reset variance and ge0
-		for (int g=0;g<c.G;g++) {
-			for (int d=0;d<c.Gd[g];d++) {
-				for (int k=0;k<K;k++) {
-					nmk10[g][d][k]=0;
-				}
-			}
-		}
-
 		int progress = c.M / 50;
 		if (progress==0) progress = 1;
 		for (int m=0;m<Double.valueOf(c.M);m++) {
@@ -263,11 +253,83 @@ public class DCTM2_CVB {
 
 		for (int g=0; g<c.G;g++) {
 			comment_counter[g]=0;
-		}
-		for (int g=0;g<c.G;g++) {
 			//reset information if comment-tables are > 0
 			mdkg0[g]=BasicMath.setTo(mdkg0[g], 1.0f);
 		}
+
+	}
+	
+	public double[] perplexity() {
+
+		int sumN = 0;
+		int sumNPost = 0;
+		int sumNComment = 0;
+
+		double ppx = 0;
+		double ppxPost = 0;
+		double ppxComment = 0;
+		
+		int progress = c.M / 50;
+		if (progress==0) progress = 1;
+		for (int m=0;m<Double.valueOf(c.M);m++) {
+			if(m%progress == 0) {
+				System.out.print(".");
+			}
+
+			double ppxm = perplexity(m);
+			ppx+=ppxm;
+			sumN+=c.getN(m);
+			
+			//Post
+			if (c.meta[m][2]==0) {
+				sumNPost+=c.getN(m);
+				ppxPost+=ppxm;
+
+			}
+			//Comment
+			else {
+				sumNComment+=c.getN(m);
+				ppxComment+=ppxm;
+
+			}
+
+
+		}
+		System.out.println();
+
+		
+		//reset parameters
+
+		for (int g=0; g<c.G;g++) {
+			comment_counter[g]=0;
+			//reset information if comment-tables are > 0
+			mdkg0[g]=BasicMath.setTo(mdkg0[g], 1.0f);
+		}
+		double result = Math.exp(-ppx/sumN);
+		double resultPost = Math.exp(-ppxPost/sumNPost);
+		double resultComment = Math.exp(-ppxComment/sumNComment);
+
+
+		
+		String output_base_folder = c.directory + "output_DCTM2/";
+
+		File output_base_folder_file = new File(output_base_folder);
+		if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
+
+		Save save = new Save();
+		save.saveVar(result, output_base_folder+save_prefix+"perplexity");
+		save.close();
+		save = new Save();
+		save.saveVar(resultPost, output_base_folder+save_prefix+"perplexityPost");
+		save.close();
+		save = new Save();
+		save.saveVar(resultComment, output_base_folder+save_prefix+"perplexityComment");
+		save.close();
+		
+		System.out.println(result + " " + resultPost + " " + resultComment);
+
+		double[] res = {result,resultPost,resultComment};
+		return(res);
 
 	}
 
@@ -574,6 +636,7 @@ public class DCTM2_CVB {
 						nkt[k][t]-=termfreq*z[g][d][i][k];
 						nk[k]-=termfreq*z[g][d][i][k];
 					}
+					nmk10[g][d][k]-=termfreq*Math.log(1.0-z[g][d][i][k]);
 					nmk1var[g][d][k]-=termfreq*(z[g][d][i][k]*(1.0-z[g][d][i][k]));
 					if (!test) {
 						nkt0[k][t]/=Math.pow((1.0-z[g][d][i][k]),termfreq);
@@ -1295,6 +1358,8 @@ public class DCTM2_CVB {
 		save.close();
 		save.saveVar(alpha0, output_folder+save_prefix+"alpha0");
 		save.close();
+		save.saveVar(pi0gk, output_folder+save_prefix+"pi0gk");
+		save.close();
 		save.saveVar(alpha1, output_folder+save_prefix+"alpha1");
 		save.close();
 		save.saveVar(alpha2, output_folder+save_prefix+"alpha2");
@@ -1519,7 +1584,7 @@ public class DCTM2_CVB {
 				//probability of topics drawn from alpha2
 				for (int k2=0;k2<K2;k2++) {				
 					z_theta[K*K2+k2] = 
-							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2])
+							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2]) * topic_probability[k2]
 									* Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2],2))))
 									;
 				}
@@ -1530,6 +1595,10 @@ public class DCTM2_CVB {
 				for (int k=0;k<K+1;k++) {	
 					for (int k2=0;k2<K2;k2++) {			
 						ppx += termfreq * Math.log(z_theta[k*k2+k2] * topic_probability[k2]);
+						if (Double.isInfinite(ppx) || ppx==0) {
+							BasicMath.print(z_theta);
+							BasicMath.print(topic_probability);
+						}
 					}
 				}		
 

@@ -30,7 +30,7 @@ First steps
 Building the jar file
 ***************************
 You can build the promoss.jar using Ant. Go to the directory of the extracted promoss.tar.gz file (in which the build.xml is located) and enter the command:
-ant || ant build-jar
+ant; ant build-jar
 
 (The ant build might yield errors for classes under development which can be ignored.)
 
@@ -38,6 +38,77 @@ ant || ant build-jar
 Demo files
 ***************************
 If you would like to have demo files to play around with, just write a mail to promoss@c-kling.de
+
+###########################
+Latent Dirichlet Allocation (LDA)
+###########################
+Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
+
+
+***************************
+Example command line usage
+***************************
+java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DICT_WORDS 0 -T 5
+
+
+***************************
+Input files
+***************************
+The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
+
+--------------------------- 
+corpus.txt
+--------------------------- 
+Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
+#Example file:#
+exist distribut origin softwar distributor agre gpl
+gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
+dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
+gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
+
+--------------------------- 
+words.txt
+--------------------------- 
+This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
+
+***************************
+Output files
+***************************
+Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
+After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+
+***************************
+Mandatory parameter
+***************************
+-directory 		String. Gives the directory of the texts.txt and groups.txt file.
+
+
+***************************
+Optional parameters:
+***************************
+-T			Integer. Number of truncated topics
+-RUNS			Integer. Number of iterations the sampler will run. Default: 200
+-SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+-TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+-BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
+-BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+-INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
+-MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
+-save_prefix		String. If given, this String is appended to all output files.
+-alpha			Double. Initial value of alpha_0. Default: 1
+-rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
+-rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
+-rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
+-rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
+-rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
+-rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
+-processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
+-stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
+-stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
+-language		String. Currently "en" and "de" are available languages for stemming.
+-store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
+-topk			Integer. Set the number of top words returned in the topktopics file of the output.
+
 
 ###########################
 Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
@@ -186,74 +257,4 @@ Optional parameters:
 -topk			Integer. Set the number of top words returned in the topktopics file of the output.
 
 
-
-###########################
-Latent Dirichlet Allocation (LDA)
-###########################
-Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
-
-
-***************************
-Example command line usage
-***************************
-java -Xmx11000M -jar promoss.jar -directory demo/ml_demo/ -method "LDA" -MIN_DICT_WORDS 1000 -T 5
-
-
-***************************
-Input files
-***************************
-The most simple way to feed your documents into the topic model is via the corpus.txt file, which can include raw documents (each line corresponds to a document). From this corpus.txt, a wordsets file with the processed documents in SVMlight format is created, called wordsets. You can also directly give the wordsets file and a words.txt dictionary, where the line number (starting with 0) corresponds to the word ID in the SVMlight file.
-
---------------------------- 
-corpus.txt
---------------------------- 
-Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
-#Example file:#
-exist distribut origin softwar distributor agre gpl
-gpl establish term distribut origin softwar even goe unmodifi word distribut gpl softwar one agre 
-dynam link constitut make deriv work allow dynam link long rule follow code make deriv work rule
-gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyright law gpl section 
-
---------------------------- 
-words.txt
---------------------------- 
-This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
-
-***************************
-Output files
-***************************
-Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
-After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
-
-***************************
-Mandatory parameter
-***************************
--directory 		String. Gives the directory of the texts.txt and groups.txt file.
-
-
-***************************
-Optional parameters:
-***************************
--T			Integer. Number of truncated topics
--RUNS			Integer. Number of iterations the sampler will run. Default: 200
--SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
--TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
--BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
--BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
--INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
--MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
--save_prefix		String. If given, this String is appended to all output files.
--alpha			Double. Initial value of alpha_0. Default: 1
--rhokappa		Double. Initial value of kappa, a parameter for the learning rate of topics. Default: 0.5
--rhotau			Integer. Initial value of tau, a parameter for the learning rate of topics. Default: 64
--rhos			Integer. Initial value of s, a parameter for the learning rate of topics. Default: 1
--rhokappa_document	Double. Initial value of kappa, a parameter for the learning rate of the document-topic distribution. Default: kappa
--rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
--rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
--processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
--stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
--stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
--language		String. Currently "en" and "de" are available languages for stemming.
--store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
--topk			Integer. Set the number of top words returned in the topktopics file of the output.
 

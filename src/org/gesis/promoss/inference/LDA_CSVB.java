@@ -51,7 +51,7 @@ public class LDA_CSVB {
 	//number of top words returned for the topic file
 	public int topk = 100;
 	//Number of read docs (might repeat with the same docs)
-	public int RUNS = 500;
+	public int RUNS = 100;
 	//Save variables after step SAVE_STEP
 	public int SAVE_STEP = 10;
 	public int BATCHSIZE = 128;

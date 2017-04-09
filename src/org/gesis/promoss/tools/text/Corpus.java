@@ -305,7 +305,7 @@ public class Corpus {
 					}
 					Set<Entry<Integer, Short>> wordset = distinctWords.entrySet();
 
-					if (m % Math.round(M/50) == 0)
+					if (m % Math.ceil(M/50) == 0)
 						System.out.print(".");
 					
 					m++;
