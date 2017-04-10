@@ -23,6 +23,8 @@ You should have received a copy of the GNU General Public License along with thi
 ## Support
 Please contact me if you need help running the code: promoss (ät) c-kling.de
 
+---
+
 ## First steps
 
 ### Building the jar file
@@ -34,6 +36,8 @@ ant; ant build-jar
 
 ### Demo files
 If you would like to have demo files to play around with, just write a mail to promoss@c-kling.de
+
+---
 
 ## Latent Dirichlet Allocation (LDA)
 Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
@@ -48,6 +52,7 @@ The most simple way to feed your documents into the topic model is via the corpu
 
 #### corpus.txt
 Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
+
 Example corpus.txt:
 ```
 exist distribut origin softwar distributor agre gpl
@@ -91,6 +96,7 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
 * topk			Integer. Set the number of top words returned in the topktopics file of the output.
 
+---
 
 ## Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
 An efficient topic model which uses arbitrary document metadata!
