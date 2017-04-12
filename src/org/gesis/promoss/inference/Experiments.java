@@ -15,7 +15,7 @@ public class Experiments {
 
 
 	private static int RUNS = 50;
-	private static int MIN_DICT_WORDS = 100;
+	private static int MIN_DICT_WORDS = 1000;
 	private static int BATCHSIZE = 64;
 	private static int T = 100;
 
@@ -24,8 +24,8 @@ public class Experiments {
 	
 	public static void main(String[] args) {
 
-		//dctm2();
-		ldadc();
+		dctm2();
+		//ldadc();
 
 		System.exit(0);
 		
@@ -377,13 +377,13 @@ public class Experiments {
 	
 	public static void dctm2 () {
 
-		String directory="/home/ckling/work/topicmodels/fb_party_train/";
+		String directory="/home/ckling/work/topicmodels/fb_party_train2/";
 		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/work/topicmodels/fb_party_train/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+			directory="/home/c/work/topicmodels/fb_party_train/"; T=25; RUNS = 20; MIN_DICT_WORDS = 10;
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
-		DCTM2_CVB model = new DCTM2_CVB();
+		DCTM_CVBSa model = new DCTM_CVBSa();
 		
 		model.c.directory = directory;
 		
@@ -395,8 +395,8 @@ public class Experiments {
 		model.K2 = T;
 		
 		model.c.processed=false;
-		model.c.stemming=false;
-		model.c.stopwords=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
 		model.c.language="de";
 		
 
@@ -463,7 +463,7 @@ public class Experiments {
 
 		String directory="/home/ckling/work/topicmodels/fb_party_train/";
 		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/work/topicmodels/fb_party_train/"; T=10; RUNS = 100; MIN_DICT_WORDS = 10;
+			directory="/home/c/work/topicmodels/fb_party_train/"; T=25; RUNS = 20; MIN_DICT_WORDS = 10;
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
@@ -479,8 +479,8 @@ public class Experiments {
 		model.K2 = T;
 		
 		model.c.processed=false;
-		model.c.stemming=false;
-		model.c.stopwords=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
 		model.c.language="de";
 		
 

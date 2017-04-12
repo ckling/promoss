@@ -47,7 +47,6 @@ public class RandomSamplers {
 	public static void main(String[] args) {
 
 		RandomSamplers rs = new RandomSamplers();
-
 		
 		
 		int n = 1000;
@@ -684,6 +683,15 @@ public class RandomSamplers {
 
 		for (int i = 0; i < repetitions; i++) {
 			samples[i] = randMult(pp);
+		}
+		return samples;
+
+	}
+	public short[] randMultShort(double[] pp, int repetitions) {
+		short[] samples = new short[repetitions];
+
+		for (int i = 0; i < repetitions; i++) {
+			samples[i] = (short) randMult(pp);
 		}
 		return samples;
 

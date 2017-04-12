@@ -997,6 +997,9 @@ public class LDA_CVB {
 				for (int d = 0;d<c.Gd[g];d++) {
 					for (int k=0;k<K;k++) {
 						double g0 = 1.0-(Math.exp(nmk10[g][d][k]));
+						if (Double.isNaN(g0)) {
+							g0=0;
+						}
 
 						double tables = 0;
 

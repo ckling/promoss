@@ -344,13 +344,31 @@ public class BasicMath {
 	public static double[] normalise (double[] x) {
 			
 		double sum = sum(x);
+		if (sum==0) return x;
+
 		double[] x2 = new double[x.length];
 
 		for (int i=0;i<x.length;i++) {
-			x2[i] = x[i]/sum;
+			if (x2[i]!=0) {
+				x2[i] = x[i]/sum;
+			}
 		}
 		
 		return x2;
+	}
+	
+	public static void normaliseDirect (double[] x) {
+		
+		double sum = sum(x);
+		if (sum==0) return;
+		
+		
+		for (int i=0;i<x.length;i++) {
+			if (x[i]!=0) {
+				x[i] = x[i]/sum;
+			}
+		}
+		
 	}
 
 	public static float[] normalise (float[] x) {
@@ -396,5 +414,13 @@ public class BasicMath {
 		return ret;
 	}
 
+	public static double[] approxMultFromSamples(short[] a, int K) {
+		double[] ret = new double[K];
+		for (int i=0;i<a.length;i++) {
+			ret[i]+=a[i];
+		}
+		normaliseDirect(ret);
+		return ret;
+	}
 
 }
