@@ -79,7 +79,7 @@ public class DCTM_CVBSa {
 	public int K = 100; //Number of topics
 	public int K2 = K; //Number of comment topics
 
-	public int S = 10;
+	public int S = 1000;
 
 	//global prior: G x K 
 	public double[] alpha0;
@@ -524,6 +524,9 @@ public class DCTM_CVBSa {
 				}
 				alphag[g] = alpha1[g] + BasicMath.sum(alpha2[g]);
 			}
+			
+			gamma = K2*0.1;
+			Ggamma = K2*0.1;
 
 			Galphadeltag = new double[c.G][K2+1];
 
@@ -811,7 +814,12 @@ public class DCTM_CVBSa {
 							if (approxz2[l]!=1) {
 								nkt20[k2][t]/=Math.pow((1.0-approxz2[l]),termfreq);
 								if (k<K) {
-									mgkk0[g][k2][k]/=Math.pow((1.0-approxz2[l]),termfreq);
+									if (approxz2[l]<1) {
+										mgkk0[g][k2][k]/=Math.pow((1.0-approxz2[l]),termfreq);
+									}
+									else {
+										mgkk0[g][k2][k]=1;
+									}
 									mgkkvar[g][k2][k]-=termfreq*approxz2[l]*(1.0-approxz2[l]);
 								}
 							}
@@ -885,12 +893,12 @@ public class DCTM_CVBSa {
 
 				//q = BasicMath.normalise(q);	
 
-				if (Double.isNaN(BasicMath.sum(q))) {
-					BasicMath.print(topic_probability);
-					BasicMath.print(q);
-					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K2+k2]);
-					//q[k*K2+k2]=0;
-				}
+//				if (Double.isNaN(BasicMath.sum(q))) {
+//					BasicMath.print(topic_probability);
+//					BasicMath.print(q);
+//					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K2+k2]);
+//					//q[k*K2+k2]=0;
+//				}
 
 				short[] samples = rs.randMultShort(q, S);
 
@@ -1432,7 +1440,9 @@ public class DCTM_CVBSa {
 					}
 				}
 
-				Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K2* sumetagamma);
+				if (sumetagamma>0) {
+					Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K2* sumetagamma);
+				}
 			}	
 			else {
 				mgamma=0;
@@ -1458,15 +1468,18 @@ public class DCTM_CVBSa {
 									if (tables <= 0) {
 										tables = (1.0-mgkk0[g][k2][k]);
 									}
+									if (Double.isNaN(tables)) {
+										tables = 0;
+									}
 
 									mgamma+=tables;
 
-									//								System.out.println(
-									//										(((mgkkvar[g][k2][k])/(1.0-mgkk0[g][k2][k]) 
-									//										- mgkk0[g][k2][k] * (mgkk[g][k2][k])/(1.0-mgkk0[g][k2][k]))) 
-									//														+ "\t" +  Gamma.tetragamma(Ggamma + (mgkk[g][k2][k]/(1.0-mgkk0[g][k2][k]))) 
-									//														+ "\t" +  Ggamma + "\t" + (mgkk[g][k2][k]/(1.0-mgkk0[g][k2][k])) + "\t" + mgkk[g][k2][k] + "\t" + (1.0-mgkk0[g][k2][k]) 				
-									//										);
+																	System.out.println(
+																			(((mgkkvar[g][k2][k])/(1.0-mgkk0[g][k2][k]) 
+																			- mgkk0[g][k2][k] * (mgkk[g][k2][k])/(1.0-mgkk0[g][k2][k]))) 
+																							+ "\t" +  Gamma.tetragamma(Ggamma + (mgkk[g][k2][k]/(1.0-mgkk0[g][k2][k]))) 
+																							+ "\t" +  Ggamma + "\t" + (mgkk[g][k2][k]/(1.0-mgkk0[g][k2][k])) + "\t" + mgkk[g][k2][k] + "\t" + (1.0-mgkk0[g][k2][k]) 				
+																			);
 								}
 								else {
 									mgamma+=(1.0-mgkk0[g][k2][k]);
@@ -1480,9 +1493,10 @@ public class DCTM_CVBSa {
 
 			if(debug)System.out.println("c gamma " + mgamma);
 
+			if (sumetagamma>0) {
 			Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K2* sumetagamma);
 			gamma = mgamma / (-K2 * sumetagamma);
-
+			}
 
 			System.out.println("gamma\t" + gamma);
 

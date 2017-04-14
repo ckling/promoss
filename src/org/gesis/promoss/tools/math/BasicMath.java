@@ -349,7 +349,7 @@ public class BasicMath {
 		double[] x2 = new double[x.length];
 
 		for (int i=0;i<x.length;i++) {
-			if (x2[i]!=0) {
+			if (x[i]!=0) {
 				x2[i] = x[i]/sum;
 			}
 		}
@@ -417,10 +417,16 @@ public class BasicMath {
 	public static double[] approxMultFromSamples(short[] a, int K) {
 		double[] ret = new double[K];
 		for (int i=0;i<a.length;i++) {
-			ret[i]+=a[i];
+			ret[a[i]]++;
 		}
 		normaliseDirect(ret);
 		return ret;
+	}
+	
+	public static void main (String[] args) {
+		double[] q = {1,2,3};
+		q = normalise(q);
+		print(q);
 	}
 
 }

@@ -383,7 +383,7 @@ public class Experiments {
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
-		DCTM_CVBSa model = new DCTM_CVBSa();
+		DCTM2_CVBSa model = new DCTM2_CVBSa();
 		
 		model.c.directory = directory;
 		

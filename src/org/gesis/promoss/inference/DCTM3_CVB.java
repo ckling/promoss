@@ -42,7 +42,7 @@ import org.knowceans.util.Vectors;
  * This is the practical collapsed stochastic variational inference
  * for the Hierarchical Multi-Dirichlet Process Topic Model (HMDP)
  */
-public class DCTM2_CVB {
+public class DCTM3_CVB {
 
 
 	//This class holds the corpus and its properties
@@ -76,7 +76,6 @@ public class DCTM2_CVB {
 	public String save_prefix = "";
 
 	public int K = 100; //Number of topics
-	public int K2 = K; //Number of comment topics
 
 	//global prior: G x K 
 	public double[] alpha0;
@@ -88,15 +87,12 @@ public class DCTM2_CVB {
 	//Dirichlet concentration parameter for topic-word distributions
 	public double beta = 0.01;
 	public double Gbeta = 0.01;
-	public double beta2 = 0.01;
-	public double Gbeta2 = 0.01;
 
 	public double gamma = 0.1;
 	public double Ggamma = 0.1;
 
 	//helping variable beta*V
 	private double beta_V;
-	private double beta2_V;
 
 	//Store some zeros for empty documents in the doc_topic matrix?
 	public Boolean store_empty = true;
@@ -110,29 +106,23 @@ public class DCTM2_CVB {
 	//Var of nk: K
 	private double[] nkvar;
 	//same as above for nkt' and nk'
-	private double[][] nkt20;
-	private double[][] nkt2var;
-	private double[] nk2var;
 
 	private double[][][] mgkk0;
 	private double[][][] mgkkvar;
 
 	//Estimated number of words in topic k: K 
 	private double[] nk;
-	//Estimated number of times term t appeared in topic k: K' x V
-	private double[][] nkt2;
-	//Estimated number of words in topic k: K'
-	private double[] nk2;
+	
 	//Topic counts per document: G x Gd x K
 	private float[][][] nmk1;
 	//Per document: Is K>0? G x Gd x K
 	private float[][][] nmk10;
 	//Per document: Variance of every topic probability. G x Gd x K
 	private float[][][] nmk1var;
-	//Per document: Variance of every topic probability in comments. G x Gd x Cd x (K+1)*K2
+	//Per document: Variance of every topic probability in comments. G x Gd x Cd x (K+1)*K
 	private float[][][][] nmk2var;
 	//private int[][] nm;
-	//Topic counts per comment: G x Gd x Cd x (K+1)*K2
+	//Topic counts per comment: G x Gd x Cd x (K+1)*K
 	private float[][][][] nmk2;
 	//mmk table counts for the comments of document m: G x Gd x K
 	private float[][][] mdk;
@@ -163,8 +153,6 @@ public class DCTM2_CVB {
 	private double[][] gapk;
 	//tables for topics
 	private double mbeta;
-	//tables for comment topics
-	private double mbeta2;
 	//tables for delta
 	private double mgamma;
 
@@ -190,7 +178,7 @@ public class DCTM2_CVB {
 	public double b0 = 1;
 
 
-	DCTM2_CVB() {
+	DCTM3_CVB() {
 		c = new DCTM_Corpus();
 	}
 
@@ -322,7 +310,7 @@ public class DCTM2_CVB {
 
 
 
-		String output_base_folder = c.directory + "output_DCTM2/";
+		String output_base_folder = c.directory + "output_DCTM3/";
 
 		File output_base_folder_file = new File(output_base_folder);
 		if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
@@ -352,7 +340,6 @@ public class DCTM2_CVB {
 
 		if (!test) {
 			beta_V = beta * c.V;
-			beta2_V = beta2 * c.V;
 
 			nk = new double[K];
 			nkt = new double[K][c.V];
@@ -361,17 +348,6 @@ public class DCTM2_CVB {
 			nktvar = new double[K][c.V];
 			nkvar = new double[K];
 
-			nkt20 = new double[K][c.V];
-			BasicMath.setTo(nkt20, 1.0);
-			nkt2var = new double[K][c.V];
-			nk2var = new double[K2];
-
-
-
-			if (!test) {
-				nk2 = new double[K2];
-				nkt2 = new double[K2][c.V];
-			}
 
 		}
 
@@ -384,10 +360,10 @@ public class DCTM2_CVB {
 		//		}
 		//
 		//
-		//		for (int k2=0;k2<K2;k2++) {
+		//		for (int k2=0;k2<K;k2++) {
 		//			for (int t=0;t<c.V;t++) {
-		//				nkt2[k2][t]=(float) Math.random();
-		//				nk2[k2]+=nkt2[k2][t];
+		//				nkt[k2][t]=(float) Math.random();
+		//				nk[k2]+=nkt[k2][t];
 		//			}			
 		//		}
 
@@ -423,14 +399,14 @@ public class DCTM2_CVB {
 					gapk[g][k]=0.1;
 				}
 			}
-			mgkk = new double[c.G][K][K2];
-			mgalpha2 = new double[c.G][K2];
+			mgkk = new double[c.G][K][K];
+			mgalpha2 = new double[c.G][K];
 
 			mgkSum = new double[c.G][K];
 
 			for (int g=0;g<c.G;g++) {
 				for (int k=0;k<K;k++) {
-					for (int k2=0;k2<K2;k2++) {
+					for (int k2=0;k2<K;k2++) {
 
 						mgkSum[g][k]+=mgkk[g][k][k2];
 					}
@@ -487,10 +463,10 @@ public class DCTM2_CVB {
 
 				//System.out.println(d + " " + cd + " " + c.Cd[d]);
 				//comment
-				z2[g][d][ci-1]=new float[c.getTermIDs(m).length][K2*(K+1)];
+				z2[g][d][ci-1]=new float[c.getTermIDs(m).length][K*(K+1)];
 				//System.out.println(m + " " + g + " " + d  + " " + ci + " "  + c.getTermIDs(m).length);
 				//System.out.println(z2[g][d][ci-1].length); 
-				mdc[g][d][ci-1] = new float[K2*(K+1)]; 
+				mdc[g][d][ci-1] = new float[K*(K+1)]; 
 			}
 			else {
 				//document
@@ -502,24 +478,24 @@ public class DCTM2_CVB {
 
 			alpha0 = new double[c.G];
 			alpha1 = new double[c.G];
-			alpha2 = new double[c.G][K2];
+			alpha2 = new double[c.G][K];
 			alphag = new double[c.G];
 
 
 			for (int g=0;g<c.G;g++) {
 				alpha0[g] = 1;
-				alpha1[g] = 0.1*K2;
+				alpha1[g] = 0.1*K;
 
 				for (int k=0;k<K;k++) {
 					//alpha0[g][k]=0.01;
 				}
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					alpha2[g][k2]=0.1;
 				}
 				alphag[g] = alpha1[g] + BasicMath.sum(alpha2[g]);
 			}
 
-			Galphadeltag = new double[c.G][K2+1];
+			Galphadeltag = new double[c.G][K+1];
 
 
 			for (int m=0;m<c.M;m++) {
@@ -544,10 +520,10 @@ public class DCTM2_CVB {
 					Galphadeltag[g][l]=Math.exp(Gamma.digamma(mg[g])-Gamma.digamma(mg[g]-eta_sum[g]));
 					//Gdelta
 					if (l==0) {
-						Galphadeltag[g][l]*=Math.exp(Gamma.digamma(1)-Gamma.digamma(1+K2+ c.Gc[g]));
+						Galphadeltag[g][l]*=Math.exp(Gamma.digamma(1)-Gamma.digamma(1+K+ c.Gc[g]));
 					}
 					else {
-						Galphadeltag[g][l]*=Math.exp(Gamma.digamma(1 + c.Gc[g]/Double.valueOf(K2))-Gamma.digamma(1+ K2+ c.Gc[g]));
+						Galphadeltag[g][l]*=Math.exp(Gamma.digamma(1 + c.Gc[g]/Double.valueOf(K))-Gamma.digamma(1+ K+ c.Gc[g]));
 					}
 
 				}
@@ -573,7 +549,7 @@ public class DCTM2_CVB {
 		for (int g=0;g<c.G;g++) {
 			nmk2[g] = new float[c.Gd[g]][][];
 			for (int d = 0; d < c.Gd[g]; d++) {
-				nmk2[g][d] = new float[c.Cd[g][d]][K2 * (K+1)];
+				nmk2[g][d] = new float[c.Cd[g][d]][K * (K+1)];
 			}
 		}
 
@@ -581,14 +557,14 @@ public class DCTM2_CVB {
 		for (int g=0;g<c.G;g++) {
 			nmk2var[g] = new float[c.Gd[g]][][];
 			for (int d = 0; d < c.Gd[g]; d++) {
-				nmk2var[g][d] = new float[c.Cd[g][d]][K2 * (K+1)];
+				nmk2var[g][d] = new float[c.Cd[g][d]][K * (K+1)];
 			}
 		}
 
 
-		mgkk0 = new double[c.G][K2][K];
+		mgkk0 = new double[c.G][K][K];
 		BasicMath.setTo(mgkk0, 1.0);
-		mgkkvar = new double[c.G][K2][K];
+		mgkkvar = new double[c.G][K][K];
 		
 		if (!test) {
 
@@ -727,13 +703,13 @@ public class DCTM2_CVB {
 		//Comment inference
 		else {
 
-			double[] Vndck = new double[K2*(K+1)];
+			double[] Vndck = new double[K*(K+1)];
 
 			double[] theta = new double[K];
 			double theta_sum = 0;
 
 			double[] Gtheta = new double[K];
-			double[][] Gpi = new double[K][K2];
+			double[][] Gpi = new double[K][K];
 
 			for (int k=0;k<K;k++) {
 				theta[k] = (nmk1[g][d][k] + mdk[g][d][k] + alpha0[g] * pi0gk[g][k]);
@@ -749,13 +725,13 @@ public class DCTM2_CVB {
 				Gtheta[k] = Gamma.digamma(theta[k]);
 
 				double sum = 0;
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					double tmp =mgkk[g][k][k2] +gamma;
 					Gpi[k][k2] = Gamma.digamma(tmp);
 					sum += tmp;
 				}
 				double Gsum = Gamma.digamma(sum);
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					Gpi[k][k2]=Math.exp(Gpi[k][k2]-Gsum);
 				}
 			}
@@ -768,7 +744,7 @@ public class DCTM2_CVB {
 			}
 
 			//for every table: p>0
-			double[] mgreater0 = new double[K2*(K+1)];
+			double[] mgreater0 = new double[K*(K+1)];
 			for (int l=0;l<mgreater0.length;l++) {
 				mgreater0[l]=1.0;
 			}
@@ -785,53 +761,53 @@ public class DCTM2_CVB {
 				int termfreq = termFreqs[i];
 
 				//topic probabilities - q(z)
-				double[] q = new double[K2*(K+1)];
+				double[] q = new double[K*(K+1)];
 
 
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					for (int k=0;k<K+1;k++) {	
 						//we subtract the old topic assignment(s) from the counts
 						//and do sanity checks because of imprecisions (float/double)
-						nmk2[g][d][ci-1][k*K2+k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
-						if (nmk2[g][d][ci-1][k*K2+k2]<0) nmk2[g][d][ci-1][k*K2+k2] = 0;
+						nmk2[g][d][ci-1][k*K+k2]-=termfreq*z2[g][d][ci-1][i][k*K+k2];
+						if (nmk2[g][d][ci-1][k*K+k2]<0) nmk2[g][d][ci-1][k*K+k2] = 0;
 						if (!test) {
-							nkt2[k2][t]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
-							if (nkt2[k2][t]<0) nkt2[k2][t]=0;
-							nk2[k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2];
-							if (nk2[k2]<0) nk2[k2]=0;
+							nkt[k2][t]-=termfreq*z2[g][d][ci-1][i][k*K+k2];
+							if (nkt[k2][t]<0) nkt[k2][t]=0;
+							nk[k2]-=termfreq*z2[g][d][ci-1][i][k*K+k2];
+							if (nk[k2]<0) nk[k2]=0;
 							//shouldn't happen... but in case:
-							if (z2[g][d][ci-1][i][k*K2+k2]!=1) {
-								nkt20[k2][t]/=Math.pow((1.0-z2[g][d][ci-1][i][k*K2+k2]),termfreq);
+							if (z2[g][d][ci-1][i][k*K+k2]!=1) {
+								nkt0[k2][t]/=Math.pow((1.0-z2[g][d][ci-1][i][k*K+k2]),termfreq);
 								if (k<K) {
-									mgkk0[g][k2][k]/=Math.pow((1.0-z2[g][d][ci-1][i][k*K2+k2]),termfreq);
-									mgkkvar[g][k2][k]-=termfreq*z2[g][d][ci-1][i][k*K2+k2]*(1.0-z2[g][d][ci-1][i][k*K2+k2]);
+									mgkk0[g][k2][k]/=Math.pow((1.0-z2[g][d][ci-1][i][k*K+k2]),termfreq);
+									mgkkvar[g][k2][k]-=termfreq*z2[g][d][ci-1][i][k*K+k2]*(1.0-z2[g][d][ci-1][i][k*K+k2]);
 								}
 							}
-							nkt2var[k2][t]-=termfreq*z2[g][d][ci-1][i][k*K2+k2]*(1.0-z2[g][d][ci-1][i][k*K2+k2]);
-							if (nkt2var[k2][t]<=0) nkt2var[k2][t]=0;
-							nk2var[k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2]*(1.0-z2[g][d][ci-1][i][k*K2+k2]);
-							if (nk2var[k2]<=0) nk2var[k2]=0;
+							nktvar[k2][t]-=termfreq*z2[g][d][ci-1][i][k*K+k2]*(1.0-z2[g][d][ci-1][i][k*K+k2]);
+							if (nktvar[k2][t]<=0) nktvar[k2][t]=0;
+							nkvar[k2]-=termfreq*z2[g][d][ci-1][i][k*K+k2]*(1.0-z2[g][d][ci-1][i][k*K+k2]);
+							if (nkvar[k2]<=0) nkvar[k2]=0;
 						}
-						nmk2var[g][d][ci-1][K*K2+k2]-=termfreq*z2[g][d][ci-1][i][k*K2+k2]*(1.0-z2[g][d][ci-1][i][k*K2+k2]);
-						if (nmk2var[g][d][ci-1][K*K2+k2]<=0) nmk2var[g][d][ci-1][K*K2+k2]=0;	
+						nmk2var[g][d][ci-1][K*K+k2]-=termfreq*z2[g][d][ci-1][i][k*K+k2]*(1.0-z2[g][d][ci-1][i][k*K+k2]);
+						if (nmk2var[g][d][ci-1][K*K+k2]<=0) nmk2var[g][d][ci-1][K*K+k2]=0;	
 					}
 				}
 
-				double[] topic_probability = new double[K2];
-				for (int k2=0;k2<K2;k2++) {
+				double[] topic_probability = new double[K];
+				for (int k2=0;k2<K;k2++) {
 
 					if (rhot_step==1) {
 						topic_probability[k2]=Math.random();
 					}else {
 						topic_probability[k2] = 
-								(nkt2[k2][t] + Gbeta2) 
-								/ (nk2[k2] + c.V*Gbeta2)
-								*Math.exp(-nkt2var[k2][t]/(2*Math.pow(nkt2[k2][t] + Gbeta2,2)) + nk2var[k2]/(2*Math.pow(nk2[k2] + c.V*Gbeta2,2)))
+								(nkt[k2][t] + Gbeta) 
+								/ (nk[k2] + c.V*Gbeta)
+								*Math.exp(-nktvar[k2][t]/(2*Math.pow(nkt[k2][t] + Gbeta,2)) + nkvar[k2]/(2*Math.pow(nk[k2] + c.V*Gbeta,2)))
 								;
-						if (nkt2[k2][t]<0 || nk2[k2] <0) {
-							System.out.println("nkt2 "+nkt2[k2][t] + " "  + nk2[k2]);
+						if (nkt[k2][t]<0 || nk[k2] <0) {
+							System.out.println("nkt "+nkt[k2][t] + " "  + nk[k2]);
 							for (int k=0;k<K+1;k++) {	
-								System.out.println(z2[g][d][ci-1][i][k*K2+k2]);
+								System.out.println(z2[g][d][ci-1][i][k*K+k2]);
 							}
 
 							System.exit(0);
@@ -842,20 +818,20 @@ public class DCTM2_CVB {
 
 				//probabilities for topics drawn from the document-topic priors
 				for (int k=0;k<K;k++) {	
-					double denom = Gamma.digamma(mgkSum[g][k] +K2*gamma);
-					for (int k2=0;k2<K2;k2++) {			
+					double denom = Gamma.digamma(mgkSum[g][k] +K*gamma);
+					for (int k2=0;k2<K;k2++) {			
 						double prior = Galphadeltag[g][0] * Gtheta[k] * Math.exp(Gamma.digamma(mgkk[g][k][k2] + gamma) - denom);
 						//e^second part of the Taylor expansion of the log
-						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K2+k2] + prior,2))));
+						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K+k2] + prior,2))));
 						if (Double.isNaN(second)) {
 							second = 1;
 						}
-						q[k*K2+k2]=
-								(nmk2[g][d][ci-1][k*K2+k2] + prior) 
+						q[k*K+k2]=
+								(nmk2[g][d][ci-1][k*K+k2] + prior) 
 								* second
 								* topic_probability[k2];
-						if (q[k*K2+k2]<0) {// || Double.isNaN(q[k*K2+k2])) {
-							q[k*K2+k2]=0;
+						if (q[k*K+k2]<0) {// || Double.isNaN(q[k*K+k2])) {
+							q[k*K+k2]=0;
 						}
 					}
 				}
@@ -863,30 +839,35 @@ public class DCTM2_CVB {
 				if (Double.isNaN(BasicMath.sum(q))) {
 					BasicMath.print(topic_probability);
 					BasicMath.print(q);
-					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K2+k2]);
-					//q[k*K2+k2]=0;
+					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K+k2]);
+					//q[k*K+k2]=0;
 				}
 
 				//probability of topics drawn from alpha2
-				for (int k2=0;k2<K2;k2++) {				
-					q[K*K2+k2] = 
-							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2]) * topic_probability[k2]
-									* Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2],2))))
+				for (int k2=0;k2<K;k2++) {				
+					q[K*K+k2] = 
+							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2]) * topic_probability[k2]
+									* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2],2))))
 									;
 				}
 
 				BasicMath.normaliseDirect(q);	
+				
 
 				if (Double.isNaN(BasicMath.sum(q))) {
 					BasicMath.print(topic_probability);
 					BasicMath.print(q);
-					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K2+k2]);
-					//q[k*K2+k2]=0;
+					//System.out.println(g + " " + d + " " + ci+ " " + k + " " + k2 +  " " +  alpha1[g] + " " +  theta[k] + " " + (mgkk[g][k][k2] +1) + " " +  denom + " " + nmk2[g][d][ci-1][k*K+k2]);
+					//q[k*K+k2]=0;
 				}
 
 				for (int l=0;l<q.length;l++) {
 					z2[g][d][ci-1][i][l] = (float) q[l];
 					mgreater0[l]*=Math.pow((1.0-q[l]),termfreq);
+					
+					//System.out.println(mgreater0[l]);
+
+					//System.out.println(mgreater0[l]);
 
 					//if (mgreater0[l]>1) mgreater0[l]=1;
 
@@ -897,8 +878,8 @@ public class DCTM2_CVB {
 
 							System.out.println("greater0: " + mgreater0[l] + " "  + q[l]);
 
-							for (int k2=0;k2<K2;k2++) {				
-								int offset = K*K2;
+							for (int k2=0;k2<K;k2++) {				
+								int offset = K*K;
 								System.out.println( 
 										nmk2[g][d][ci-1][offset+k2] + " " +  alpha2[g][k2]  + " " + topic_probability[k2]);
 							}
@@ -912,21 +893,21 @@ public class DCTM2_CVB {
 				}
 
 				for (int k=0;k<K+1;k++) {	
-					for (int k2=0;k2<K2;k2++) {		
-						int l = k*K2+k2;
+					for (int k2=0;k2<K;k2++) {		
+						int l = k*K+k2;
 						nmk2[g][d][ci-1][l]+=termfreq*q[l];
 						if (!test) {
-							nkt2[k2][t]+=termfreq*q[l];
-							nk2[k2]+=termfreq*q[l];
-							nkt20[k2][t]*=Math.pow((1.0-q[l]),termfreq);
-							nkt2var[k2][t]+=termfreq*q[l]*(1.0-q[l]);
-							nk2var[k2]+=termfreq*q[l]*(1.0-q[l]);
+							nkt[k2][t]+=termfreq*q[l];
+							nk[k2]+=termfreq*q[l];
+							nkt0[k2][t]*=Math.pow((1.0-q[l]),termfreq);
+							nktvar[k2][t]+=termfreq*q[l]*(1.0-q[l]);
+							nkvar[k2]+=termfreq*q[l]*(1.0-q[l]);
 							if (k<K) {
 								mgkk0[g][k2][k]*=Math.pow((1.0-q[l]),termfreq);
 								mgkkvar[g][k2][k]+=termfreq*q[l]*(1.0-q[l]);
 							}
 						}
-						nmk2var[g][d][ci-1][K*K2+k2]+=termfreq*q[l]*(1.0-q[l]);
+						nmk2var[g][d][ci-1][K*K+k2]+=termfreq*q[l]*(1.0-q[l]);
 					}
 				}		
 
@@ -950,8 +931,8 @@ public class DCTM2_CVB {
 
 
 				for (int k=0;k<K;k++) {	
-					for (int k2=0;k2<K2;k2++) {	
-						mdkg0[g][d][k]*=mgreater0[k*K2+k2];
+					for (int k2=0;k2<K;k2++) {	
+						mdkg0[g][d][k]*=mgreater0[k*K+k2];
 					}
 				}
 			}
@@ -964,17 +945,17 @@ public class DCTM2_CVB {
 			if (rhot_step==1) {
 				//practical approximation 
 				for (int k=0;k<K+1;k++) {	
-					for (int k2=0;k2<K2;k2++) {
-						mdc[g][d][ci-1][k*K2+k2]=(float) (mgreater0[k*K2+k2]);
-						if (mdc[g][d][ci-1][k*K2+k2]<0) {
-							System.out.println("mdc < 0: " + mgreater0[k*K2+k2]);
+					for (int k2=0;k2<K;k2++) {
+						mdc[g][d][ci-1][k*K+k2]=(float) (mgreater0[k*K+k2]);
+						if (mdc[g][d][ci-1][k*K+k2]<0) {
+							System.out.println("mdc < 0: " + mgreater0[k*K+k2]);
 						}
 					}
 				}
 
 				for (int k=0;k<K;k++) {
-					for (int k2=0;k2<K2;k2++) {
-						varmdk[g][d][k]+=mgreater0[k*K2+k2] * (1.0 - mgreater0[k*K2+k2]);
+					for (int k2=0;k2<K;k2++) {
+						varmdk[g][d][k]+=mgreater0[k*K+k2] * (1.0 - mgreater0[k*K+k2]);
 					}
 				}
 
@@ -983,57 +964,58 @@ public class DCTM2_CVB {
 
 
 				if (rhot_step > 1) {
-					for (int k2=0;k2<K2;k2++) {
+					for (int k2=0;k2<K;k2++) {
 
 						//remove tables
 						for (int k=0;k<K;k++) {	
 							if (!test) {
-								mg[g] -=mdc[g][d][ci-1][k*K2+k2];
-								mgkk[g][k][k2] -= mdc[g][d][ci-1][k*K2+k2];			
-								mgkSum[g][k] -= mdc[g][d][ci-1][k*K2+k2];	
+								mg[g] -=mdc[g][d][ci-1][k*K+k2];
+								mgkk[g][k][k2] -= mdc[g][d][ci-1][k*K+k2];			
+								mgkSum[g][k] -= mdc[g][d][ci-1][k*K+k2];	
 							}
-							mdk[g][d][k] -= mdc[g][d][ci-1][k*K2+k2];
+							mdk[g][d][k] -= mdc[g][d][ci-1][k*K+k2];
 						}
 						if (!test) {
 							//remove tables for alpha2
-							mgalpha2[g][k2]-=mdc[g][d][ci-1][K*K2+k2];
-							mg[g] -=mdc[g][d][ci-1][K*K2+k2];
+							mgalpha2[g][k2]-=mdc[g][d][ci-1][K*K+k2];
+							mg[g] -=mdc[g][d][ci-1][K*K+k2];
 						}
 					}
 				}
 
-				double[] varmdc = new double[K*K2];
-				for (int k2=0;k2<K2;k2++) {
+				double[] varmdc = new double[K*K];
+				for (int k2=0;k2<K;k2++) {
 					//calculate new expectation of tables as in Teh 06: CVB for DP
 
 					for (int k=0;k<K;k++) {					
 
 						double adtp = Galphadeltag[g][0] * Gtheta[k]* Gpi[k][k2];
+						//System.out.println("adtp"+adtp);
 
 
 						if (rhot_step>1){
-							if (debug)System.out.println(g + " d " + d + " ci " + ci + " k " +k + " k2 "+ k2 + " " + mdc[g][d][ci-1][k*K2+k2] + "\t" +adtp 
+							if (debug)System.out.println(g + " d " + d + " ci " + ci + " k " +k + " k2 "+ k2 + " " + mdc[g][d][ci-1][k*K+k2] + "\t" +adtp 
 									+ "\t"+ Gtheta[k]
-											+ "\t"+mgreater0[k*K2+k2]+"\t"+nmk2[g][d][ci-1][k*K2+k2]);
+											+ "\t"+mgreater0[k*K+k2]+"\t"+nmk2[g][d][ci-1][k*K+k2]);
 						}
 
-						if (mgreater0[k*K2+k2]>0.001 && adtp > 0.0000000000000001 ) {
-							mdc[g][d][ci-1][k*K2+k2]=	(float) (adtp * 	mgreater0[k*K2+k2]
-									*(Gamma.digamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp) - Gamma.digamma(adtp) 
-											+ 0.5 * ((Vndck[k*K2+k2]/mgreater0[k*K2+k2] - (1.0-mgreater0[k*K2+k2]) * nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2])
-													* Gamma.tetragamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp)
+						if (mgreater0[k*K+k2]>0.01 && adtp > 0.0000000000000001 ) {
+							mdc[g][d][ci-1][k*K+k2]=	(float) (adtp * 	mgreater0[k*K+k2]
+									*(Gamma.digamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp) - Gamma.digamma(adtp) 
+											+ 0.5 * ((Vndck[k*K+k2]/mgreater0[k*K+k2] - (1.0-mgreater0[k*K+k2]) * nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2])
+													* Gamma.tetragamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp)
 													)) 
 									);	
 
-							varmdc[k*K2+k2] = (float) (
-									adtp * 	mgreater0[k*K2+k2]
-											*(Gamma.digamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp) - Gamma.digamma(adtp) 
-													+ 0.5 * ((Vndck[k*K2+k2]/mgreater0[k*K2+k2] - (1.0-mgreater0[k*K2+k2]) * nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2])
-															* Gamma.tetragamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp)
+							varmdc[k*K+k2] = (float) (
+									adtp * 	mgreater0[k*K+k2]
+											*(Gamma.digamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp) - Gamma.digamma(adtp) 
+													+ 0.5 * ((Vndck[k*K+k2]/mgreater0[k*K+k2] - (1.0-mgreater0[k*K+k2]) * nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2])
+															* Gamma.tetragamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp)
 															)
-															+ adtp* (Gamma.trigamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp) - Gamma.trigamma(adtp) 
-																	+ 0.5 * ((Vndck[k*K2+k2]/mgreater0[k*K2+k2] - (1.0-mgreater0[k*K2+k2]) * nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2])
-																			* Gamma.pentagamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp)
+															+ adtp* (Gamma.trigamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp) - Gamma.trigamma(adtp) 
+																	+ 0.5 * ((Vndck[k*K+k2]/mgreater0[k*K+k2] - (1.0-mgreater0[k*K+k2]) * nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2])
+																			* Gamma.pentagamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp)
 																			)		
 																	)
 													) 
@@ -1042,22 +1024,22 @@ public class DCTM2_CVB {
 
 						}
 						else {
-							mdc[g][d][ci-1][k*K2+k2] = (float) mgreater0[k*K2+k2];
+							mdc[g][d][ci-1][k*K+k2] = (float) mgreater0[k*K+k2];
 						}
 
 				
 
-						if (mdc[g][d][ci-1][k*K2+k2] < 0 || Double.isNaN(mdc[g][d][ci-1][k*K2+k2])) {
+						if (mdc[g][d][ci-1][k*K+k2] < 0 || Double.isNaN(mdc[g][d][ci-1][k*K+k2])) {
 							System.out.println( "table problem a " +
 									Galphadeltag[g][0] + " " + Gtheta[k] + " " + Gpi[k][k2]
 									);
-							System.out.println(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp + " " +  mgreater0[k*K2+k2]);
+							System.out.println(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp + " " +  mgreater0[k*K+k2]);
 							System.out.println(								
-									(nmk2[g][d][ci-1][k*K2+k2] + " " + mgreater0[k*K2+k2] + " " + adtp) 
+									(nmk2[g][d][ci-1][k*K+k2] + " " + mgreater0[k*K+k2] + " " + adtp) 
 									);
 							System.out.println(
-									0.5 * ((Vndck[k*K2+k2]/mgreater0[k*K2+k2] - (1.0-mgreater0[k*K2+k2]) * nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2])
-											* Gamma.trigamma(nmk2[g][d][ci-1][k*K2+k2]/mgreater0[k*K2+k2] + adtp))
+									0.5 * ((Vndck[k*K+k2]/mgreater0[k*K+k2] - (1.0-mgreater0[k*K+k2]) * nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2])
+											* Gamma.trigamma(nmk2[g][d][ci-1][k*K+k2]/mgreater0[k*K+k2] + adtp))
 									);
 							System.exit(0);
 						}
@@ -1065,30 +1047,30 @@ public class DCTM2_CVB {
 
 					}
 					//update counts from global group prior alpha2
-					if (mgreater0[K*K2+k2] > 0.001 && Galphadeltag[g][1+k2] > 0.0000000000000001) {
-						mdc[g][d][ci-1][K*K2+k2]=	(float) (Galphadeltag[g][1+k2] * 	mgreater0[K*K2+k2]
-								*(Gamma.digamma(nmk2[g][d][ci-1][K*K2+k2]/mgreater0[K*K2+k2] + Galphadeltag[g][1+k2]) - Gamma.digamma(Galphadeltag[g][1+k2]) 
-										+ 0.5 * ((Vndck[K*K2+k2]/mgreater0[K*K2+k2] - (1.0-mgreater0[K*K2+k2]) * nmk2[g][d][ci-1][K*K2+k2]/mgreater0[K*K2+k2])
-												* Gamma.tetragamma(nmk2[g][d][ci-1][K*K2+k2]/mgreater0[K*K2+k2] + Galphadeltag[g][1+k2])
+					if (mgreater0[K*K+k2] > 0.001 && Galphadeltag[g][1+k2] > 0.0000000000000001) {
+						mdc[g][d][ci-1][K*K+k2]=	(float) (Galphadeltag[g][1+k2] * 	mgreater0[K*K+k2]
+								*(Gamma.digamma(nmk2[g][d][ci-1][K*K+k2]/mgreater0[K*K+k2] + Galphadeltag[g][1+k2]) - Gamma.digamma(Galphadeltag[g][1+k2]) 
+										+ 0.5 * ((Vndck[K*K+k2]/mgreater0[K*K+k2] - (1.0-mgreater0[K*K+k2]) * nmk2[g][d][ci-1][K*K+k2]/mgreater0[K*K+k2])
+												* Gamma.tetragamma(nmk2[g][d][ci-1][K*K+k2]/mgreater0[K*K+k2] + Galphadeltag[g][1+k2])
 												)) 							
 								);	
 					}
 					else {
-						mdc[g][d][ci-1][K*K2+k2]=(float) mgreater0[K*K2+k2];
+						mdc[g][d][ci-1][K*K+k2]=(float) mgreater0[K*K+k2];
 					}
-					if (mdc[g][d][ci-1][K*K2+k2] < 0) mdc[g][d][ci-1][K*K2+k2]=0;
+					if (mdc[g][d][ci-1][K*K+k2] < 0) mdc[g][d][ci-1][K*K+k2]=0;
 
-					if (mdc[g][d][ci-1][K*K2+k2] < 0 || Double.isNaN(mdc[g][d][ci-1][K*K2+k2])) {
+					if (mdc[g][d][ci-1][K*K+k2] < 0 || Double.isNaN(mdc[g][d][ci-1][K*K+k2])) {
 						System.out.println( "table problem b " +
-								Galphadeltag[g][1+k2] * 	mgreater0[K*K2+k2]
+								Galphadeltag[g][1+k2] * 	mgreater0[K*K+k2]
 								);
-						System.out.println((nmk2[g][d][ci-1][K*K2+k2]) + " " + mgreater0[K*K2+k2] + " " );
+						System.out.println((nmk2[g][d][ci-1][K*K+k2]) + " " + mgreater0[K*K+k2] + " " );
 						System.out.println(								
-								nmk2[g][d][ci-1][K*K2+k2] + " " + mgreater0[K*K2+k2] + " " + Galphadeltag[g][1+k2]  
+								nmk2[g][d][ci-1][K*K+k2] + " " + mgreater0[K*K+k2] + " " + Galphadeltag[g][1+k2]  
 								);
 						System.out.println(
-								0.5 * ((Vndck[K*K2+k2]/mgreater0[K*K2+k2] - (1.0-mgreater0[K*K2+k2]) * nmk2[g][d][ci-1][K*K2+k2]/mgreater0[K*K2+k2])
-										* Gamma.trigamma(nmk2[g][d][ci-1][K*K2+k2]/mgreater0[K*K2+k2] + Galphadeltag[g][1+k2]))
+								0.5 * ((Vndck[K*K+k2]/mgreater0[K*K+k2] - (1.0-mgreater0[K*K+k2]) * nmk2[g][d][ci-1][K*K+k2]/mgreater0[K*K+k2])
+										* Gamma.trigamma(nmk2[g][d][ci-1][K*K+k2]/mgreater0[K*K+k2] + Galphadeltag[g][1+k2]))
 								);
 						System.exit(0);
 					}
@@ -1096,27 +1078,27 @@ public class DCTM2_CVB {
 				}
 
 				for (int k=0;k<K;k++) {
-					for (int k2=0;k2<K2;k2++) {
-						varmdk[g][d][k]+=varmdc[k*K2+k2];
+					for (int k2=0;k2<K;k2++) {
+						varmdk[g][d][k]+=varmdc[k*K+k2];
 					}
 				}
 			}
 
 			for (int k=0;k<K;k++) {
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					if (!test) {
-						mg[g] +=mdc[g][d][ci-1][k*K2+k2];			
-						mgkk[g][k][k2]+=mdc[g][d][ci-1][k*K2+k2];
-						mgkSum[g][k]+=mdc[g][d][ci-1][k*K2+k2];
+						mg[g] +=mdc[g][d][ci-1][k*K+k2];			
+						mgkk[g][k][k2]+=mdc[g][d][ci-1][k*K+k2];
+						mgkSum[g][k]+=mdc[g][d][ci-1][k*K+k2];
 					}
-					mdk[g][d][k]+=mdc[g][d][ci-1][k*K2+k2];		
+					mdk[g][d][k]+=mdc[g][d][ci-1][k*K+k2];		
 					//System.out.println(table[k2]);
 				}
 			}
 			if (!test) {
-				for (int k2=0;k2<K2;k2++) {
-					mgalpha2[g][k2]+=mdc[g][d][ci-1][K*K2+k2];
-					mg[g] +=mdc[g][d][ci-1][K*K2+k2];	
+				for (int k2=0;k2<K;k2++) {
+					mgalpha2[g][k2]+=mdc[g][d][ci-1][K*K+k2];
+					mg[g] +=mdc[g][d][ci-1][K*K+k2];	
 				}
 			}
 
@@ -1233,7 +1215,7 @@ public class DCTM2_CVB {
 
 				double mgkk_sum = BasicMath.sum(mgkk[g]);
 				double mgalpha2_sum = BasicMath.sum(mgalpha2[g]);
-				double sum = mgkk_sum + mgalpha2_sum +1+K2 ;
+				double sum = mgkk_sum + mgalpha2_sum +1+K ;
 				//System.out.println("mgkk_sum " + mgkk_sum);
 				//System.out.println("mgalpha2_sum " + mgalpha2_sum);
 
@@ -1327,90 +1309,26 @@ public class DCTM2_CVB {
 
 
 
-			System.out.println("Estimating beta'...");
-
-
-			double sumeta2=0;
-			for (int k=0;k<K;k++) {
-				sumeta2+=Gamma.digamma( c.V *beta2) - Gamma.digamma( c.V *beta2 + nk2[k]);
-			}
-
-
-
-			if (mbeta2==0) {
-				for (int k2=0;k2<K2;k2++) {
-
-					for (int t=0;t<c.V;t++) {
-
-						mbeta2+=(1.0-nkt20[k2][t]);
-					}
-				}
-
-				Gbeta2 = Math.exp(Gamma.digamma(mbeta2))/(-c.V * sumeta2);
-			}	
-			else {
-				mbeta2=0;
-			}
-
-
-
-			if(debug)System.out.println("b2" + Gbeta2 + " " + mbeta2 + " " + sumeta2);
-
-			if (mbeta2==0) {
-				for (int k2=0;k2<K2;k2++) {
-
-					for (int t=0;t<c.V;t++) {
-
-						if (nkt20[k2][t] < 1.0) {
-							double tables=(1.0-nkt20[k2][t]) * Gbeta2 * 
-									(
-											Gamma.digamma(Gbeta2 + (nkt2[k2][t]/(1.0-nkt20[k2][t]))) - Gamma.digamma(Gbeta2) 
-											+0.5*((((nkt2var[k2][t])/(1.0-nkt20[k2][t]) - nkt20[k2][t] * (nkt2[k2][t])/(1.0-nkt20[k2][t]))) 
-													* Gamma.tetragamma(Gbeta2 + (nkt2[k2][t]/(1.0-nkt20[k2][t]))) 
-
-													));
-						if (tables<=0) {
-							tables = (1.0-nkt20[k2][t]);
-						}
-						mbeta2+=tables;
-						}
-
-					}
-				}
-			}
-
-			if(debug)System.out.println("c2 " + mbeta2);
-
-			Gbeta2 = Math.exp(Gamma.digamma(mbeta2))/(-c.V * sumeta2);
-			beta2 = mbeta2 / (-c.V * sumeta2);
-			beta2_V = beta2 * c.V;
-
-
-			System.out.println("beta2\t" + beta2);
-
-
-
-
 			System.out.println("Estimating gamma...");
 
 
 			double sumetagamma=0;
 			for (int g=0;g<c.G;g++) {
 				for (int k=0;k<K;k++) {
-					sumetagamma+=Gamma.digamma(K2 * gamma) - Gamma.digamma( K2 *gamma + BasicMath.sum(mgkk[g][k]));
+					sumetagamma+=Gamma.digamma(K * gamma) - Gamma.digamma( K *gamma + BasicMath.sum(mgkk[g][k]));
 				}
 			}
 
 			if (mgamma==0) {
 				for (int g=0;g<c.G;g++) {
-					for (int k2=0;k2<K2;k2++) {
+					for (int k2=0;k2<K;k2++) {
 						for (int k=0;k<K;k++) {
 							mgamma+=(1.0-mgkk0[g][k2][k]);
 						}
 					}
 				}
 
-				Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K2* sumetagamma);
+				Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K* sumetagamma);
 			}	
 			else {
 				mgamma=0;
@@ -1421,7 +1339,7 @@ public class DCTM2_CVB {
 
 			if (mgamma==0) {
 				for (int g=0;g<c.G;g++) {
-					for (int k2=0;k2<K2;k2++) {
+					for (int k2=0;k2<K;k2++) {
 						for (int k=0;k<K;k++) {
 
 							if (mgkk0[g][k2][k] < 1.0) {
@@ -1458,8 +1376,8 @@ public class DCTM2_CVB {
 			
 			if(debug)System.out.println("c gamma " + mgamma);
 
-			Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K2* sumetagamma);
-			gamma = mgamma / (-K2 * sumetagamma);
+			Ggamma = Math.exp(Gamma.digamma(mgamma))/(-K* sumetagamma);
+			gamma = mgamma / (-K * sumetagamma);
 
 
 			System.out.println("gamma\t" + gamma);
@@ -1474,7 +1392,7 @@ public class DCTM2_CVB {
 
 	public void save () {
 
-		String output_base_folder = c.directory + "output_DCTM2/";
+		String output_base_folder = c.directory + "output_DCTM3/";
 
 		File output_base_folder_file = new File(output_base_folder);
 		if (!output_base_folder_file.exists()) output_base_folder_file.mkdir();
@@ -1487,7 +1405,7 @@ public class DCTM2_CVB {
 		Save save = new Save();
 		save.saveVar(nkt, output_folder+save_prefix+"nkt");
 		save.close();
-		save.saveVar(nkt2, output_folder+save_prefix+"nkt2");
+		save.saveVar(nkt, output_folder+save_prefix+"nkt");
 		save.close();
 		for (int g=0;g<c.G;g++) {
 			save.saveVar(nmk1[g], output_folder+save_prefix+"nmk_"+g);
@@ -1507,7 +1425,7 @@ public class DCTM2_CVB {
 		save.close();
 		save.saveVar(beta, output_folder+save_prefix+"beta");
 		save.close();
-		save.saveVar(beta2, output_folder+save_prefix+"beta2");
+		save.saveVar(beta, output_folder+save_prefix+"beta");
 		save.close();
 
 
@@ -1517,11 +1435,11 @@ public class DCTM2_CVB {
 
 		for (int g=0;g<c.G;g++) {
 
-			double[][] pi = new double[K][K2];
+			double[][] pi = new double[K][K];
 
 			for (int k=0;k<K;k++) {
-				for (int k2=0;k2<K2;k2++) {
-					pi[k][k2] = (mgkk[g][k][k2] +gamma)/(mgkSum[g][k] + K2*gamma);
+				for (int k2=0;k2<K;k2++) {
+					pi[k][k2] = (mgkk[g][k][k2] +gamma)/(mgkSum[g][k] + K*gamma);
 				}
 			}
 
@@ -1564,13 +1482,13 @@ public class DCTM2_CVB {
 
 
 
-		String[][] topktopicsc = new String[K2*2][topk];
+		String[][] topktopicsc = new String[K*2][topk];
 
-		for (int k2=0;k2<K2;k2++) {
+		for (int k2=0;k2<K;k2++) {
 
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < c.V; v++){
-				wordprob.add(new Pair(c.dict.getWord(v), (nkt2[k2][v]+beta2)/(nk2[k2]+beta2_V), false));
+				wordprob.add(new Pair(c.dict.getWord(v), (nkt[k2][v]+beta)/(nk[k2]+beta_V), false));
 			}
 			Collections.sort(wordprob);
 
@@ -1648,13 +1566,13 @@ public class DCTM2_CVB {
 		//Comment inference
 		else {
 
-			double[] Vndck = new double[K2*(K+1)];
+			double[] Vndck = new double[K*(K+1)];
 
 			double[] theta = new double[K];
 			double theta_sum = 0;
 
 			double[] Gtheta = new double[K];
-			double[][] Gpi = new double[K][K2];
+			double[][] Gpi = new double[K][K];
 
 			for (int k=0;k<K;k++) {
 				theta[k] = (nmk1[g][d][k] + mdk[g][d][k] + alpha0[g] * pi0gk[g][k]);
@@ -1670,13 +1588,13 @@ public class DCTM2_CVB {
 				Gtheta[k] = Gamma.digamma(theta[k]);
 
 				double sum = 0;
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					double tmp = mgkk[g][k][k2] + gamma;
 					Gpi[k][k2] = Gamma.digamma(tmp);
 					sum += tmp;
 				}
 				double Gsum = Gamma.digamma(sum);
-				for (int k2=0;k2<K2;k2++) {
+				for (int k2=0;k2<K;k2++) {
 					Gpi[k][k2]=Math.exp(Gpi[k][k2]-Gsum);
 				}
 			}
@@ -1689,7 +1607,7 @@ public class DCTM2_CVB {
 			}
 
 			//for every table: p>0
-			double[] mgreater0 = new double[K2*(K+1)];
+			double[] mgreater0 = new double[K*(K+1)];
 			for (int l=0;l<mgreater0.length;l++) {
 				mgreater0[l]=1.0;
 			}
@@ -1705,37 +1623,37 @@ public class DCTM2_CVB {
 				//How often doas t appear in the document?
 				int termfreq = termFreqs[i];
 
-				double[] z_theta = new double[K2*(K+1)];
+				double[] z_theta = new double[K*(K+1)];
 
-				double[] topic_probability = new double[K2];
-				for (int k2=0;k2<K2;k2++) {
+				double[] topic_probability = new double[K];
+				for (int k2=0;k2<K;k2++) {
 
 					topic_probability[k2] = 
-							(nkt2[k2][t] + beta2) 
-							/ (nk2[k2] + beta2_V)
-							//*Math.exp(-nkt2var[k2][t]/(2*Math.pow(nkt2[k2][t] + Gbeta2,2)) + nk2var[k2]/(2*Math.pow(nk2[k2] + c.V*Gbeta2,2)))
+							(nkt[k2][t] + beta) 
+							/ (nk[k2] + beta_V)
+							//*Math.exp(-nktvar[k2][t]/(2*Math.pow(nkt[k2][t] + Gbeta,2)) + nkvar[k2]/(2*Math.pow(nk[k2] + c.V*Gbeta,2)))
 							;
 				}
 
 				//probabilities for topics drawn from the document-topic priors
 				for (int k=0;k<K;k++) {	
-					double denom = Gamma.digamma(mgkSum[g][k] +K2);
-					for (int k2=0;k2<K2;k2++) {			
+					double denom = Gamma.digamma(mgkSum[g][k] +K);
+					for (int k2=0;k2<K;k2++) {			
 						double prior = Galphadeltag[g][0] * Gtheta[k] * Math.exp(Gamma.digamma(mgkk[g][k][k2] + gamma) - denom);
-						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K2+k2] + prior,2))));
+						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K+k2] + prior,2))));
 						if (Double.isNaN(second)) {
 							second = 1;
 						}
-						z_theta[k*K2+k2]=
-								(nmk2[g][d][ci-1][k*K2+k2] + prior) 
+						z_theta[k*K+k2]=
+								(nmk2[g][d][ci-1][k*K+k2] + prior) 
 								* second;
 					}
 				}
 				//probability of topics drawn from alpha2
-				for (int k2=0;k2<K2;k2++) {				
-					z_theta[K*K2+k2] = 
-							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2])
-							* Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2],2))))
+				for (int k2=0;k2<K;k2++) {				
+					z_theta[K*K+k2] = 
+							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2])
+							* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2],2))))
 							;
 				}
 
@@ -1743,8 +1661,8 @@ public class DCTM2_CVB {
 
 				double prob = 0;
 				for (int k=0;k<K+1;k++) {	
-					for (int k2=0;k2<K2;k2++) {			
-						prob += z_theta[k*K2+k2] * topic_probability[k2];			
+					for (int k2=0;k2<K;k2++) {			
+						prob += z_theta[k*K+k2] * topic_probability[k2];			
 					}
 				}		
 				ppx+=termfreq*Math.log(prob);
