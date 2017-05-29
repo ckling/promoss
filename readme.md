@@ -196,9 +196,9 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * N	Nominal values (text strings)
 			
 
-Example usage: 
+Example usage in the -meta_params parameter: 
 ```
-meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
+-meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
 ```
 
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
