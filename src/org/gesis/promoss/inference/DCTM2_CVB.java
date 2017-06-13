@@ -1915,7 +1915,7 @@ public class DCTM2_CVB {
 						}
 
 						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K2+k2] + prior,2))));
-						if (Double.isNaN(second)|| second == 0) {
+						if (Double.isNaN(second) || second == 0) {
 							second = 1;
 						}
 						z_theta[k*K2+k2]=
