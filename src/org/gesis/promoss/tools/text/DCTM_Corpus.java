@@ -19,6 +19,7 @@ public class DCTM_Corpus extends Corpus {
 	public int[][] meta; //metadata of documents: Group, Document and Comment ID
 
 	private HashMap<Integer,Integer> hm = new HashMap<Integer,Integer>();
+	
 	private HashMap<Integer,Integer>[] postMap;
 
 	
@@ -95,6 +96,8 @@ public class DCTM_Corpus extends Corpus {
 		Load load = new Load();
 
 		meta = load.readFileInt2(directory+"meta");
+		
+		
 		//Try to read parsed documents
 		if (load.readSVMlight(directory+"wordsets", this) && meta != null) {	
 			
@@ -102,7 +105,6 @@ public class DCTM_Corpus extends Corpus {
 			//System.out.println(meta.length + " " + M);
 			
 			for (int i=0;i<M;i++) {
-				
 				//map g to indices
 				if (!hm.containsKey(meta[i][0])) {
 					hm.put(meta[i][0],G);
@@ -209,15 +211,38 @@ public class DCTM_Corpus extends Corpus {
 		System.out.println(metafile);
 		System.out.println(documentfile);
 
+		HashMap<String,Integer> hm2 = new HashMap<String,Integer>();
+		int G =0;
+		
 		while ((line = documentText.readLine(documentfile))!=null && (metaline = metaText.readLine(metafile))!=null) {
 			line_number++;
 			HashMap<Integer,Short> distinctWords = new HashMap<Integer, Short>();
 
 			String[] metaString = metaline.split(",");
 
+			
+			
 			int[] meta_value = new int[3];
 			for (int f=0; f<3; f++) {
+				if (f==0) {
+				try {
+					meta_value[f] = Integer.valueOf(metaString[f]);
+				}
+				catch(java.lang.NumberFormatException ex) {
+					if (!hm2.containsKey(metaString[f])) {
+						hm2.put(metaString[f],G);
+						G++;
+					}
+					meta_value[f] = hm2.get(metaString[f]);
+
+				}
+					
+				
+				
+				}
+				else {
 				meta_value[f] = Integer.valueOf(metaString[f]);
+				}
 			}
 
 
@@ -281,7 +306,10 @@ public class DCTM_Corpus extends Corpus {
 			
 		}
 		
-		
+		//Save mapping
+		Save save2 = new Save();
+		save2.saveVarString(hm2, directory+"groupmap_first");
+		save2.close();
 		
 
 		System.out.println("");

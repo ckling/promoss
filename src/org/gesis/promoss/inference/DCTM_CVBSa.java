@@ -79,7 +79,7 @@ public class DCTM_CVBSa {
 	public int K = 100; //Number of topics
 	public int K2 = K; //Number of comment topics
 
-	public int S = 1000;
+	public int S = 10;
 
 	//global prior: G x K 
 	public double[] alpha0;

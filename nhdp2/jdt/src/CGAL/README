@@ -1,0 +1,20 @@
+CGAL Triangulation
+
+Contest
+=========
+TriangulationImpl.h
+TriangulationImpl.cpp
+CgalTRiangulationTest.cpp
+README
+
+How to Build
+=================
+Follow CGAL installation guide attached to the jdt project (CGAL_Guidelines.docx).
+If you already have CGAL and CMAKE you can use:
+cmake -DCGAL_DIR=”C:/Program Files/CGAL-3.5” .
+and the solution will be created automatically.
+
+
+How To Run
+=================
+The exe can accept tsin file or no input argument for random selection of points

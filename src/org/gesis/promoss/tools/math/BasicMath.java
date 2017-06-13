@@ -38,7 +38,22 @@ public class BasicMath {
 	
 	public static void print(double[] a) {
 		for (int i=0;i<a.length;i++) {
-			System.out.print(i +": " + a[i] + " ");
+			System.out.print(i +": " + a[i] + "\t");
+		}
+		System.out.println();
+	}
+	
+	public static void print(double[][] a) {
+		for (int i=0;i<a.length;i++) {
+			System.out.print(i + ":[");
+			print(a[i]);
+			}
+		System.out.println();		
+	}
+	
+	public static void print(float[] a) {
+		for (int i=0;i<a.length;i++) {
+			System.out.print(i +": " + a[i] + "\t");
 		}
 		System.out.println();
 	}
@@ -152,6 +167,28 @@ public class BasicMath {
 		return(result);
 
 
+	}
+
+	public static double prod(double[] a) {
+
+		double result = a[0];
+		for (int i = 1;i < a.length; i++) {
+
+			result *= a[i];
+
+		}
+		return(result);
+	}
+	
+	public static float prod(float[] a) {
+
+		float result = a[0];
+		for (int i = 1;i < a.length; i++) {
+
+			result *= a[i];
+
+		}
+		return(result);
 	}
 
 	
@@ -423,10 +460,15 @@ public class BasicMath {
 		return ret;
 	}
 	
+	
 	public static void main (String[] args) {
 		double[] q = {1,2,3};
 		q = normalise(q);
 		print(q);
+		
+		
 	}
+	
+
 
 }

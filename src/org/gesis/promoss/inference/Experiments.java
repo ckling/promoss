@@ -14,17 +14,53 @@ public class Experiments {
 	
 
 
-	private static int RUNS = 50;
-	private static int MIN_DICT_WORDS = 1000;
-	private static int BATCHSIZE = 64;
-	private static int T = 100;
+	private static int RUNS = 10;//100;
+	private static int BURNIN_DOCUMENTS = 5;
 
+	private static int MIN_DICT_WORDS = 100;
+	private static int BATCHSIZE = 64;
+	private static int T = 50;
+	
 	private static String directory = "~/work/topicmodels/facebook/";
 	//private static String directory = "/home/c/ownCloud/files/fb_party_small/";
 	
 	public static void main(String[] args) {
 
-		dctm2();
+		//dctm4();
+
+		
+		//dctm3();
+
+		//
+		
+		String directory="/home/ckling/work/topicmodels/fb_party_train/";
+		String directory_test="/home/ckling/work/topicmodels/fb_party_test/";
+		String blogdir = "/home/ckling/work/topicmodels/blog_data_parsed/";
+		
+		if (! new File("/home/ckling/").exists()) {	
+			directory="/home/c/work/topicmodels/fb_party_train2/"; T=25; RUNS = 100; MIN_DICT_WORDS = 100; 
+		}
+		if (args.length>0) {
+			if (args[0].equals("2")) {
+				dctm2(directory,directory_test);
+			}
+			else if (args[0].equals("5")) {
+				dctm5(directory,directory_test);
+			}
+			else if (args[0].equals("6")) {
+				dctm6(directory,directory_test);
+			}
+			else if (args[0].equals("6b")) {
+				T=100;
+				dctm6(blogdir,blogdir);
+			}
+			else if(args[0].equals("b")) {
+				T=100;
+				dctm2b(blogdir,blogdir);
+			}
+		
+		}
+		//
 		//ldadc();
 
 		System.exit(0);
@@ -375,15 +411,11 @@ public class Experiments {
 		
 	}
 	
-	public static void dctm2 () {
+	public static void dctm2 (String directory,String directory_test) {
 
-		String directory="/home/ckling/work/topicmodels/fb_party_train2/";
-		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/work/topicmodels/fb_party_train/"; T=25; RUNS = 20; MIN_DICT_WORDS = 10;
-		}
-		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		
-		DCTM2_CVBSa model = new DCTM2_CVBSa();
+		
+		DCTM2_CVB model = new DCTM2_CVB();
 		
 		model.c.directory = directory;
 		
@@ -393,6 +425,315 @@ public class Experiments {
 		model.K = T;
 		
 		model.K2 = T;
+		
+		model.c.processed=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
+		model.c.language="de";
+		
+
+		model.BURNIN_DOCUMENTS = BURNIN_DOCUMENTS;	
+		
+				
+		model.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				model.save();
+			}
+		}
+		text.close();
+
+		model.save();
+		
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory=directory_test;
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
+		
+	}
+	
+public static void dctm2b (String directory,String directory_test) {
+
+		
+		
+		DCTM2_CVB model = new DCTM2_CVB();
+		
+		model.c.directory = directory;
+		
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		model.K = T;
+		
+		model.K2 = T;
+		
+		model.c.processed=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
+		model.c.language="en";
+		
+
+		model.BURNIN_DOCUMENTS = BURNIN_DOCUMENTS;	
+		
+				
+		model.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				model.save();
+			}
+		}
+		text.close();
+
+		model.save();
+		
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory=directory_test;
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
+		
+	}
+	
+	public static void dctm5 (String directory,String directory_test) {
+
+		
+		DCTM5_CVB model = new DCTM5_CVB();
+		
+		model.c.directory = directory;
+		
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		model.K = T;
+		
+		
+		model.c.processed=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
+		model.c.language="de";
+		
+
+		model.BURNIN_DOCUMENTS = BURNIN_DOCUMENTS;	
+		
+				
+		model.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				model.save();
+			}
+		}
+		text.close();
+
+		model.save();
+		
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory=directory_test;
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
+		
+	}
+	
+	public static void dctm6 (String directory,String directory_test) {
+
+		
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
+		
+		DCTM6_CVB model = new DCTM6_CVB();
+		
+		model.c.directory = directory;
+		
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		model.K = T;
+		
+		
+		model.c.processed=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
+		model.c.language="de";
+		
+
+		model.BURNIN_DOCUMENTS = BURNIN_DOCUMENTS;	
+		
+				
+		model.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				model.save();
+			}
+		}
+		text.close();
+
+		model.save();
+		
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory=directory_test;
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
+		
+	}
+	
+	public static void dctm3 () {
+
+		String directory="/home/ckling/work/topicmodels/fb_party_train2/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_train2/"; T=25; RUNS = 20; MIN_DICT_WORDS = 100;
+		}
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
+		
+		DCTM3_CVB model = new DCTM3_CVB();
+		
+		model.c.directory = directory;
+		
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		model.K = T;
+		
 		
 		model.c.processed=false;
 		model.c.stemming=true;
@@ -456,14 +797,92 @@ public class Experiments {
 		
 	}
 	
+
 	
+	public static void dctm4 (String directory) {
+
+		
+		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
+		
+		DCTM4_CVB model = new DCTM4_CVB();
+		
+		model.c.directory = directory;
+		
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		
+		
+		model.K = T;
+		model.K2 = T;
+
+		
+		model.c.processed=false;
+		model.c.stemming=true;
+		model.c.stopwords=true;
+		model.c.language="de";
+		
+
+		model.BURNIN_DOCUMENTS = 1;	
+		
+				
+		model.initialise();
+		
+
+		Text text = new Text();
+		
+		long timeSpent = 0;
+		for (int i=0;i<RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+			if ((i+1)%10==0) {
+				model.save();
+			}
+		}
+		text.close();
+
+		model.save();
+		
+		//now do perplexity calculations
+		double TEST_RUNS=10;
+		model.test=true;
+		model.c = new DCTM_Corpus();
+		directory="/home/ckling/work/topicmodels/fb_party_test/";
+		if (! new File("/home/ckling/").exists()) {		
+			directory="/home/c/work/topicmodels/fb_party_test/";
+			TEST_RUNS=10;
+		}
+		model.c.directory = directory;
+		model.c.MIN_DICT_WORDS = MIN_DICT_WORDS;
+		model.c.processed=false;
+		model.c.stemming=false;
+		model.c.stopwords=false;
+		model.c.language="de";
+		model.initialise();
+		
+		for (int i=0;i<TEST_RUNS;i++) {
+			long timeStart = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			model.onePass();		
+			long timeNow = ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
+			timeSpent +=  timeNow - timeStart;
+			System.out.println(i);
+			
+		}
+		
+		model.perplexity();
+		
+		model = null;
+		
+	}
 
 	
 	public static void ldadc () {
 
 		String directory="/home/ckling/work/topicmodels/fb_party_train/";
 		if (! new File("/home/ckling/").exists()) {		
-			directory="/home/c/work/topicmodels/fb_party_train/"; T=25; RUNS = 20; MIN_DICT_WORDS = 10;
+			directory="/home/c/work/topicmodels/fb_party_train/"; T=10; RUNS = 20; MIN_DICT_WORDS = 10;
 		}
 		//5GB for 9,6MB wordfile.  -> 36 = 20 GB 
 		

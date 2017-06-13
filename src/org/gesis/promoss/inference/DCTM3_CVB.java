@@ -846,8 +846,8 @@ public class DCTM3_CVB {
 				//probability of topics drawn from alpha2
 				for (int k2=0;k2<K;k2++) {				
 					q[K*K+k2] = 
-							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2]) * topic_probability[k2]
-									* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2],2))))
+							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2+1]) * topic_probability[k2]
+									* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2+1],2))))
 									;
 				}
 
@@ -1214,6 +1214,8 @@ public class DCTM3_CVB {
 
 
 				double mgkk_sum = BasicMath.sum(mgkk[g]);
+				
+				if (eta_sum[g]>0) {
 				double mgalpha2_sum = BasicMath.sum(mgalpha2[g]);
 				double sum = mgkk_sum + mgalpha2_sum +1+K ;
 				//System.out.println("mgkk_sum " + mgkk_sum);
@@ -1242,6 +1244,7 @@ public class DCTM3_CVB {
 						alpha2[g][l-1] = alpha * (mgalpha2[g][l-1] +1)/sum;
 					}
 
+				}
 				}
 
 			}
@@ -1652,8 +1655,8 @@ public class DCTM3_CVB {
 				//probability of topics drawn from alpha2
 				for (int k2=0;k2<K;k2++) {				
 					z_theta[K*K+k2] = 
-							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2])
-							* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2],2))))
+							(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2+1])
+							* Math.exp(-(nmk2var[g][d][ci-1][K*K+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K+k2] + Galphadeltag[g][k2+1],2))))
 							;
 				}
 

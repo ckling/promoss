@@ -24,6 +24,8 @@ package org.gesis.promoss.tools.probabilistic;
 
 
 
+import java.io.IOException;
+
 import jdistlib.math.PolyGamma;
 
 
@@ -265,8 +267,19 @@ public class Gamma {
      */
     // from Apache Commons Math
     public static double digamma(double x) {
-        assert !Double.isNaN(x) : "digamma: x is NaN";
-        if (x > 0 && x <= S_LIMIT) {
+
+    	if (x<-100) {
+    		System.out.println("Digamma error: " + x);
+    		//Provoke an exception
+    		int[] a={0};
+    		a[1]=2;
+    	}
+    	
+        if (Double.isNaN(x) || Double.isInfinite(x)) {
+            return x;
+        }
+    	
+    	if (x > 0 && x <= S_LIMIT) {
             // use method 5 from Bernardo AS103
             // accurate to O(x)
             return -GAMMA - 1 / x;
@@ -507,6 +520,6 @@ public class Gamma {
     }
     
     public static void main(String[] args) {
-    	System.out.println(digamma(Double.MIN_NORMAL));
+    	System.out.println(digamma(-1000));
     }
 }

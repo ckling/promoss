@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map
+END
+TriangleCrossingLinesCalculator.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/TriangleCrossingLinesCalculator.java
+END
+PointEdges_tp.java
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/PointEdges_tp.java
+END
+TopographicMapFactory.java
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map/TopographicMapFactory.java
+END
+ITopographicMap.java
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map/ITopographicMap.java
+END
+CounterLine.java
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/CounterLine.java
+END
+TopographicMapMock.java
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map/TopographicMapMock.java
+END
+Line_tp.java
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/Line_tp.java
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map/readme.txt
+END
+Point_tp.java
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/Point_tp.java
+END
+TopographicMapException.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/!svn/ver/39/trunk/jdt/src/algorithms/topographic_map/TopographicMapException.java
+END
+TopographicMap.java
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/56/trunk/jdt/src/algorithms/topographic_map/TopographicMap.java
+END

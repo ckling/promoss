@@ -1,0 +1,188 @@
+	//read DB
+	
+	public static void main2 (String[] args) throws SQLException, IOException {
+
+		Database db = new Database();
+		Database db2 = new Database();
+
+		int count = 0;
+		File file = new File("/media/500/flickrPhoto.txt");
+		FileWriter writer = new FileWriter(file ,true);
+
+		db.executeQuery("SELECT GROUP_CONCAT(FLICKR_ID SEPARATOR '\",\"'), LATITUDE, LONGITUDE FROM flickrPhoto GROUP BY USER_ID,DATE(DATE_TAKEN)");
+		while(db.rs.next()) {
+
+			if (!db.rs.getString(1).endsWith("\"") && !db.rs.getString(1).endsWith(",")) {
+
+				db2.executeQuery("SELECT GROUP_CONCAT(DISTINCT TAG SEPARATOR ' ') FROM flickrTagAs WHERE PHOTO IN (\""+db.rs.getString(1)+"\") GROUP BY PHOTO");
+
+				if (db2.rs.next()) {
+
+					writer.write(db.rs.getString(2) + " ");
+					writer.write(db.rs.getString(3));				
+					writer.write(" " + db2.rs.getString(1));
+					System.out.println(count++);
+					writer.write("\n");
+					writer.flush();
+
+				}
+
+			}
+
+		}
+
+		writer.close();
+
+
+	}
+	
+	//old kmeans without threads
+	
+	/*
+				 * 
+				 * 		
+				 for (int i = 0; i < docs.length; i++) {
+
+				//check for every place q and take the place with maximum probability (hard EM)
+				double pQ = -1.79769313486231570 *Math.pow(10,308);
+				int newQ = -1;
+				for (int j=0; j < n; j++) {
+
+					double mytx = mx[j] * x[i] + my[j] * y[i] + mz[j] * z[i];
+
+					double cdk =Math.log(k[j]) - (Math.log(2*Math.PI) + k[j] - Math.log(1 - (1 / Math.exp(2 * k[j]))));
+
+
+					double logpQnew = cdk + (k[j] * mytx);
+
+					if (logpQnew >= pQ) {
+							pQ = logpQnew;
+							newQ = j;
+
+					}
+
+				}
+
+				if (q[i] != newQ) {
+					q[i] = newQ;
+					change = true;
+				}
+
+				 */
+
+				/* old Thread
+				//count Thread nr
+				int ct = 0;
+				EstQ[] estq = new EstQ[nrThreads];
+				do {
+					estq[ct] = new EstQ(n, mx,my,mz,k,x[i+ct],y[i+ct],z[i+ct],i+ct);
+					estq[ct].run();
+					ct++;
+				} while (ct < nrThreads && i+ct < docs.length);
+				//ct = number of additional computations
+				ct--;
+
+				try {
+					for (int l = 0; l <= ct; l++) {
+						estq[l].t.join();
+						int newQ = estq[l].newQ;
+						//System.out.println(newQ + " " + q[i+l] + " " + l);
+						if (q[i+l] != newQ) {
+							//both, old and new Qs change
+							q[i+l] = newQ;
+							change = true;
+						}
+					}
+				} catch (InterruptedException e) {}
+				i += ct;
+
+				}
+				 */
+	
+	//
+	
+	/* PRINT MAP	
+		Map map = new Map(54.265224, -3.994629, 5);
+		map.size(2);
+
+		double[][] qLatLon = Coordinates.toSpherical(mx,my,mz);
+		
+		for (int i = 0; i < n; i++) {
+
+			System.out.println(mx[i] + " " + my[i] + " " + mz[i]);
+				int color = (i % 20) +1;
+				map.image("http://localhost/"+color+".png");
+				map.add(qLatLon[0][i],qLatLon[1][i]);
+
+		}
+		
+		
+		for (int i = 0; i < docs.length; i++) {
+
+			if (Math.random() > 0.99) {
+
+				int color = (docs[i].q % 20) +1;
+				map.image("http://localhost/"+color+".png");
+				map.add(docs[i].lat, docs[i].lon);
+				System.out.println(i);
+			}
+
+		}
+
+		Text text = new Text();
+		text.setText(map.getMap());
+		text.write("/home/c/map.html");
+		
+		*/
+		
+		
+		/*
+class EstQ2 implements Runnable {
+	public int newQ = -1;
+	private int n;
+	private double x;
+	private double y;
+	private double z;
+	private double[] mx;
+	private double[] my;
+	private double[] mz;
+	private double[] k;
+	Thread t;
+
+	EstQ2 (int nI, double[] mxI, double[] myI, double[] mzI,double[] kI, double xI, double yI, double zI, int iI) {
+		String i = String.valueOf(iI);
+		t = new Thread(this, i);
+		n = nI;
+		mx = mxI;
+		my = myI;
+		mz = mzI;
+		k = kI;
+		x= xI;
+		y= yI;
+		z= zI;	
+		t.start();
+	}
+
+	public void run() {
+
+		double pQ = -1.79769313486231570 *Math.pow(10,308);
+		for (int j=0; j < n; j++) {
+
+			double mytx = mx[j] * x + my[j] * y + mz[j] * z;
+
+			double cdk =Math.log(k[j]) - (Math.log(2*Math.PI) + k[j] - Math.log(1 - (1 / Math.exp(2 * k[j]))));
+
+
+			double logpQnew = cdk + (k[j] * mytx);
+
+			if (logpQnew >= pQ) {
+				pQ = logpQnew;
+				newQ = j;					
+			}
+
+		}
+	}
+}
+*/
+	
+	
