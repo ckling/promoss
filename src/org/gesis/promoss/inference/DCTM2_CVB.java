@@ -1717,7 +1717,6 @@ public class DCTM2_CVB {
 		String[][] topktopics = new String[K*2][topk];
 
 		for (int k=0;k<K;k++) {
-			|| second == 0
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < c.V; v++){
 				wordprob.add(new Pair(c.dict.getWord(v), (nkt[k][v]+beta)/(nk[k]+beta_V), false));
