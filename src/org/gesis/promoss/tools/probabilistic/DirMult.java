@@ -21,7 +21,7 @@ public class DirMult {
 	//Number of parent Dirichlet distributions / DPs
 	public int P = 1;
 	
-	public float
+	
 	
 
 }

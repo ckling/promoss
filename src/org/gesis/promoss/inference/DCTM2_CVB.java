@@ -856,7 +856,6 @@ public class DCTM2_CVB {
 						//shouldn't happen... but in case:
 						if (z2[g][d][ci-1][i][k2]!=1) {
 							nkt20[k2][t]/=Math.pow((1.0-z2[g][d][ci-1][i][k2]),termfreq);
-
 						}
 						nkt2var[k2][t]-=termfreq*z2[g][d][ci-1][i][k2]*(1.0-z2[g][d][ci-1][i][k2]);
 						if (nkt2var[k2][t]<=0) nkt2var[k2][t]=0;
@@ -1717,6 +1716,7 @@ public class DCTM2_CVB {
 		String[][] topktopics = new String[K*2][topk];
 
 		for (int k=0;k<K;k++) {
+			
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < c.V; v++){
 				wordprob.add(new Pair(c.dict.getWord(v), (nkt[k][v]+beta)/(nk[k]+beta_V), false));
