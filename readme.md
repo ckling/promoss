@@ -69,11 +69,11 @@ Cluster descriptions (e.g. means of the geographical clusters, bins of timestamp
 After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
 
 ### Mandatory parameter
-* directory 		String. Gives the directory of the texts.txt and groups.txt file.
+* directory 		String. Gives the directory of the texts.txt file.
 
 
 ### Optional parameters:
-* T			Integer. Number of truncated topics
+* T			Integer. Number of topics. Default: 100
 * RUNS			Integer. Number of iterations the sampler will run. Default: 200
 * SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
 * TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
@@ -90,11 +90,11 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
 * rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
 * processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
-* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
-* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
-* language		String. Currently "en" and "de" are available languages for stemming.
+* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given. Default: false
+* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given. Defaukt: false
+* language		String. Currently "en" and "de" are available languages for stemming. Default: "en"
 * store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
-* topk			Integer. Set the number of top words returned in the topktopics file of the output.
+* topk			Integer. Set the number of top words returned in the topktopics file of the output. Default: 100
 
 ---
 
