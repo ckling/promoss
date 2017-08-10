@@ -18,6 +18,7 @@
         <pathelement location="lib/jdistlib-0.4.5-bin.jar"/>
         <pathelement location="lib/knowceans.jar"/>
         <pathelement location="lib/mallet.jar"/>
+        <pathelement location="lib/json-20140107.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -41,7 +42,7 @@
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target name="Run (2)">
+    <target name="Run">
         <java classname="org.gesis.promoss.inference.Run" failonerror="true" fork="yes">
             <classpath refid="promoss.classpath"/>
         </java>
