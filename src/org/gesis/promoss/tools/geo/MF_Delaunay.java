@@ -154,8 +154,6 @@ public class MF_Delaunay {
 		x = toc[0];
 		y = toc[1];
 		z = toc[2];
-
-		//System.out.println(lats[0] + " " + lons[0] + " " + x[0]+ " " + y[0] + " " + z[0]);
 		
 		q = new int[corpusSize];
 		likelihood  = 0;
@@ -398,7 +396,6 @@ public class MF_Delaunay {
 						k[j] = kstart;
 						countQ[j] = 1;
 
-						count = 0;
 
 
 					}
@@ -633,7 +630,6 @@ public class MF_Delaunay {
 		double[][] ret = new double[J][2];
 		for (int j=0;j<J;j++) {
 			ret[j] = Coordinates.toCart(mx[j], my[j], mz[j]);
-			System.out.println(ret[j][0] + " " + ret[j][1] + " " + mx[j] + " " + my[j] + " " + mz[j]);
 		}
 		return ret;
 	}
