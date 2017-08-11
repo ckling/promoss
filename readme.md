@@ -20,8 +20,10 @@ Promoss is distributed in the hope that it will be useful, but WITHOUT ANY WARRA
 
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-##Support
+## Support
 Please contact me if you need help running the code: promoss (ät) c-kling.de
+
+---
 
 ## First steps
 
@@ -34,6 +36,8 @@ ant; ant build-jar
 
 ### Demo files
 If you would like to have demo files to play around with, just write a mail to promoss@c-kling.de
+
+---
 
 ## Latent Dirichlet Allocation (LDA)
 Collapsed stochastic variational inference for LDA with an asymmetric document-topic prior.
@@ -48,6 +52,7 @@ The most simple way to feed your documents into the topic model is via the corpu
 
 #### corpus.txt
 Each line corresponds to a document. Words of documents are separated by spaces. (However, one can also input raw text and set the -processed parameter to false in order to use a library-specific code for splitting words.)
+
 Example corpus.txt:
 ```
 exist distribut origin softwar distributor agre gpl
@@ -64,11 +69,11 @@ Cluster descriptions (e.g. means of the geographical clusters, bins of timestamp
 After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
 
 ### Mandatory parameter
-* directory 		String. Gives the directory of the texts.txt and groups.txt file.
+* directory 		String. Gives the directory of the texts.txt file.
 
 
 ### Optional parameters:
-* T			Integer. Number of truncated topics
+* T			Integer. Number of topics. Default: 100
 * RUNS			Integer. Number of iterations the sampler will run. Default: 200
 * SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
 * TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
@@ -85,12 +90,13 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * rhotau_document	Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: tau
 * rhos_document		Integer. Initial value of tau, a parameter for the learning rate of the document-topic distribution. Default: rhos
 * processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
-* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given.
-* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given.
-* language		String. Currently "en" and "de" are available languages for stemming.
+* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given. Default: false
+* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given. Defaukt: false
+* language		String. Currently "en" and "de" are available languages for stemming. Default: "en"
 * store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
-* topk			Integer. Set the number of top words returned in the topktopics file of the output.
+* topk			Integer. Set the number of top words returned in the topktopics file of the output. Default: 100
 
+---
 
 ## Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
 An efficient topic model which uses arbitrary document metadata!
@@ -190,9 +196,9 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * N	Nominal values (text strings)
 			
 
-Example usage: 
+Example usage in the -meta_params parameter: 
 ```
-meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
+-meta_params "G(1000);T(L1000,Y100,M10,W20,D10);O"
 ```
 
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).

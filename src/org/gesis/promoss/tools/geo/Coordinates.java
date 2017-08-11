@@ -25,16 +25,16 @@ public class Coordinates {
 
 			//convert to spherical coordinates if cartesian coordinates are given
 			if (p1.length == 3) {
-				p1=org.gesis.promoss.tools.geo.Coordinates.toSpherical(p1[0],p1[1],p1[2]);
+				p1=org.gesis.promoss.tools.geo.Coordinates.toCart(p1[0],p1[1],p1[2]);
 			}
 			if (p2.length == 3) {
-				p2=org.gesis.promoss.tools.geo.Coordinates.toSpherical(p2[0],p2[1],p2[2]);
+				p2=org.gesis.promoss.tools.geo.Coordinates.toCart(p2[0],p2[1],p2[2]);
 			}
 			
 			return distFrom(p1[0],p1[1],p2[0],p2[1]);
 	}
 	
-	public static BigDecimal[] toCartBig(double lat, double lon) {
+	public static BigDecimal[] toSpherical(double lat, double lon) {
 		BigDecimal[] coords = new BigDecimal[3];
 		
 		lat = 90 - lat;
@@ -48,7 +48,7 @@ public class Coordinates {
 		return(coords);
 	}
 	
-	public static BigDecimal[][] toCartBig(double[] lats, double[] lons) {
+	public static BigDecimal[][] toSphericalBig(double[] lats, double[] lons) {
 
 		BigDecimal[] x= new BigDecimal[lats.length];
 		BigDecimal[] y = new BigDecimal[lats.length];
@@ -57,7 +57,7 @@ public class Coordinates {
 
 		for (int i = 0; i < lats.length; i++) {
 			
-			BigDecimal[] coords = toCartBig(lats[i],lons[i]);
+			BigDecimal[] coords = toSpherical(lats[i],lons[i]);
 			
 			x[i] = coords[0];
 			y[i] = coords[1];
@@ -71,11 +71,11 @@ public class Coordinates {
 		
 	}
 	
-	public static double[] toCart(double[] latlon) {
-		return toCart(latlon[0],latlon[1]);
+	public static double[] toSphericalCoord(double[] latlon) {
+		return toSphericalCoord(latlon[0],latlon[1]);
 	}
 	
-	public static double[] toCart(double lat, double lon) {
+	public static double[] toSphericalCoord(double lat, double lon) {
 		double[] coords = new double[3];
 		
 //		lat = 90 - lat;
@@ -98,7 +98,7 @@ public class Coordinates {
 		return(coords);
 	}
 	
-	public static double[][] toCart(Double[] lats, Double[] lons) {
+	public static double[][] toSphericalCoord(Double[] lats, Double[] lons) {
 
 		double[] x= new double[lats.length];
 		double[] y = new double[lats.length];
@@ -107,7 +107,7 @@ public class Coordinates {
 
 		for (int i = 0; i < lats.length; i++) {
 			
-			double[] coords = toCart(lats[i],lons[i]);
+			double[] coords = toSphericalCoord(lats[i],lons[i]);
 			
 			x[i] = coords[0];
 			y[i] = coords[1];
@@ -121,7 +121,7 @@ public class Coordinates {
 		
 	}
 	
-	public static double[][] toCart(double[] lats, double[] lons) {
+	public static double[][] toSphericalCoord(double[] lats, double[] lons) {
 
 		double[] x= new double[lats.length];
 		double[] y = new double[lats.length];
@@ -130,7 +130,7 @@ public class Coordinates {
 
 		for (int i = 0; i < lats.length; i++) {
 			
-			double[] coords = toCart(lats[i],lons[i]);
+			double[] coords = toSphericalCoord(lats[i],lons[i]);
 			
 			x[i] = coords[0];
 			y[i] = coords[1];
@@ -144,17 +144,17 @@ public class Coordinates {
 		
 	}
 	
-	public static double[] toSpherical(double[] xyz){ 
-				return toSpherical(xyz[0],xyz[1],xyz[2]);
+	public static double[] toCart(double[] xyz){ 
+				return toCart(xyz[0],xyz[1],xyz[2]);
 	}
 	
-	public static double[][] toSpherical(double[] x, double[] y, double[] z){    
+	public static double[][] toCart(double[] x, double[] y, double[] z){    
 			
 		double[] lat = new double[x.length];
 		double[] lon = new double[x.length];
 		
 		for (int i = 0; i < x.length; i++) {
-			double[] latlon = toSpherical(x[i],y[i],z[i]);
+			double[] latlon = toCart(x[i],y[i],z[i]);
 			
 			lat[i] = latlon[0];
 			lon[i] = latlon[1];
@@ -165,7 +165,7 @@ public class Coordinates {
 		return (result);
 	}
 	
-	public static double[] toSpherical(double x, double y, double z){    
+	public static double[] toCart(double x, double y, double z){    
 		
 		double[] latlon = new double[2];
 		
@@ -191,7 +191,7 @@ public class Coordinates {
 		
 	public static double[] mean(double[] lats, double[] lons) {
 
-		double[][] toc = toCart(lats,lons);
+		double[][] toc = toSphericalCoord(lats,lons);
 		double[] x = toc[0];
 		double[] y = toc[1];
 		double[] z = toc[2];
@@ -241,5 +241,12 @@ public class Coordinates {
 	 * 
 	 */
 	
-	
+	public static void main(String[] args) {
+		double[] lat = {50};
+		double[] lon = {14};
+		double[][] res = toSphericalCoord(lat, lon);
+		//double[] res2 = toCart(res[0][0],res[1][0],res[2][0]);	
+		double[] res2 = toCart(-0.41195504815700035, -0.49218704417626036, -0.7668408908261214);
+		System.out.println(res2[0] + " " + res2[1] + " " + res[0][0]+ " " +res[1][0]+ " " +res[2][0]);
+	}
 }

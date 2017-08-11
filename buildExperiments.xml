@@ -42,7 +42,7 @@
         </javac>
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
-    <target name="Run">
+    <target name="Run (2)">
         <java classname="org.gesis.promoss.inference.Run" failonerror="true" fork="yes">
             <classpath refid="promoss.classpath"/>
         </java>
@@ -75,13 +75,13 @@
            
     
     <target name="build-jar">
-       <jar destfile="promoss.jar"
+       <jar destfile="/home/c/dctm.jar"
           basedir="bin"
           includes="org/gesis/promoss/**"
           excludes="**.class*">
           <zipgroupfileset dir="lib" includes="*.jar" excludes=""/>
           <manifest>
-             <attribute name="Main-Class" value="org.gesis.promoss.inference.Run"/>
+             <attribute name="Main-Class" value="org.gesis.promoss.inference.Experiments"/>
              <attribute name="Class-Path" value="${promoss.classpath}"/>
           </manifest>
        </jar>

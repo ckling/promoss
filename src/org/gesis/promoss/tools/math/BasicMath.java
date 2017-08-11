@@ -38,7 +38,22 @@ public class BasicMath {
 	
 	public static void print(double[] a) {
 		for (int i=0;i<a.length;i++) {
-			System.out.print(i +": " + a[i] + " ");
+			System.out.print(i +": " + a[i] + "\t");
+		}
+		System.out.println();
+	}
+	
+	public static void print(double[][] a) {
+		for (int i=0;i<a.length;i++) {
+			System.out.print(i + ":[");
+			print(a[i]);
+			}
+		System.out.println();		
+	}
+	
+	public static void print(float[] a) {
+		for (int i=0;i<a.length;i++) {
+			System.out.print(i +": " + a[i] + "\t");
 		}
 		System.out.println();
 	}
@@ -152,6 +167,28 @@ public class BasicMath {
 		return(result);
 
 
+	}
+
+	public static double prod(double[] a) {
+
+		double result = a[0];
+		for (int i = 1;i < a.length; i++) {
+
+			result *= a[i];
+
+		}
+		return(result);
+	}
+	
+	public static float prod(float[] a) {
+
+		float result = a[0];
+		for (int i = 1;i < a.length; i++) {
+
+			result *= a[i];
+
+		}
+		return(result);
 	}
 
 	
@@ -344,13 +381,31 @@ public class BasicMath {
 	public static double[] normalise (double[] x) {
 			
 		double sum = sum(x);
+		if (sum==0) return x;
+
 		double[] x2 = new double[x.length];
 
 		for (int i=0;i<x.length;i++) {
-			x2[i] = x[i]/sum;
+			if (x[i]!=0) {
+				x2[i] = x[i]/sum;
+			}
 		}
 		
 		return x2;
+	}
+	
+	public static void normaliseDirect (double[] x) {
+		
+		double sum = sum(x);
+		if (sum==0) return;
+		
+		
+		for (int i=0;i<x.length;i++) {
+			if (x[i]!=0) {
+				x[i] = x[i]/sum;
+			}
+		}
+		
 	}
 
 	public static float[] normalise (float[] x) {
@@ -395,6 +450,25 @@ public class BasicMath {
 		}
 		return ret;
 	}
+
+	public static double[] approxMultFromSamples(short[] a, int K) {
+		double[] ret = new double[K];
+		for (int i=0;i<a.length;i++) {
+			ret[a[i]]++;
+		}
+		normaliseDirect(ret);
+		return ret;
+	}
+	
+	
+	public static void main (String[] args) {
+		double[] q = {1,2,3};
+		q = normalise(q);
+		print(q);
+		
+		
+	}
+	
 
 
 }

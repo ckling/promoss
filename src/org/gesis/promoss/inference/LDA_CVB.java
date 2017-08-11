@@ -626,13 +626,17 @@ public class LDA_CVB {
 					if (rhot_step==1) {
 						q[k]=10+Math.random();
 					}else {
+						double var = Math.exp(-(nmk1var[g][d][k]/(2*Math.pow(nmk1[g][d][k] +  gapk[g][k],2))))
+								*Math.exp(-nktvar[k][t]/(2*Math.pow(nkt[k][t] + Gbeta,2)) + nkvar[k]/(2*Math.pow(nk[k] + c.V*Gbeta,2)));
+						if (Double.isNaN(var) || var <= 0) {
+							var = 1;
+						}
 						q[k] = 	//probability of topic given feature & group
 								(nmk1[g][d][k] + gapk[g][k])
 								//probability of topic given word w
 								* (nkt[k][t] + Gbeta) 
 								/ (nk[k] + c.V * Gbeta)
-								* Math.exp(-(nmk1var[g][d][k]/(2*Math.pow(nmk1[g][d][k] +  gapk[g][k],2))))
-								*Math.exp(-nktvar[k][t]/(2*Math.pow(nkt[k][t] + Gbeta,2)) + nkvar[k]/(2*Math.pow(nk[k] + c.V*Gbeta,2)))
+								* var
 								;
 					}
 
@@ -753,10 +757,14 @@ public class LDA_CVB {
 					if (rhot_step==1) {
 						topic_probability[k2]=Math.random();
 					}else {
+						double var = Math.exp(-nkt2var[k2][t]/(2*Math.pow(nkt2[k2][t] + Gbeta2,2)) + nk2var[k2]/(2*Math.pow(nk2[k2] + c.V*Gbeta2,2)));
+						if (var <=0 || Double.isNaN(var)) {
+							var = 1;
+						}
 						topic_probability[k2] = 
 								(nkt2[k2][t] + Gbeta2) 
 								/ (nk2[k2] + c.V*Gbeta2)
-								*Math.exp(-nkt2var[k2][t]/(2*Math.pow(nkt2[k2][t] + Gbeta2,2)) + nk2var[k2]/(2*Math.pow(nk2[k2] + c.V*Gbeta2,2)))
+								*var;
 								;
 						if (nkt2[k2][t]<0 || nk2[k2] <0) {
 							System.out.println("nkt2 "+nkt2[k2][t] + " "  + nk2[k2]);
@@ -772,10 +780,14 @@ public class LDA_CVB {
 
 
 				//probability of topics drawn from alpha2
-				for (int k2=0;k2<K2;k2++) {				
+				for (int k2=0;k2<K2;k2++) {		
+					double var =  Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2],2))));
+					if (var <= 0 || Double.isNaN(var)) {
+						var = 1;
+					}
 					q[K*K2+k2] = 
 							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2]) * topic_probability[k2]
-									* Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2],2))))
+									*var									
 									;
 				}
 
@@ -985,6 +997,9 @@ public class LDA_CVB {
 				for (int d = 0;d<c.Gd[g];d++) {
 					for (int k=0;k<K;k++) {
 						double g0 = 1.0-(Math.exp(nmk10[g][d][k]));
+						if (Double.isNaN(g0)) {
+							g0=0;
+						}
 
 						double tables = 0;
 

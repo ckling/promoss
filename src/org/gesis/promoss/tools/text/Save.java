@@ -96,6 +96,36 @@ public class Save {
 
 
 	}
+	
+	public void saveVarSetString (Set<Entry<String, Integer>> var, String filename) {
+
+		checkFile(filename);
+
+		if (var==null || var.isEmpty()) return;
+		
+		int sum = 0;
+		for (Entry<String,Integer> e : var) {	
+			sum += e.getValue();
+		}
+		//first sign is the sum over the words of the document
+		text.write(filename, sum+" ", true);
+
+		
+		int i=0;
+		for (Entry<String,Integer> e : var) {	
+
+			i++;
+			String key_val = e.getKey() + ":" + e.getValue();
+			saveVar(key_val,filename);
+			if (i < var.size()) {
+				text.write(filename, " ", true);
+			}
+
+		}
+		text.write(filename, "\n", true);
+
+
+	}
 
 
 
@@ -263,6 +293,12 @@ public class Save {
 		Set<Entry<Integer, Integer>> set = hm.entrySet();
 		this.saveVarSet(set,filename);
 		
+	}
+
+	public void saveVarString(HashMap<String, Integer> hm2, String filename) {
+		Set<Entry<String, Integer>> set = hm2.entrySet();
+		this.saveVarSetString(set,filename);
+				
 	}
 
 }

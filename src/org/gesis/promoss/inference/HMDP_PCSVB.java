@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gesis.promoss.metadata.ClusterMetadata;
+import org.gesis.promoss.tools.geo.GeoJSON;
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.ArrayUtils;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
@@ -1309,6 +1311,16 @@ public class HMDP_PCSVB {
 			}
 
 			save.saveVar(feature_cluster_topics[f], output_folder+save_prefix+"clusters_"+f+"");
+			
+			String cluster_geo_file = c.directory + ClusterMetadata.cluster_folder + "cluster_"+ f + "_geo";
+			String cluster_geojson_folder = output_folder+save_prefix+"clusters_"+ f + "_geojson";
+
+			if (new File(cluster_geo_file).exists()) {
+				GeoJSON.saveTopicMap(feature_cluster_topics[f],
+						cluster_geo_file,
+						cluster_geojson_folder);
+			}
+			
 			save.close();
 		}
 
