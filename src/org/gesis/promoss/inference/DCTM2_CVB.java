@@ -892,7 +892,11 @@ public class DCTM2_CVB {
 				for (int k2=0;k2<K2;k2++) {			
 					//e^second part of the Taylor expansion of the log
 					double second = Math.exp(-(nmk2var[g][d][ci-1][k2]/(2*Math.pow(nmk2[g][d][ci-1][k2] + prior[k2],2))));
+<<<<<<< HEAD
 					if (Double.isNaN(second) || second <= 0) {
+=======
+					if (Double.isNaN(second)) {
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 						second = 1;
 					}
 					if (rhot_step==1) {
@@ -1303,9 +1307,12 @@ public class DCTM2_CVB {
 				for (int d = 0;d<c.Gd[g];d++) {
 					for (int k=0;k<K;k++) {
 						double g0 = 1.0-(Math.exp(nmk10[g][d][k]) * mdkequal0[g][d][k]);
+<<<<<<< HEAD
 						if (Double.isNaN(g0)) {
 							g0=1;
 						}
+=======
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 
 						double tables = 0;
 
@@ -1405,6 +1412,7 @@ public class DCTM2_CVB {
 								System.out.println(" gamma error " + l + " " +Gamma.digamma(mgkk_sum + 1) +" " + Gamma.digamma(sum));
 								System.exit(0);
 							}
+<<<<<<< HEAD
 
 							alpha1[g] = alpha * (mgkk_sum + 1)/sum;
 							//System.out.println(alpha1[g]);
@@ -1412,6 +1420,15 @@ public class DCTM2_CVB {
 						else {
 							//System.out.println(" gamma test " + g + " " + l + " " +mgalpha2[g][l-1] + " "+ sum);
 
+=======
+
+							alpha1[g] = alpha * (mgkk_sum + 1)/sum;
+							//System.out.println(alpha1[g]);
+						}
+						else {
+							//System.out.println(" gamma test " + g + " " + l + " " +mgalpha2[g][l-1] + " "+ sum);
+
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 
 							double temp = Math.exp(Gamma.digamma(mgalpha2[g][l-1] +1)-Gamma.digamma(sum));
 							if (!Double.isNaN(temp)) {
@@ -1613,9 +1630,15 @@ public class DCTM2_CVB {
 										if (tables <= 0) {
 											tables = (1.0-mgkk0[g][k2][k]);
 										}
+<<<<<<< HEAD
 
 										mgamma+=tables;
 
+=======
+
+										mgamma+=tables;
+
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 
 									}
 									else {
@@ -1898,6 +1921,7 @@ public class DCTM2_CVB {
 				}
 
 				//probabilities for topics drawn from the document-topic priors
+<<<<<<< HEAD
 				
 					for (int k2=0;k2<K2;k2++) {		
 						double prior = 0;
@@ -1906,6 +1930,13 @@ public class DCTM2_CVB {
 							prior += Galphadeltag[g][0] * Gtheta[k] * Math.exp(Gamma.digamma(mgkk[g][k][k2] + gamma) - denom);
 						}
 						prior += Galphadeltag[g][k2+1];
+=======
+				for (int k=0;k<K;k++) {	
+					double denom = Gamma.digamma(mgkSum[g][k] +K2);
+					for (int k2=0;k2<K2;k2++) {			
+						double prior = Galphadeltag[g][0] * Gtheta[k] * Math.exp(Gamma.digamma(mgkk[g][k][k2] + gamma) - denom)
+								+ Galphadeltag[g][k2+1];
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 
 						if (Double.isInfinite(prior)) {
 							System.out.println("Infinite prior!");
@@ -1926,7 +1957,11 @@ public class DCTM2_CVB {
 
 						}
 
+<<<<<<< HEAD
 						double second = Math.exp(-(nmk2var[g][d][ci-1][k2]/(2*Math.pow(nmk2[g][d][ci-1][k2] + prior,2))));
+=======
+						double second = Math.exp(-(nmk2var[g][d][ci-1][k*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][k*K2+k2] + prior,2))));
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 						if (Double.isNaN(second) || second == 0) {
 							second = 1;
 						}
@@ -1937,7 +1972,11 @@ public class DCTM2_CVB {
 				
 				//probability of topics drawn from alpha2
 				for (int k2=0;k2<K2;k2++) {				
+<<<<<<< HEAD
 					z_theta[k2] = 
+=======
+					z_theta[K*K2+k2] = 
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 							(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2+1])
 							* Math.exp(-(nmk2var[g][d][ci-1][K*K2+k2]/(2*Math.pow(nmk2[g][d][ci-1][K*K2+k2] + Galphadeltag[g][k2+1],2))))
 							;

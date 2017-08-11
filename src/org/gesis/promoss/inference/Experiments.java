@@ -26,8 +26,17 @@ public class Experiments {
 	
 	public static void main(String[] args) {
 
+<<<<<<< HEAD
 		//dctm4();		
 		//dctm3();
+=======
+		//dctm4();
+
+		
+		//dctm3();
+
+		//
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 		
 		String directory="/home/ckling/work/topicmodels/fb_party_train/";
 		String directory_test="/home/ckling/work/topicmodels/fb_party_test/";
@@ -43,19 +52,30 @@ public class Experiments {
 			else if (args[0].equals("5")) {
 				dctm5(directory,directory_test);
 			}
+<<<<<<< HEAD
 			else if (args[0].equals("5b")) {
 				T=15;
 				dctm6(blogdir,blogdir);
 			}
+=======
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 			else if (args[0].equals("6")) {
 				dctm6(directory,directory_test);
 			}
 			else if (args[0].equals("6b")) {
+<<<<<<< HEAD
 				T=15;
 				dctm6(blogdir,blogdir);
 			}
 			else if(args[0].equals("b")) {
 				T=15;
+=======
+				T=100;
+				dctm6(blogdir,blogdir);
+			}
+			else if(args[0].equals("b")) {
+				T=100;
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 				dctm2b(blogdir,blogdir);
 			}
 		

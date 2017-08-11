@@ -1,7 +1,10 @@
 package org.gesis.promoss.tools.probabilistic;
 
+<<<<<<< HEAD
 import org.gesis.promoss.tools.math.BasicMath;
 
+=======
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 /**
  * @author Christoph Carl Kling
  *
@@ -17,6 +20,7 @@ import org.gesis.promoss.tools.math.BasicMath;
 public class DirMult {
 	
 	//Number of categories / truncation level
+<<<<<<< HEAD
 	public int K;
 	//Number of multinomial distributions
 	public int M;	
@@ -85,5 +89,15 @@ public class DirMult {
 		}
 		return p;
 	}
+=======
+	public double K;
+	//Number of multinomial distributions
+	public double M;	
+	//Number of parent Dirichlet distributions / DPs
+	public int P = 1;
+	
+	
+	
+>>>>>>> 70b5662ad9b8fa2a07e6477243204ad8b19c49c8
 
 }
