@@ -78,7 +78,7 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 * SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
 * TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
 * BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
-* BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+* BURNIN			Integer. Number of iterations till the topics are updated. Default: 0
 * INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
 * MIN_DICT_WORDS		Integer. If the words.txt file is missing, words.txt is created by using words which occur at least MIN_DICT_WORDS times in the corpus. Default: 100
 * save_prefix		String. If given, this String is appended to all output files.
@@ -210,7 +210,7 @@ This command can be used for the meta.txt given above. It would create 1000 geog
 * TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
 * BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
 * BATCHSIZE_GROUPS	Integer. Batch size for group-specific parameter estimation. Default: BATCHSIZE
-* BURNIN			Integer. Number of iterations till the topics are updated. Default: 200
+* BURNIN			Integer. Number of iterations till the topics are updated. Default: 0
 * BURNIN_DOCUMENTS	Integer. Gives the number of sampling iterations where the group-specific parameters are not updated yet. Default: 0
 * INIT_RAND		Double. Topic-word counts are initiatlised as INIT_RAND * RANDOM(). Default: 0
 * SAMPLE_ALPHA		Integer. Every SAMPLE_ALPHAth document is used to estimate alpha_1. Default: 1
