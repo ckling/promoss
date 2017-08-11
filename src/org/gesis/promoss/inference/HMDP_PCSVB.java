@@ -1330,8 +1330,10 @@ public class HMDP_PCSVB {
 
 
 		String[][] topktopics = new String[T*2][topk];
-
+		String topktopic_words = "";
+		
 		for (int k=0;k<T;k++) {
+			topktopic_words += "Topic " + k + ":";
 
 			List<Pair> wordprob = new ArrayList<Pair>(); 
 			for (int v = 0; v < c.V; v++){
@@ -1342,10 +1344,13 @@ public class HMDP_PCSVB {
 			for (int i=0;i<topk;i++) {
 				topktopics[k*2][i] = (String) wordprob.get(i).first;
 				topktopics[k*2+1][i] = String.valueOf(wordprob.get(i).second);
+				topktopic_words += " " + topktopics[k*2][i];
 			}
+			topktopic_words+="\n";
 
 		}
 		save.saveVar(topktopics, output_folder+save_prefix+"topktopics");
+		save.saveVar(topktopic_words, output_folder+save_prefix+"topktopic_words");
 		save.saveVar(delta, output_folder+save_prefix+"delta");
 		save.saveVar(epsilon, output_folder+save_prefix+"epsilon");
 

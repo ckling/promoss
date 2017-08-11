@@ -15,7 +15,7 @@ public class Run {
 
 			//args = "-directory /home/c/work/topicmodels/schelter/ -method HMDP -BURNIN 1 -BURNIN_DOCUMENTS 10 -T 50 -meta_params T(L70) -MIN_DICT_WORDS 10 -RUNS 100 -TRAINING_SHARE 1.0".split(" ");
 			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
-			args = "-directory /home/c/work/topicmodels/geo_test/ -method HMDP -T 10 -meta_params G(100)".split(" ");
+			args = "-directory /home/c/work/topicmodels/geo_test/ -method HMDP -T 10 -meta_params G(200)".split(" ");
 
 		}
 		
@@ -58,8 +58,12 @@ public class Run {
 				else if (args[i].equals("-TRAINING_SHARE")) 
 					hmdp.TRAINING_SHARE = Double.valueOf(args[++i]);
 
-				else if (args[i].equals("-delta_fix")) 
+				else if (args[i].equals("-delta_fix")) {
+					String value = args[++i];
+					if (!value.equals("none")) {
 					hmdp.delta_fix = Double.valueOf(args[++i]);
+					}
+				}
 
 				else if (args[i].equals("-BATCHSIZE")) 
 					hmdp.BATCHSIZE = Integer.valueOf(args[++i]);
@@ -140,12 +144,15 @@ public class Run {
 					hmdp.c.processed = Boolean.valueOf(args[++i]);
 
 				else if (args[i].equals("-epsilon")) {
-					String[] argssplit = args[++i].split(",");
+					String value = args[++i];
+					if (!value.equals("none")) {
+					String[] argssplit = value.split(",");
 					double[] epsilon = new double[argssplit.length]; 
 					for (int j=0;j<epsilon.length;j++) {
 						epsilon[j] = Double.valueOf(argssplit[j]);
 					}
 					hmdp.epsilon = epsilon;
+					}
 				}
 
 				else if (args[i].equals("-store_empty")) 

@@ -71,6 +71,8 @@ public class GeoJSON {
 				properties.put("color", "none");
 				properties.put("fillColor", colours[k]);
 				properties.put("fillOpacity", topicProbabilities[l][k]);
+				properties.put("topicProbability", topicProbabilities[l][k]);
+
 
 				feature.put("properties",properties);
 				
