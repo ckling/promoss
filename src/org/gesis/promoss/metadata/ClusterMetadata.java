@@ -125,7 +125,9 @@ public class ClusterMetadata {
 				//write file with geographical cluster description
 				double[][] coords = mfd.getqm_lat_lon();
 				double[] ks = mfd.getqk();
+
 				String cluster_file_path = dir + cluster_folder + "cluster_"+ currentCatIdx + "_geo";
+
 				Text cluster_file = new Text();
 				cluster_file.write(cluster_file_path, "", false);
 				for (int l=0;l<ks.length;l++) {
