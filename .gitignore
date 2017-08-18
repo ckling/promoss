@@ -5,3 +5,5 @@ demo/
 promoss.jar
 .project
 .classpath
+buildExperiments.xml
+src/org/gesis/promoss/inference/CLDA_CSVB.java
