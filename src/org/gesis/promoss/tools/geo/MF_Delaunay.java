@@ -150,11 +150,11 @@ public class MF_Delaunay {
 
 		//System.out.println(count1 +" " + count2 + " " + distinct.size());
 
-		double[][] toc = org.gesis.promoss.tools.geo.Coordinates.toCart(lats,lons);
+		double[][] toc = Coordinates.toSphericalCoord(lats,lons);
 		x = toc[0];
 		y = toc[1];
 		z = toc[2];
-
+		
 		q = new int[corpusSize];
 		likelihood  = 0;
 		mx =  new double[n];	
@@ -276,7 +276,8 @@ public class MF_Delaunay {
 
 			do {
 				change = true;
-
+				
+				
 				//E-step: assign region q to points (hard assignment)			
 
 				EstQ[] estq = new EstQ[nrThreads];
@@ -375,7 +376,7 @@ public class MF_Delaunay {
 						if (!distinct.isEmpty()) {
 							Coord coord = distinct.iterator().next();
 							distinct.remove(coord);
-							double[]xyz = org.gesis.promoss.tools.geo.Coordinates.toCart(coord.lat,coord.lon);
+							double[]xyz = Coordinates.toSphericalCoord(coord.lat,coord.lon);
 							mx[j] = xyz[0];
 							my[j] = xyz[1];
 							mz[j] = xyz[2];
@@ -395,7 +396,6 @@ public class MF_Delaunay {
 						k[j] = kstart;
 						countQ[j] = 1;
 
-						count = 0;
 
 
 					}
@@ -436,7 +436,7 @@ public class MF_Delaunay {
 				likelihood = 0.0;
 
 				System.out.println("Geographical clustering step "+ count++ + " (Likelihood: " + oldLikelihood+")");
-
+				
 			} while (change);
 
 			if (useFile) {
@@ -621,6 +621,15 @@ public class MF_Delaunay {
 			ret[j][0]=mx[j];
 			ret[j][1]=my[j];
 			ret[j][2]=mz[j];
+		}
+		return ret;
+	}
+	
+	public double[][] getqm_lat_lon () {
+
+		double[][] ret = new double[J][2];
+		for (int j=0;j<J;j++) {
+			ret[j] = Coordinates.toCart(mx[j], my[j], mz[j]);
 		}
 		return ret;
 	}

@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.gesis.promoss.metadata.ClusterMetadata;
+import org.gesis.promoss.tools.geo.GeoJSON;
 import org.gesis.promoss.tools.math.BasicMath;
 import org.gesis.promoss.tools.probabilistic.ArrayUtils;
 import org.gesis.promoss.tools.probabilistic.DirichletEstimation;
@@ -1193,11 +1195,22 @@ public class HMDP_PCSVB {
 		save.saveVar(pi_0, output_folder+save_prefix+"pi0");
 		save.close();
 		save.saveVar(sumqf, output_folder+save_prefix+"sumqf");
+		
+		
+		
 		save.close();
 		save.saveVar(alpha_0, output_folder+save_prefix+"alpha_0");
 		save.close();
 		save.saveVar(alpha_1, output_folder+save_prefix+"alpha_1");
 		save.close();
+		
+		double[] zeta = new double[c.F];
+		for (int f=0;f<c.F;f++) {
+			zeta[f] = sumqf[f]+epsilon[f];
+		}
+		zeta = BasicMath.normalise(zeta);
+		save.saveVar(zeta, output_folder+save_prefix+"zeta");
+
 
 		//We save the large document-topic file every 10 save steps, together with the perplexity
 		if ((rhot_step % (SAVE_STEP *10)) == 0) {
@@ -1309,6 +1322,16 @@ public class HMDP_PCSVB {
 			}
 
 			save.saveVar(feature_cluster_topics[f], output_folder+save_prefix+"clusters_"+f+"");
+			
+			String cluster_geo_file = c.directory + ClusterMetadata.cluster_folder + "cluster_"+ f + "_geo";
+			String cluster_geojson_folder = output_folder+save_prefix+"clusters_"+ f + "_geojson";
+
+			if (new File(cluster_geo_file).exists()) {
+				GeoJSON.saveTopicMap(feature_cluster_topics[f],
+						cluster_geo_file,
+						cluster_geojson_folder);
+			}
+			
 			save.close();
 		}
 
@@ -1318,7 +1341,8 @@ public class HMDP_PCSVB {
 
 
 		String[][] topktopics = new String[T*2][topk];
-
+		String topktopic_words = "";
+		
 		for (int k=0;k<T;k++) {
 
 			List<Pair> wordprob = new ArrayList<Pair>(); 
@@ -1330,13 +1354,19 @@ public class HMDP_PCSVB {
 			for (int i=0;i<topk;i++) {
 				topktopics[k*2][i] = (String) wordprob.get(i).first;
 				topktopics[k*2+1][i] = String.valueOf(wordprob.get(i).second);
+				if (i>0) {
+					topktopic_words += " ";
+				}
+				topktopic_words += topktopics[k*2][i];
 			}
+			topktopic_words+="\n";
 
 		}
 		save.saveVar(topktopics, output_folder+save_prefix+"topktopics");
+		save.saveVar(topktopic_words, output_folder+save_prefix+"topktopic_words");
 		save.saveVar(delta, output_folder+save_prefix+"delta");
 		save.saveVar(epsilon, output_folder+save_prefix+"epsilon");
-
+		
 
 		save.saveVar("alpha_0 "+alpha_0+
 				"\nalpha_1 "+ alpha_1+

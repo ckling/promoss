@@ -53,6 +53,10 @@ public class Corpus {
 	public int C = 0; //Number of words in the corpus
 	public int V = 0; //Number of distinct words in the corpus, read from dictfile
 	protected int[] N; //Number of Words per document
+		
+	public int[] testN;
+	public int testC;
+	protected short[][] testTermFreqs;
 
 	/**
 	 * @param m Document ID
@@ -77,6 +81,11 @@ public class Corpus {
 	public short[] getTermFreqs(int m) {
 		return termFreqs[m];
 	}
+	
+	public void setTermFreqs(int m, int termIndex, short termFrequency) {
+		this.termFreqs[m][termIndex]=termFrequency;
+	}
+	
 	
 	public short[][] getTermFreqs() {
 		return termFreqs;
@@ -332,6 +341,51 @@ public class Corpus {
 		return;
 
 	}
+	
+	/**
+	 * 
+	 * Split corpus in training and test data
+	 * 
+	 * @param split Double, relative size of training data
+	 * 
+	 */
+	public void splitTest(double split) {
+				
+		//Variables to be changed: N, M, C
+		
+		this.testN = new int[M];
+		this.testC = 0;
+		this.testTermFreqs = termFreqs;
+		
+		for (int m=0;m<this.M;m++) {
+		int[] termIDs = this.getTermIDs(m);
+		short[] termFreqs = this.getTermFreqs(m);
+		
+			for (int i=0;i<termIDs.length;i++) {
+				
+				//How often doas t appear in the document?
+				int termfreq = termFreqs[i];
+
+				int newTermfreq = 0;
+				
+				for (int j=0;j<termfreq;j++) {
+					newTermfreq++;
+					this.testN[m]++;
+					this.testC++;
+				}
+				int termfreqTest = termfreq - newTermfreq;
+
+				this.setTermFreqs(m,i,(short) newTermfreq);
+				this.testTermFreqs[m][i]=(short) termfreqTest;
+
+			}
+		
+		}
+		
+		
+		
+	}
+	
 
 
 }

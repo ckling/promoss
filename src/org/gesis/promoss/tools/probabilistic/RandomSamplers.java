@@ -49,8 +49,24 @@ public class RandomSamplers {
 		RandomSamplers rs = new RandomSamplers();
 		
 		
+		int ns = 9;
+		double a = 0.345;
+		double result = Math.exp(Gamma.lgamma(a + ns)-Gamma.lgamma(a));
+		System.out.println(result);
+		double[] stirs = rs.stirling(ns);
+		
+		double result2 = 0;
+		for (int ms = 1; ms <= ns; ms++) {
+			result2 += Math.exp(rs.lmss) * stirs[ms-1] * Math.pow(a, ms);
+		}
+		System.out.println(result2);
+		System.exit(0);
+
+		
 		int n = 1000;
 		double[] stir = rs.stirling(n);
+		
+		
 		for (int i=0;i<stir.length-1;i++) {
 			System.out.println((stir[i]/stir[i+1]));
 		}

@@ -25,7 +25,7 @@ public class Experiments {
 	//private static String directory = "/home/c/ownCloud/files/fb_party_small/";
 	
 	public static void main(String[] args) {
-
+		if (1==0) {
 		//dctm4();
 
 		
@@ -47,15 +47,22 @@ public class Experiments {
 			else if (args[0].equals("5")) {
 				dctm5(directory,directory_test);
 			}
+			else if (args[0].equals("5b")) {
+				T=15;
+				dctm6(blogdir,blogdir);
+			}
+
 			else if (args[0].equals("6")) {
 				dctm6(directory,directory_test);
 			}
 			else if (args[0].equals("6b")) {
-				T=100;
+
+				T=15;
 				dctm6(blogdir,blogdir);
 			}
 			else if(args[0].equals("b")) {
-				T=100;
+				T=15;
+
 				dctm2b(blogdir,blogdir);
 			}
 		
@@ -112,16 +119,18 @@ public class Experiments {
 
 		//mvhmdp2();
 
-		if (1==1)return;
+	}
 		
 		directory = "~/work/topicmodels/porn_hmd/";
 		MIN_DICT_WORDS = 100;
 		BATCHSIZE = 64;
 		T=100;
 		delall();
-		hmd_p();
+		
+		hmdp();
 		//delall();
 		//lda();
+		System.exit(0);
 
 		directory = "~/work/topicmodels/porn_dmr/";
 		//delall();
@@ -311,6 +320,8 @@ public class Experiments {
 		hmd = null;
 		
 	}
+	
+	
 	
 
 	

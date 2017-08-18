@@ -13,7 +13,12 @@ import org.gesis.promoss.tools.text.Text;
 
 public class ClusterMetadata {
 
+	public static String cluster_folder = "cluster_desc/";
 
+	public static void transformData(String params,String dir,String meta_file_name, String corpus_file_name)  {
+		transformData(params, dir, meta_file_name,  corpus_file_name,  cluster_folder);
+	}
+	
 	public static void transformData(String params,String dir,String meta_file_name, String corpus_file_name, String cluster_folder)  {
 
 		//parameters separated by semicolons
@@ -27,7 +32,6 @@ public class ClusterMetadata {
 
 		String rawLocation = dir+meta_file_name;
 
-		cluster_folder = "cluster_desc/";
 
 		File file = new File(dir+cluster_folder);
 		if (!file.exists()) file.mkdir();
@@ -83,6 +87,10 @@ public class ClusterMetadata {
 					String[] lineSplit = line.split(";");
 
 					String[] latlon = lineSplit[i].split(",");
+					
+					if (latlon.length != 2) {
+						System.out.println("Geographical metadata has not the expected format (should be lat,lon separated by comma, and different metadata separated by semicolons)");
+					}
 
 					latlist.add(Double.valueOf(latlon[0]));
 					lonlist.add(Double.valueOf(latlon[1]));
@@ -91,7 +99,7 @@ public class ClusterMetadata {
 				}
 
 				Double[] lats = latlist.toArray(new Double[latlist.size()]);
-				Double[] lons = latlist.toArray(new Double[latlist.size()]);
+				Double[] lons = lonlist.toArray(new Double[latlist.size()]);
 
 				MF_Delaunay mfd = new MF_Delaunay(lats,lons,Integer.valueOf(p_args[0]),dir + cluster_folder,i);				
 
@@ -115,9 +123,9 @@ public class ClusterMetadata {
 				}		
 
 				//write file with geographical cluster description
-				double[][] coords = mfd.getqm();
+				double[][] coords = mfd.getqm_lat_lon();
 				double[] ks = mfd.getqk();
-				String cluster_file_path = dir + cluster_folder + "cluster"+ i;
+				String cluster_file_path = dir + cluster_folder + "cluster_"+ currentCatIdx + "_geo";
 				Text cluster_file = new Text();
 				cluster_file.write(cluster_file_path, "", false);
 				for (int l=0;l<ks.length;l++) {
@@ -188,7 +196,7 @@ public class ClusterMetadata {
 						}
 
 						//write median (!) of the timestamps in the bins
-						String cluster_file_path = dir+ cluster_folder + "cluster"+ i+"_"+p_args[j].substring(0,1);
+						String cluster_file_path = dir+ cluster_folder + "cluster"+ currentCatIdx+"_"+p_args[j].substring(0,1);
 						Text cluster_desc = new Text();
 						cluster_desc.write(cluster_file_path, "", false);
 						for (int c=0;c<bins;c++) {
@@ -259,7 +267,7 @@ public class ClusterMetadata {
 						}
 
 						//write median (!) of the timestamps in the bins
-						String cluster_file_path = dir + cluster_folder + "cluster"+ i+"_"+p_args[j].substring(0,1);
+						String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx+"_"+p_args[j].substring(0,1);
 						Text cluster_desc = new Text();
 						cluster_desc.write(cluster_file_path, "", false);
 						for (int c=0;c<bins;c++) {
@@ -331,7 +339,7 @@ public class ClusterMetadata {
 						}
 
 						//write median (!) of the timestamps in the bins
-						String cluster_file_path = dir + cluster_folder + "cluster"+ i+"_"+p_args[j].substring(0,1);
+						String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx+"_"+p_args[j].substring(0,1);
 						Text cluster_desc = new Text();
 						cluster_desc.write(cluster_file_path, "", false);
 						for (int c=0;c<bins;c++) {
@@ -404,7 +412,7 @@ public class ClusterMetadata {
 						}
 
 						//write median (!) of the timestamps in the bins
-						String cluster_file_path = dir + cluster_folder + "cluster"+ i+"_"+p_args[j].substring(0,1);
+						String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx+"_"+p_args[j].substring(0,1);
 						Text cluster_desc = new Text();
 						cluster_desc.write(cluster_file_path, "", false);
 						for (int c=0;c<bins;c++) {
@@ -474,7 +482,7 @@ public class ClusterMetadata {
 						}
 
 						//write median (!) of the timestamps in the bins
-						String cluster_file_path = dir + cluster_folder + "cluster"+ i+"_"+p_args[j].substring(0,1);
+						String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx+"_"+p_args[j].substring(0,1);
 						Text cluster_desc = new Text();
 						cluster_desc.write(cluster_file_path, "", false);
 						for (int c=0;c<bins;c++) {
@@ -507,7 +515,7 @@ public class ClusterMetadata {
 					j++;
 				}
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ i;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
 
 				dict.writeWordMap(cluster_file_path);
 
@@ -542,7 +550,7 @@ public class ClusterMetadata {
 					j++;
 				}				
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ i;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
 
 				dict.writeWordMap(cluster_file_path);
 
@@ -585,7 +593,7 @@ public class ClusterMetadata {
 					j++;
 				}				
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ i;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
 
 				dict.writeWordMap(cluster_file_path);
 

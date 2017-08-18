@@ -868,7 +868,9 @@ public class DCTM5_CVB {
 				for (int k2=0;k2<K;k2++) {			
 					//e^second part of the Taylor expansion of the log
 					double second = Math.exp(-(nmk2var[g][d][ci-1][k2]/(2*Math.pow(nmk2[g][d][ci-1][k2] + prior[k2],2))));
-					if (Double.isNaN(second)) {
+
+					if (Double.isNaN(second) || second <= 0) {
+
 						second = 1;
 					}
 					if (rhot_step==1) {
