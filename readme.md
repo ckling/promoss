@@ -236,6 +236,8 @@ This command can be used for the meta.txt given above. It would create 1000 geog
 * language		String. Currently "en" and "de" are available languages for stemming. Default: "en"
 * store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
 * topk			Integer. Set the number of top words returned in the topktopics file of the output. Default: 100
+* gamma			Double. Initial scaling parameter of the top-level Dirichlet process. Default: 1
+* learn_gamma		Boolean. Should gamma be learned during inference? Default: True
 
 
 
