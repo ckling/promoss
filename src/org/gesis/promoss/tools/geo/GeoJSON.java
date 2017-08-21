@@ -70,7 +70,7 @@ public class GeoJSON {
 				JSONObject properties = new JSONObject();
 				properties.put("color", "none");
 				properties.put("fillColor", colours[k]);
-				properties.put("fillOpacity", 1.0-topicProbabilities[l][k]);
+				properties.put("fillOpacity", topicProbabilities[l][k]);
 
 				properties.put("topicProbability", topicProbabilities[l][k]);
 

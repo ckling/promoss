@@ -29,6 +29,9 @@ public class ClusterMetadata {
 
 		//raw_file_name = "meta.txt";
 		//corpus_file_name = "corpus.txt";
+		
+		Text groups_file = new Text();
+		groups_file.write( dir+"groups.txt","",false);
 
 		String rawLocation = dir+meta_file_name;
 
@@ -37,7 +40,6 @@ public class ClusterMetadata {
 		if (!file.exists()) file.mkdir();
 
 		ArrayList<ArrayList<Integer>> groupmembers = new ArrayList<ArrayList<Integer>>();
-		String groupclusters = "";
 
 		Text raw = new Text();
 		int n = 0;
@@ -56,7 +58,7 @@ public class ClusterMetadata {
 		int currentCatIdx = 0;
 
 		for (int i=0; i< param_split.length; i++) {
-
+			
 			String[] p_split = param_split[i].split("\\(");
 			String[] p_args = null;
 			if (p_split.length > 1) {
@@ -67,6 +69,8 @@ public class ClusterMetadata {
 			}
 
 			String p = p_split[0];
+			
+			System.out.println(p);
 
 
 			//Geographical context variable: latitude, longitude
@@ -112,7 +116,7 @@ public class ClusterMetadata {
 				//assign groups to context clusters
 				for (int j=0;j<qqN.size();j++) {
 					//every group has the cluster of the same ID plus the neighbours as parents!
-					groupclusters+=currentCatIdx + " " +j + " " + j;
+					String groupclusters=currentCatIdx + " " +j + " " + j;
 					CopyOnWriteArraySet<Integer> neighbours = qqN.get(j);
 					Iterator<Integer> it = neighbours.iterator();
 					while(it.hasNext()) {
@@ -120,6 +124,8 @@ public class ClusterMetadata {
 						groupclusters+=" "+neighbour;
 					}
 					groupclusters+="\n";
+					groups_file.write( dir+"groups.txt",groupclusters,true);
+
 				}		
 
 				//write file with geographical cluster description
@@ -185,7 +191,7 @@ public class ClusterMetadata {
 
 						for (int c=0;c<bins;c++) {
 							//for every category, there is a group which is linked to the cluster of the same ID
-							groupclusters += currentCatIdx+ " " + c + " " + c;
+							String groupclusters = currentCatIdx+ " " + c + " " + c;
 
 							if (c>0) {
 								groupclusters += " " + (c-1);
@@ -195,6 +201,8 @@ public class ClusterMetadata {
 							}
 
 							groupclusters += "\n";
+							groups_file.write( dir+"groups.txt",groupclusters,true);
+
 						}
 
 						//write median (!) of the timestamps in the bins
@@ -256,7 +264,7 @@ public class ClusterMetadata {
 
 						for (int c=0;c<bins;c++) {
 							//for every category, there is a group which is linked to the cluster of the same ID
-							groupclusters += currentCatIdx+ " " + c + " " + c;
+							String groupclusters = currentCatIdx+ " " + c + " " + c;
 
 							if (c>0) {
 								groupclusters += " " + (c-1);
@@ -266,6 +274,8 @@ public class ClusterMetadata {
 							}
 
 							groupclusters += "\n";
+							groups_file.write( dir+"groups.txt",groupclusters,true);
+
 						}
 
 						//write median (!) of the timestamps in the bins
@@ -328,7 +338,7 @@ public class ClusterMetadata {
 
 						for (int c=0;c<bins;c++) {
 							//for every category, there is a group which is linked to the cluster of the same ID
-							groupclusters += currentCatIdx+ " " + c + " " + c;
+							String groupclusters = currentCatIdx+ " " + c + " " + c;
 
 							if (c>0) {
 								groupclusters += " " + (c-1);
@@ -338,6 +348,8 @@ public class ClusterMetadata {
 							}
 
 							groupclusters += "\n";
+							groups_file.write( dir+"groups.txt",groupclusters,true);
+
 						}
 
 						//write median (!) of the timestamps in the bins
@@ -401,7 +413,7 @@ public class ClusterMetadata {
 
 						for (int c=0;c<bins;c++) {
 							//for every category, there is a group which is linked to the cluster of the same ID
-							groupclusters += currentCatIdx+ " " + c + " " + c;
+							String groupclusters = currentCatIdx+ " " + c + " " + c;
 
 							if (c>0) {
 								groupclusters += " " + (c-1);
@@ -411,6 +423,8 @@ public class ClusterMetadata {
 							}
 
 							groupclusters += "\n";
+							groups_file.write( dir+"groups.txt",groupclusters,true);
+
 						}
 
 						//write median (!) of the timestamps in the bins
@@ -471,7 +485,7 @@ public class ClusterMetadata {
 
 						for (int c=0;c<bins;c++) {
 							//for every category, there is a group which is linked to the cluster of the same ID
-							groupclusters += currentCatIdx+ " " + c + " " + c;
+							String groupclusters = currentCatIdx+ " " + c + " " + c;
 
 							if (c>0) {
 								groupclusters += " " + (c-1);
@@ -481,6 +495,8 @@ public class ClusterMetadata {
 							}
 
 							groupclusters += "\n";
+							groups_file.write( dir+"groups.txt",groupclusters,true);
+
 						}
 
 						//write median (!) of the timestamps in the bins
@@ -510,6 +526,9 @@ public class ClusterMetadata {
 				int j = 0;
 				while((line = raw.readLine(rawLocation))!=null) {
 					String[] lineSplit = line.split(";");
+					if (lineSplit.length<i+1) {
+						System.out.println("Error - not enough metadata given:" + line);
+					}
 					String category = lineSplit[i];
 					dict.addWord(category);	
 					int categoryID = dict.getID(category);
@@ -517,15 +536,19 @@ public class ClusterMetadata {
 					j++;
 				}
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx +"_N";;
 
 				dict.writeWordMap(cluster_file_path);
 
 				for (int k=0;k<dict.length();k++) {
 					//for every category, there is a group which is linked to the cluster of the same ID
-					groupclusters += currentCatIdx+ " " + k + " " + k+"\n";
+					String groupclusters = currentCatIdx+ " " + k + " " + k+"\n";
+					groups_file.write( dir+"groups.txt",groupclusters,true);
+
 				}
 
+				dict = null;
+				raw.close();
 				currentCatIdx++;
 
 			}
@@ -552,24 +575,28 @@ public class ClusterMetadata {
 					j++;
 				}				
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx +"_O";;
 
 				dict.writeWordMap(cluster_file_path);
 
 				for (int k=0;k<dict.length();k++) {
 					//for every category, there is a group which is linked to the cluster of the same ID
-					groupclusters += currentCatIdx+ " " + k + " " + k;
+					String groupclusters = currentCatIdx+ " " + k + " " + k;
 
 					if (k>0) {
 						groupclusters += " " + (k-1);
 					}
 					if (k<dict.length()-1) {
-						groupclusters += " " + k+1;
+						groupclusters += " " + (k+1);
 					}
 
 					groupclusters += "\n";
+					groups_file.write( dir+"groups.txt",groupclusters,true);
+
 				}
 
+				dict = null;
+				raw.close();
 				currentCatIdx++;
 
 			}
@@ -595,13 +622,13 @@ public class ClusterMetadata {
 					j++;
 				}				
 
-				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx;
+				String cluster_file_path = dir + cluster_folder + "cluster"+ currentCatIdx +"_C";
 
 				dict.writeWordMap(cluster_file_path);
 
 				for (int k=0;k<dict.length();k++) {
 					//for every category, there is a group which is linked to the cluster of the same ID
-					groupclusters += currentCatIdx+ " " + k + " " + k;
+					String groupclusters = currentCatIdx+ " " + k + " " + k;
 
 					if (k>0) {
 						groupclusters += " " + (k-1);
@@ -619,15 +646,19 @@ public class ClusterMetadata {
 					}
 
 					groupclusters += "\n";
+					
+					groups_file.write( dir+"groups.txt",groupclusters,true);
+
 				}
 
+				dict = null;
+				raw.close();
 				currentCatIdx++;
 
 			}
 
 
-			Text groups_file = new Text();
-			groups_file.write( dir+"groups.txt",groupclusters,false);
+			groups_file.close();
 
 			Text member_file = new Text();
 			member_file.write( dir+"texts.txt","",false);

@@ -16,7 +16,8 @@ public class Run {
 			//args = "-directory /home/c/work/topicmodels/schelter/ -method HMDP -BURNIN 1 -BURNIN_DOCUMENTS 10 -T 50 -meta_params T(L70) -MIN_DICT_WORDS 10 -RUNS 100 -TRAINING_SHARE 1.0".split(" ");
 			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 			//args = "-directory /home/c/work/topicmodels/geo_test/ -method HMDP -T 10 -meta_params G(200)".split(" ");
-			args = "-directory /home/c/work/topicmodels/ml_test/ -method HMDP -T 100 -meta_params T(L100,W20)".split(" ");
+			//args = "-directory /home/c/work/topicmodels/ml_test/ -method HMDP -T 100 -meta_params T(L100,W20)".split(" ");
+			args = "-directory /home/c/work/topicmodels/scopus/ -method HMDP -T 100 -BURNIN_DOCUMENTS 1 -meta_params N;O;N -MIN_DICT_WORDS 100 -processed false -stopwords true -stemming true".split(" ");
 
 		}
 		
@@ -143,6 +144,12 @@ public class Run {
 
 				else if (args[i].equals("-processed")) 
 					hmdp.c.processed = Boolean.valueOf(args[++i]);
+					
+				else if (args[i].equals("-gamma")) 
+					hmdp.gamma = Double.valueOf(args[++i]);
+				
+				else if (args[i].equals("-learn_gamma")) 
+					hmdp.learn_gamma = Boolean.valueOf(args[++i]);
 
 				else if (args[i].equals("-epsilon")) {
 					String value = args[++i];

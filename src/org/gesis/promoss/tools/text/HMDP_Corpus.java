@@ -22,7 +22,7 @@ public class HMDP_Corpus extends Corpus {
 
 	public int[][][] A; //Groups and their clusters
 
-	public ArrayList<ArrayList<Set<Integer>>> affected_groups; //Which clusters are affected by changes in group g; F x G x ...
+	//public ArrayList<ArrayList<Set<Integer>>> affected_groups; //Which clusters are affected by changes in group g; F x G x ...
 
 	//document groups (M+empty_documents.size() x F)
 	//we first have the groups of the non-empty documents
@@ -219,8 +219,11 @@ public class HMDP_Corpus extends Corpus {
 		//get text of the groupfile
 		Text grouptext = new Text();
 		String line;
+		
 		if (new File(groupfile).exists()) {
 			while ((line = grouptext.readLine(groupfile))!= null) {
+				
+				//System.out.println(line);
 
 				String[] lineSplit = line.split(" ");
 
@@ -235,10 +238,13 @@ public class HMDP_Corpus extends Corpus {
 					Cf[f] = Math.max(Cf[f],cluster[i-2] + 1);
 				}
 
+				//System.out.println(groupID + " " + f + " " + A[f].length);
+				
 				if(A[f].length - 1 < groupID) {
 					int[][] Afold = A[f];
 					A[f] = new int[groupID+1][];
 					System.arraycopy(Afold, 0, A[f], 0, Afold.length);
+					Afold = null;
 				}
 				A[f][groupID] = cluster;			
 			}
@@ -264,6 +270,8 @@ public class HMDP_Corpus extends Corpus {
 		}
 
 		grouptext.close();
+		
+		//System.out.println("finished");
 
 		//fill undefined groups with null
 		//TODO: we have to add a mechanism for adding new groups...
@@ -275,24 +283,24 @@ public class HMDP_Corpus extends Corpus {
 			}
 		}
 
-		affected_groups = new ArrayList<ArrayList<Set<Integer>>>();
-		for (int f=0;f<F;f++) {
-			affected_groups.add(f, new ArrayList<Set<Integer>>());
-			for (int g=0;g<A[f].length;g++) {
-				affected_groups.get(f).add(g, new HashSet<Integer>());
-				for (int i = 0;i<A[f][g].length;i++) {
-					for (int g2=0;g2<A[f].length;g2++) {
-						for (int i2 = 0;i2<A[f][g].length;i2++) {
-							if (i2==i) {
-								affected_groups.get(f).get(g).add(g2);
-							}
-						}
-					}
-				}
-			}
-
-
-		}
+//		affected_groups = new ArrayList<ArrayList<Set<Integer>>>();
+//		for (int f=0;f<F;f++) {
+//			affected_groups.add(f, new ArrayList<Set<Integer>>());
+//			for (int g=0;g<A[f].length;g++) {
+//				affected_groups.get(f).add(g, new HashSet<Integer>());
+//				for (int i = 0;i<A[f][g].length;i++) {
+//					for (int g2=0;g2<A[f].length;g2++) {
+//						for (int i2 = 0;i2<A[f][g].length;i2++) {
+//							if (i2==i) {
+//								affected_groups.get(f).get(g).add(g2);
+//							}
+//						}
+//					}
+//				}
+//			}
+//
+//
+//		}
 
 
 	}

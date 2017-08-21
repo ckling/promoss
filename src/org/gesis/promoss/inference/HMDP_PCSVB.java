@@ -70,7 +70,7 @@ public class HMDP_PCSVB {
 	public int SAMPLE_ALPHA = 1;
 	//Burn in phase: how long to wait till updating nkt?
 	public int BURNIN = 0;
-	//Burn in phase for documents: How long till we update the
+	//Burn in phase for documents: How long till we update the		boolean learn_gamma;
 	//topic distributions of context-clusters?
 	public int BURNIN_DOCUMENTS = 0;
 	//Should the topics be randomly initialised?
@@ -96,7 +96,11 @@ public class HMDP_PCSVB {
 	//Dirichlet parameter for multinomial over features
 	public double[] epsilon;
 
+	//Scaling parameter top level Dirichlet process
 	public double gamma = 1;
+	
+	//Do we want to learn gamma, which influences the number of topics?
+	boolean learn_gamma = true;
 
 	//Dirichlet concentration parameter for topic-word distributions
 	public double beta_0 = 0.01;
@@ -884,10 +888,7 @@ public class HMDP_PCSVB {
 
 
 
-			if (rhot_step > BURNIN_DOCUMENTS+2)  {
-				//Update global topic distribution
-				updateGlobalTopicDistribution();
-			}
+
 
 			//			Iterator<Integer> it = affected_groups.get(f).get(g).iterator();
 			//			while (it.hasNext()) {
@@ -1029,12 +1030,15 @@ public class HMDP_PCSVB {
 
 		int a = 1;
 		int b = 0;
-		gamma = (T + a - 2) / (gamma_denominator + b);
 
+		if (learn_gamma) {
+			gamma = (T + a - 2) / (gamma_denominator + b);
+		}
 
 	}
 
 	public void updateHyperParameters() {
+
 
 		//we have to have at least one run for learning the cluster-specific parameters
 		if(rhot_step>BURNIN_DOCUMENTS+1) {
@@ -1169,6 +1173,12 @@ public class HMDP_PCSVB {
 		}
 
 
+		
+		if (rhot_step > BURNIN_DOCUMENTS+2)  {
+			//Update global topic distribution
+			updateGlobalTopicDistribution();
+		}
+		
 	}
 
 
