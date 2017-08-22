@@ -101,7 +101,7 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 ## Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
 An efficient topic model which uses arbitrary document metadata!
 
-For a description of the model, I refer to my dissertation: 
+For a description of the model, I refer to Chapter 4 of my dissertation: 
 
 [Christoph Carl Kling. Probabilistic Models for Context in Social Media - Novel Approaches and Inference Schemes. 2016](https://kola.opus.hbz-nrw.de/frontdoor/deliver/index/docId/1397/file/DissertationChristophKling.pdf)
 
