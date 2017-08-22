@@ -30,8 +30,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.gesis.promoss.metadata.ClusterMetadata;
 import org.gesis.promoss.tools.geo.GeoJSON;
@@ -522,7 +520,6 @@ public class HMDP_PCSVB {
 
 		//Prior of the document-topic distribution
 		//(This is a mixture of the cluster-topic distributions of the clusters of the document
-		double sum = 0;
 		double[] topic_prior = new double[T];
 		for (int f=0;f<c.F;f++) {
 			int g = group[f];
@@ -536,15 +533,14 @@ public class HMDP_PCSVB {
 					double temp = 	(sumqfck[f][a][k] + (alpha_0 * pi_0[k])) * temp3;
 					double temp4 = temp*featureprior[f];
 					topic_prior[k]+=temp4;
-					sum+=temp4;
 					pk_f[k][f]+=temp4;
 					pk_fck[f][i][k] = temp4;
 				}
 			}
 		}
-		for (int k=0;k<T;k++) {
-			topic_prior[k] /= sum;
-		}
+		
+		topic_prior = BasicMath.normalise(topic_prior);
+		
 
 		for (int k=0;k<T;k++) {
 			pk_f[k]=BasicMath.normalise(pk_f[k]);

@@ -100,7 +100,11 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 
 ## Hierarchical Multi-Dirichlet Process Topic Model (Promoss)
 An efficient topic model which uses arbitrary document metadata!
-(Practical collapsed stochastic variational inference for hierarchical multi-Dirichlet process topic models) 
+
+For a description of the model, I refer to my dissertation: 
+
+*Christoph Carl Kling. Probabilistic Models for Context in Social Media - Novel Approaches and Inference Schemes. 2016*
+[pdf](https://kola.opus.hbz-nrw.de/frontdoor/deliver/index/docId/1397/file/DissertationChristophKling.pdf)
 
 ### Example command line usage
 ```
@@ -203,11 +207,23 @@ Example usage in the -meta_params parameter:
 
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
 
-### Optional parameters:
+#### Rule of thumb for clustering
+The number of clusters should not 
+
+### Optional parameters
+The parameters are sorted, most common parameters are on top:
 * T			Integer. Number of truncated topics. Default: 100
 * RUNS			Integer. Number of iterations the sampler will run. Default: 200
-* SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
+* processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
+* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given. Default: false
+* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given. Default: false
+* language		String. Currently "en" and "de" are available languages for stemming. Default: "en"
+* store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
 * TRAINING_SHARE		Double. Gives the share of documents which are used for training (0 to 1). Default: 1
+* topk			Integer. Set the number of top words returned in the topktopics file of the output. Default: 100
+* gamma			Double. Initial scaling parameter of the top-level Dirichlet process. Default: 1
+* learn_gamma		Boolean. Should gamma be learned during inference? Default: True
+* SAVE_STEP		Integer. Number of iterations after which the learned paramters are saved. Default: 10
 * BATCHSIZE		Integer. Batch size for topic estimation. Default: 128
 * BATCHSIZE_GROUPS	Integer. Batch size for group-specific parameter estimation. Default: BATCHSIZE
 * BURNIN			Integer. Number of iterations till the topics are updated. Default: 0
@@ -230,14 +246,7 @@ This command can be used for the meta.txt given above. It would create 1000 geog
 * rhokappa_group		Double. Initial value of kappa, a parameter for the learning rate of the group-topic distribution. Default: kappa
 * rhotau_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: tau
 * rhos_group		Integer. Initial value of tau, a parameter for the learning rate of the group-topic distribution. Default: rhos
-* processed		Boolean. Tells if the text is already processed, or if words should be split with complex regular expressions. Otherwise split by spaces. Default: true.
-* stemming		Boolean. Activates word stemming in case no words.txt/wordsets file is given. Default: false
-* stopwords		Boolean. Activates stopword removal in case no words.txt/wordsets file is given. Default: false
-* language		String. Currently "en" and "de" are available languages for stemming. Default: "en"
-* store_empty		Boolean. Determines if empty documents should be omitted in the final document-topic matrix or if the topic distribution should be predicted using the context. Default: True
-* topk			Integer. Set the number of top words returned in the topktopics file of the output. Default: 100
-* gamma			Double. Initial scaling parameter of the top-level Dirichlet process. Default: 1
-* learn_gamma		Boolean. Should gamma be learned during inference? Default: True
+
 
 
 

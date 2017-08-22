@@ -381,7 +381,12 @@ public class BasicMath {
 	public static double[] normalise (double[] x) {
 			
 		double sum = sum(x);
-		if (sum==0) return x;
+		if (sum==0) {
+			for (int i=0;i<x.length;i++) {
+				x[i]=1.0/Double.valueOf(x.length);
+			}
+			return x;			
+		}
 
 		double[] x2 = new double[x.length];
 
