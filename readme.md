@@ -207,7 +207,9 @@ Example usage in the -meta_params parameter:
 This command can be used for the meta.txt given above. It would create 1000 geographical clusters based on the latitude and longitude. Then it would parse each UNIX timestamp to create 1000 clusters on the timeline, 100 clusters on the yearly, 10 clusters on the monthly, 20 clusters on the weekly and 10 clusters on the daily cycle (based on simple binning). Then the third metadata variable would be interpreted as an ordinal variable, meaning that each different value is an own cluster which is smoothed with the previous and next cluster (if existent).
 
 #### Rule of thumb for clustering
-The number of clusters should not 
+Clusters should not be too small, because the observed documents in a cluster should be sufficient to learn a cluster-specific topic prior.
+On the other hand, too few clusters prevent the model from capturing differences in topic frequencies in the context space.
+One rule of thumb for the number of clusters C in a corpus with M documents and (an expected number of) T topics is: C = M/T. I.e. if we have 1.000.000 documents and expect about 100 topics, it is reasonable to pick 10.000 clusters. This approximation is very simplistic, I recommend to use e.g. Dirichlet process-based methods such as infinite Gaussian mixture models for cluster detection before running the model. 
 
 ### Optional parameters
 The parameters are sorted, most common parameters are on top:
