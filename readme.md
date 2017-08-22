@@ -188,15 +188,15 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
 
 ### Mandatory Parameters when Using corpus.txt and meta.txt (Input Variant 1)
 * meta_params		String. Specifies the metadata types and gives the desired clustering. Types of metadata are given separated by semicolons (and correspond to the number of different metadata in the meta.txt file. Possible datatypes are:
-* G	Geographical coordinates. The number of desired clusters is specified in brackets, i.e. G(1000) will cluster the documents into 1000 clusters based on the geographical coordinates. (Technical detail: we use EM to fit a mixture of fisher distributions.)
-* T	UNIX timestamps (in seconds). The number of clusters (based on binning) is given in brackets, and there can be multiple clusterings based on a binning on the timeline or temporal cycles. This is indicated by a letter followed by the number of desired clusters:
-* L	Binning based on the timeline. Example: L1000 gives 1000 bins.
-* Y	Binning based on the yearly cycle. Example: L1000 gives 1000 bins.
-* M	Binning based on the monthly cycle. Example: L1000 gives 1000 bins.
-* W	Binning based on the weekly cycle. Example: L1000 gives 1000 bins.
-* D	Binning based on the daily  cycle. Example: L1000 gives 1000 bins.
-* O	Ordinal values (numbers)
-* N	Nominal values (text strings)
+ * G	Geographical coordinates. The number of desired clusters is specified in brackets, i.e. G(1000) will cluster the documents into 1000 clusters based on the geographical coordinates. (Technical detail: we use EM to fit a mixture of fisher distributions.)
+ * T	UNIX timestamps (in seconds). The number of clusters (based on binning) is given in brackets, and there can be multiple clusterings based on a binning on the timeline or temporal cycles. This is indicated by a letter followed by the number of desired clusters:
+ * L	Binning based on the timeline. Example: L1000 gives 1000 bins.
+ * Y	Binning based on the yearly cycle. Example: L1000 gives 1000 bins.
+ * M	Binning based on the monthly cycle. Example: L1000 gives 1000 bins.
+ * W	Binning based on the weekly cycle. Example: L1000 gives 1000 bins.
+ * D	Binning based on the daily  cycle. Example: L1000 gives 1000 bins.
+ * O	Ordinal values (numbers)
+ * N	Nominal values (text strings)
 			
 
 Example usage in the -meta_params parameter: 
