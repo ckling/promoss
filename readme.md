@@ -65,12 +65,10 @@ gpl also deal deriv work link creat deriv work gpl affect gpl defin scope copyri
 This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
 
 ### Output files
-Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
-After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+After each 10 runs, important parameters are stored in the *output_LDA/* subfolder, with the number of runs as folder name. The *topktopic_words* file contains the top words of each topic (the number of returned top words can be set via the -topk parameter). The *nkt* file contains the word counts for each topic: Each line corresponds to a topic, and each column to a word (starting with index 0), corrsponding to the line numbers in *words.txt* file located in the main directory. The *doc_topic* file contains the topic probabilities for each document, rows correspond to documents (same ordering as given), columns to topics.
 
 ### Mandatory parameter
 * directory 		String. Gives the directory of the texts.txt file.
-
 
 ### Optional parameters:
 * T			Integer. Number of topics. Default: 100
@@ -171,17 +169,21 @@ Example groups.txt
 0 8 7 8 9
 0 9 8 9 10
 0 10 9 10 11
+[...]
+0 254 123 23 53
 ```
 
 The first line reads: For context 0, documents which are assigned to context group 0 draw their topics from context cluster 0 and context cluster 1.
+The last line reads: For context 0, documents which are assigned to context group 254 draw their topics from context cluster 123, 23 and 53.
 If no groups.txt is given, all context groups will be linked to a context cluster with the same ID, which means that all context clusters are independent.
 
 #### words.txt 
 This optional file gives the vocabulary, one word per row. The line numbers correspond to the later indices in the topic-word matrix.
 
 ### Output files
-Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the cluster_desc/ folder.
-After each 10 runs, important parameters are stored in the output_Promoss/ subfolder, with the number of runs as folder name. The clusters_X file contains the topic loadings of each cluster of the Xth metadata. The topktopics file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+Cluster descriptions (e.g. means of the geographical clusters, bins of timestamps etc.) are saved in the *cluster_desc/* folder.
+After each 10 runs, important parameters are stored in the *output_HMDP/* subfolder, with the number of runs as folder name. The *clusters_X* file contains the topic loadings of each cluster of the *X*th metadata. The *topktopic_words* file contains the top words of each topic (the number of returned top words can be set via the -topk parameter).
+The *nkt* file contains the word counts for each topic: Each line corresponds to a topic, and each column to a word (starting with index 0), corrsponding to the line numbers in *words.txt* file located in the main directory. The *doc_topic* file contains the topic probabilities for each document, rows correspond to documents (same ordering as given), columns to topics.
 
 ### Mandatory parameter
 * directory 		String. Gives the directory of the texts.txt and groups.txt file.
@@ -195,8 +197,8 @@ After each 10 runs, important parameters are stored in the output_Promoss/ subfo
  * M	Binning based on the monthly cycle. Example: L1000 gives 1000 bins.
  * W	Binning based on the weekly cycle. Example: L1000 gives 1000 bins.
  * D	Binning based on the daily  cycle. Example: L1000 gives 1000 bins.
- * O	Ordinal values (numbers)
- * N	Nominal values (text strings)
+* O	Ordinal values (numbers)
+* N	Nominal values (text strings)
 			
 
 Example usage in the -meta_params parameter: 
