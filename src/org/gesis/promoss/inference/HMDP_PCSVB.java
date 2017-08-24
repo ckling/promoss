@@ -601,6 +601,7 @@ public class HMDP_PCSVB {
 							" qk " + q[k] + 
 							" nmk " + nmk[m][k] + 
 							" prior " + topic_prior[k] + 
+							" pik " + pi_0[k] +
 							" nkt " + nkt[k][t]+ 
 							" a0 " + alpha_0  + 		
 							" alpha1 " + alpha_1 +
@@ -831,8 +832,7 @@ public class HMDP_PCSVB {
 		//sumqkfc2[f][a][k] ok
 		//sumqfgc[f][group[f]][i] ok 
 		//sumqfg[f][group[f]] 
-
-
+		
 		//we update after we saw all documents from the group 
 		//OR if we saw BATCHSIZE_GROUPS documents
 		int BATCHSIZE_GROUP_MIN = Math.min(c.Cfg[f][g],BATCHSIZE_GROUPS);
@@ -892,6 +892,7 @@ public class HMDP_PCSVB {
 			//				estimateGroupTopicDistribution(f,ag);
 			//			}
 		}
+		
 	}
 
 	public void updateGlobalTopicDistribution() {
@@ -921,12 +922,15 @@ public class HMDP_PCSVB {
 						double a0pik=alpha_0 * pi_0[k];
 						tables = (sumqfck_ge0[f][i][k] > 0) ? a0pik * sumqfck_ge0[f][i][k] * (Gamma.digamma0(a0pik + sumqfck[f][i][k] / sumqfck_ge0[f][i][k]) - Gamma.digamma0(a0pik)) : 0;
 						//we do not add the variance here, so we have to check for negative counts
-						if (tables < 0) tables = 0;
 					}
 					else {
 						//Sampled number of tables -> better perplexity
 						tables = sumqfck_ge0[f][i][k] * rs.randNumTable(pi_0[k], sumqfck[f][i][k]);
 					}
+					if (tables < 0 || Double.isNaN(tables)) {
+						tables = 0;
+					}
+					
 					sumfck[k] += tables;
 					//sum_cluster_tables += sumfck[k];
 				}
@@ -1027,8 +1031,8 @@ public class HMDP_PCSVB {
 		int a = 1;
 		int b = 0;
 
-		if (learn_gamma) {
-			gamma = (T + a - 2) / (gamma_denominator + b);
+		if (learn_gamma && !Double.isInfinite(gamma_denominator) && !Double.isNaN(gamma_denominator)) {
+			gamma = (T + a - 1) / (gamma_denominator + b);
 		}
 
 	}
@@ -1167,10 +1171,8 @@ public class HMDP_PCSVB {
 
 
 		}
-
-
 		
-		if (rhot_step > BURNIN_DOCUMENTS+2)  {
+		if (rhot_step > BURNIN_DOCUMENTS+1)  {
 			//Update global topic distribution
 			updateGlobalTopicDistribution();
 		}

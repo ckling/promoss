@@ -17,7 +17,7 @@ public class Run {
 			//args = "-directory /home/c/work/topicmodels/ml9/ -method HMD -T 100 -meta_params T(L1000) -MIN_DICT_WORDS 1000 -RUNS 100 -TRAINING_SHARE 0.8".split(" ");
 			//args = "-directory /home/c/work/topicmodels/geo_test/ -method HMDP -T 10 -meta_params G(200)".split(" ");
 			//args = "-directory /home/c/work/topicmodels/ml_test/ -method HMDP -T 100 -meta_params T(L100,W20)".split(" ");
-			args = "-directory /home/c/work/topicmodels/scopus4/ -method HMDP -T 100 -BURNIN_DOCUMENTS 2 -meta_params O -MIN_DICT_WORDS 100 -processed false -stopwords true -stemming true".split(" ");
+			args = "-directory /home/c/work/topicmodels/scopus3/ -method HMDP -T 10 -BURNIN_DOCUMENTS 2 -meta_params O -MIN_DICT_WORDS 100 -processed false -stopwords true -stemming true".split(" ");
 
 		}
 		

@@ -638,7 +638,7 @@ public class ClusterMetadata {
 						groupclusters += " " + (dict.length()-1);
 					}
 					if (k<dict.length()-1) {
-						groupclusters += " " + k+1;
+						groupclusters += " " + (k+1);
 					}
 					else {
 						//connect circle
