@@ -23,9 +23,6 @@
 package org.gesis.promoss.tools.probabilistic;
 
 
-
-import java.io.IOException;
-
 import jdistlib.math.PolyGamma;
 
 
