@@ -63,7 +63,7 @@ public class Run {
 				else if (args[i].equals("-delta_fix")) {
 					String value = args[++i];
 					if (!value.equals("none")) {
-					hmdp.delta_fix = Double.valueOf(args[++i]);
+					hmdp.delta_fix = Double.valueOf(value);
 					}
 				}
 
